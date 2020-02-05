@@ -1,6 +1,7 @@
 import subprocess
 import pandas as pd
 import re
+import atom
 
 class PsiFour():
 
@@ -37,12 +38,10 @@ class PsiFour():
 
     def parsePsiOutputFile(self, protein):
 
-        #Read the output file and write csv with the data
-        #file_csv = open(protein + ".csv","w")
         with open("outputFile.dat","r") as filehandle:
 
             isDataLine = False
-            data = []
+            atoms = []
             for line in filehandle:
 
                 #if line is an empty string after reading data
@@ -53,23 +52,9 @@ class PsiFour():
                 if(isDataLine and not '--' in line):
 
                     lineChunks = line.split()
-                    data.append(lineChunks)
-
-                    #lineFormated = re.sub('\s+', ' ', line).strip()
-                    #file_csv.write(lineFormated+'\n') 
+                    atoms += [atom.Atom(lineChunks[0], float(lineChunks[1]), float(lineChunks[2]), float(lineChunks[3]), float(lineChunks[4]))]
 
                 if 'Center' in line:
                     isDataLine = True
-                
-
-        #file_csv.close()
-
-        atoms = pd.DataFrame(data, columns = ["Element", "X", "Y", "Z", "Mass"])
-        
+                        
         return atoms
-
-        #data = pd.read_csv(protein + ".csv", header=None, delim_whitespace=True)
-        #data.columns = ["Element", "X", "Y", "Z", "Mass"]
-        #print(data.shape)
-        #print(type(data))
-        

@@ -7,19 +7,22 @@ class PsiFour():
 
     def getAtomsFromProtein(self, protein):
         
+        fileName = 'inputFile'
+        outputFileName = 'outputFile'
+
         #create input file
-        self.createInputFile(protein)
+        self.createInputFile(protein, fileName)
 
         #execute psi4
-        self.executePsiCommand()
+        self.executePsiCommand(fileName, outputFileName)
 
         #read/parse outputfile
         return self.parsePsiOutputFile(protein)
 
 
-    def createInputFile(self, protein):
+    def createInputFile(self, protein, filename):
 
-        inputFile = open('inputFile.dat', 'w')
+        inputFile = open(filename+'.dat', 'w')
 
         inputFile.write('molecule ' + protein + '{\n')
         inputFile.write(' pubchem: '+ protein+'\n')
@@ -31,10 +34,10 @@ class PsiFour():
 
         inputFile.close()
 
-    def executePsiCommand(self):
+    def executePsiCommand(self, inputFileName, outputFileName):
 
         #execute psi4 by command line (it generates the file output.dat with the information)
-        subprocess.run(["psi4", "inputFile.dat", "outputFile.dat"])
+        subprocess.run(["psi4", inputFileName+".dat", outputFileName+".dat"])
 
     def parsePsiOutputFile(self, protein):
 

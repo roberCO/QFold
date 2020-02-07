@@ -1,5 +1,5 @@
 class Atom():
-    def __init__(self,element,x,y,z,mass,aminoacid = None ,c_type = None,linked_to = [],vanderWals_r = 0):
+    def __init__(self,element,x,y,z,mass,aminoacid = "" ,c_type = "",linked_to = [],vanderWals_r = 0):
         self.element = element
         self.x = x
         self.y = y

@@ -39,6 +39,35 @@ class PsiFour():
         #execute psi4 by command line (it generates the file output.dat with the information)
         subprocess.run(["psi4", inputFileName+".dat", outputFileName+".dat"])
 
+    def writeFileEnergies(self, atoms, nitroAtom, carboxyAtom, inputFilenameEnergyPSI4):
+
+        #Write file with all atoms rotated
+        rotationHandle = open(inputFilenameEnergyPSI4+'.dat', 'w')
+
+        rotationHandle.write('molecule glycylglycine{\n')
+        #write input.dat with all rotated atoms
+        for at in atoms:
+            rotationHandle.write(" " + at.element + " " + str(at.x) + " " + str(at.y) + " " + str(at.z)+'\n')
+        
+        rotationHandle.write(" " + nitroAtom.element + " " + str(nitroAtom.x) + " " + str(nitroAtom.y) + " " + str(nitroAtom.z)+'\n')
+        rotationHandle.write(" " + carboxyAtom.element + " " + str(carboxyAtom.x) + " " + str(carboxyAtom.y) + " " + str(carboxyAtom.z)+'\n')
+        rotationHandle.write('}\n\n')
+        rotationHandle.write("set basis cc-pvdz\n")
+        rotationHandle.write("set reference rhf\n")
+        rotationHandle.write("energy('scf')\n")
+
+        rotationHandle.close()
+
+    def readEnergyFromFile(self, outputFilenameEnergyPSI4):
+
+        with open(outputFilenameEnergyPSI4+'.dat', 'r') as fileHandle:
+            for line in fileHandle:
+                if 'Final Energy' in line:
+
+                    #Return energy
+                    return float(line.split(':')[1])
+                    
+
     def parsePsiOutputFile(self, protein):
 
         with open("outputFile.dat","r") as filehandle:

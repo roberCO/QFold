@@ -1,6 +1,63 @@
 import atom
+import numpy as np
 
 class Utils():
+
+    def distance(self, atom, atom2):
+        return np.sqrt((atom.x-atom2.x)**2+(atom.y-atom2.y)**2+(atom.z-atom2.z)**2)
+
+    def calculateAtomConnection(self, atoms):
+
+        for at1 in atoms:
+            for at2 in atoms:
+                if at1 != at2:
+                    if at1.element == 'O' and at2.element == 'C' and self.distance(at1,at2)<2:
+                        at2.c_type = 'Carboxy'
+                        at1.linked_to = [at2] + at1.linked_to 
+                        at2.linked_to = [at1] + at2.linked_to
+                        
+                    if at1.element == 'N' and at2.element == 'C' and self.distance(at1,at2)<2:
+                        if at2.c_type != 'Carboxy':
+                            at2.c_type = 'C_alpha'
+                        at1.linked_to = [at2] + at1.linked_to 
+                        at2.linked_to = [at1] + at2.linked_to
+                        
+                    if at1.element == 'H' and at2.element == 'C' and self.distance(at1,at2)<1.3: 
+                        at1.linked_to = [at2] + at1.linked_to 
+                        at2.linked_to = [at1] + at2.linked_to
+                        
+                    if at1.element == 'C' and at2.element == 'C' and self.distance(at1,at2)<2  and (at1 not in at2.linked_to) : 
+                        at1.linked_to = [at2] + at1.linked_to 
+                        at2.linked_to = [at1] + at2.linked_to 
+
+        return atoms
+
+    def findAtom(self, atoms, element, cType, connections):
+
+        for at in atoms:
+
+            #The element for the angle phi is nitrogen (N)
+            if ((element != '' and at.element == element) or (cType != '' and at.c_type == cType)):
+
+                for conn in connections:
+
+                    linkedElement = conn[0]
+                    numberLinkedElements = conn[1]
+                    counterLinkedElements = 0
+
+                    #The valid nitrogen is the connected with two carbons
+                    for elementConn in at.linked_to:
+
+                        if(elementConn.element == linkedElement):
+                            counterLinkedElements += 1
+
+                    #Atom found and saved in variable
+                    if (counterLinkedElements == numberLinkedElements):
+                        return at
+
+                    else:
+                        raise Exception('Element '+at.element+' not found with the proper connections of '+linkedElement+'! '+str(counterLinkedElements)+' found but there should be ' + str(numberLinkedElements))
+
 
     def generateInitialConfig(self, aminoacids):
         print("generateInitialConfig")

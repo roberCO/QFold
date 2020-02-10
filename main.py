@@ -4,176 +4,61 @@ import psiFour
 import atom
 import numpy as np
 
-def distance(atom,atom2):
-    return np.sqrt((atom.x-atom2.x)**2+(atom.y-atom2.y)**2+(atom.z-atom2.z)**2)
-
-def calculateAtomConnection(atoms):
-
-    for at1 in atoms:
-        for at2 in atoms:
-            if at1 != at2:
-                if at1.element == 'O' and at2.element == 'C' and distance(at1,at2)<2:
-                    at2.c_type = 'Carboxy'
-                    at1.linked_to = [at2] + at1.linked_to 
-                    at2.linked_to = [at1] + at2.linked_to
-                    
-                if at1.element == 'N' and at2.element == 'C' and distance(at1,at2)<2:
-                    if at2.c_type != 'Carboxy':
-                        at2.c_type = 'C_alpha'
-                    at1.linked_to = [at2] + at1.linked_to 
-                    at2.linked_to = [at1] + at2.linked_to
-                    
-                if at1.element == 'H' and at2.element == 'C' and distance(at1,at2)<1.3: 
-                    at1.linked_to = [at2] + at1.linked_to 
-                    at2.linked_to = [at1] + at2.linked_to
-                    
-                if at1.element == 'C' and at2.element == 'C' and distance(at1,at2)<2  and (at1 not in at2.linked_to) : 
-                    at1.linked_to = [at2] + at1.linked_to 
-                    at2.linked_to = [at1] + at2.linked_to 
-
-    return atoms
-
-
-
-if(len(sys.argv) < 2):
-    print ("<*> ERROR: You must specify the number of aminoacids - Usage: python main.py numberOfAminoacids ProteinName [Aminoacid1] [Aminoacid2] [...]")
-    print ("<!> Example: python main.py 2 Glycylglycine GLY GLY")
+if(len(sys.argv) != 3):
+    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
+    print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")
     sys.exit(0)
 
-try:
-    numberAA = int(sys.argv[1])
-except ValueError:
-    print ("<*> ERROR: The number of aminoacids must be an integer and you enter: "+sys.argv[1]+" - Usage: python main.py numberOfAminoacids ProteinName [Aminoacid1] [Aminoacid2] [...]")
-    print ("<!> Example: python main.py 2 Glycylglycine GLY GLY")
-    sys.exit(0)
+#Global variable
+tools = utils.Utils()
 
-if(len(sys.argv) != numberAA+3):
-    print ("<*> ERROR: Incorrect number of aminoacids. You specify " + str(numberAA) + " but you enter "+ str(len(sys.argv)-3) +" - Usage: python main.py numberOfAminoacids ProteinName [Aminoacid1] [Aminoacid2] [...]")
-    print ("<!> Example: python main.py 2 Glycylglycine GLY GLY")
-    sys.exit(0)
-
-
-proteinName = sys.argv[2]
-aminoacids = []
-
-for index in range(0, numberAA):
-    aminoacids.append(sys.argv[index+3])
-
+proteinName = sys.argv[1]
+rotationSteps = pow(2, int(sys.argv[2]))
 
 #call psi4 to get the atoms of the protein
 psi = psiFour.PsiFour()
 atoms = psi.getAtomsFromProtein(proteinName)
 
 #Calculate the connection between atoms
-atoms = calculateAtomConnection(atoms)
-
-tools = utils.Utils()
-
-'''
-for at in atoms:
-
-    for conn in at.linked_to:
-
-        print("atom: " + at.element + " linked to: " + conn.element + " atom type: " + at.c_type)
-
-    print("------")
-
-#Initial call minifold
-initialAngleConfiguration = tools.generateInitialConfig(aminoacids)
-
-#reache initial configuration of angles
-atoms = tools.rotateAminoacid(atoms, initialAngleConfiguration)
-'''
+atoms = tools.calculateAtomConnection(atoms)
 
 
-#HARDCODED
-rotationStep = 1/32 #It will multipled by pi (64 steps)
+nitroConnections = [['C', 2]]
+carboxyConnections = [['C', 1], ['O', 2]]
 
+nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)
+carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
 
-#This is hardcoded because QFold is going to be used just with two and three aminoacids
-#if it is scale to more aminoacids, it should be necessary to implement a recursive function
+#Remove the elements that are going to be modified, then the modified elements will be added
+atoms.remove(nitroAtom)
+atoms.remove(carboxyAtom)
 
-nitroAtom = None
-carboxyAtom = None
-
-for at in atoms:
-
-    #The element for the angle phi is nitrogen (N)
-    if (at.element == 'N'):
-
-        linkedCarbons = 0
-        #The valid nitrogen is the connected with two carbons
-        for conn in at.linked_to:
-
-            if(conn.element == 'C'):
-                linkedCarbons += 1
-
-        #Atom found and saved in variable
-        if (linkedCarbons == 2):
-            nitroAtom = at
-            #Remove the element that is going to be modified, then the modified element will be added
-            atoms.remove(at)
-
-
-
-for at in atoms:
-
-    #The element for the angle psi is a carboxy
-    if (at.c_type == 'Carboxy'):
-
-        linkedCarbons = 0
-        linkedOxygens = 0
-
-        #The valid carboxy is the connected with one carbon (C) and two oxygens
-        for conn in at.linked_to:
-
-            if(conn.element == 'C'):
-                linkedCarbons += 1
-
-            if(conn.element == 'O'):
-                linkedOxygens += 1
-
-        #Atom found and saved in a variable
-        if(linkedCarbons == 1 and linkedOxygens == 2):
-            carboxyAtom = at
-            #Remove the element that is going to be modified, then the modified element will be added
-            atoms.remove(at)
-
+inputFilenameEnergyPSI4 = 'inputRotations'
+outputFilenameEnergyPSI4 = 'outputRotations'
 anglePhi = 0
-for x in range(0, 64):
+
+#These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
+#if it is scale to more aminoacids, it should be necessary to implement a recursive function
+for x in range(0, rotationSteps):
 
     tools.rotate('phi', anglePhi, nitroAtom)
     anglePsi = 0
 
-    for y in range(0, 64):
+    for y in range(0, rotationSteps):
 
         tools.rotate('psi', anglePsi, carboxyAtom)
-        anglePsi += rotationStep
+        anglePsi += 1/rotationSteps
 
-        #Write file with all atoms rotated
-        rotationHandle = open('inputRotations.dat', 'w')
+        #Write the file with the actual rotations
+        psi.writeFileEnergies(atoms, nitroAtom, carboxyAtom, inputFilenameEnergyPSI4)
 
-        rotationHandle.write('molecule glycylglycine{\n')
-        #write input.dat with all rotated atoms
-        for at in atoms:
-            rotationHandle.write(" " + at.element + " " + str(at.x) + " " + str(at.y) + " " + str(at.z)+'\n')
-        
-        rotationHandle.write(" " + nitroAtom.element + " " + str(nitroAtom.x) + " " + str(nitroAtom.y) + " " + str(nitroAtom.z)+'\n')
-        rotationHandle.write(" " + carboxyAtom.element + " " + str(carboxyAtom.x) + " " + str(carboxyAtom.y) + " " + str(carboxyAtom.z)+'\n')
-        rotationHandle.write('}\n\n')
-        rotationHandle.write("set basis cc-pvdz\n")
-        rotationHandle.write("set reference rhf\n")
-        rotationHandle.write("energy('scf')\n")
+        #Calculate the energy of the actual rotations using PSI4
+        psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
 
-        rotationHandle.close()
+        #Read the PSI4 output file and get the energy
+        energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
 
-        psi.executePsiCommand('inputRotations', 'energyRotations')
+        print (energy)
 
-        with open('energyRotations.dat', 'r') as fileHandle:
-            for line in fileHandle:
-                if 'Final Energy' in line:
-                    energy = float(line.split(':')[1])
-                    print('energy: ' + str(energy))
-
-    anglePhi += rotationStep
+    anglePhi += 1/rotationSteps
 

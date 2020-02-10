@@ -1,3 +1,8 @@
+import numpy as np
+import warnings
+from scipy.spatial.transform import Rotation as R
+
+
 class Atom():
     def __init__(self,element,x,y,z,mass,aminoacid = "" ,c_type = "",linked_to = [],vanderWals_r = 0):
         self.element = element
@@ -10,15 +15,15 @@ class Atom():
         self.linked_to = linked_to
         self.vanderWalls_r = 0
         
-    def rotate(self,atom1,atom2,angle,angle_tpye): # Angle should be a fraction since it will be multiplied by 2pi
+    def rotate(self,atom1,atom2,angle,angle_type): # Angle should be a fraction since it will be multiplied by 2pi
         
         # Check whether the angle is between the right atoms. Else raise exception
         if angle_type == 'phi':
-            if atom1.c_type != N or atom2.c_type != C_alpha:
-                raise Excepcion('Not the correct angle between N and C_alpha. The atoms are ',atom1.c_type,' and ',atom2.c_type)
-        if angle_type == 'psi':
-            if atom1.c_type != C_alpha or atom2.c_type != Carboxy:
-                raise Excepcion('Not the correct angle between C_alpha and Carboxy. The atoms are ',atom1.c_type,' and ',atom2.c_type)
+            if atom1.c_type != 'C_alpha' or atom2.element != 'N' :
+                raise Exception('Not the correct angle between N and C_alpha. The atoms are ',atom1.element,' and ',atom2.c_type)
+        elif angle_type == 'psi':
+            if atom1.c_type != 'C_alpha' or atom2.c_type != 'Carboxy':
+                raise Exception('Not the correct angle between C_alpha and Carboxy. The atoms are ',atom1.c_type,' and ',atom2.c_type)
         else: 
             raise Exception('The angle is not phi or psi!')
             

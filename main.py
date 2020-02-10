@@ -47,6 +47,7 @@ for x in range(0, rotationSteps):
     for y in range(0, rotationSteps):
 
         tools.rotate('psi', anglePsi, carboxyAtom)
+
         anglePsi += 1/rotationSteps
 
         #Write the file with the actual rotations
@@ -58,7 +59,8 @@ for x in range(0, rotationSteps):
         #Read the PSI4 output file and get the energy
         energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
 
-        print (energy)
+        print('<!>  Nitro atom   <!>: ' + str(nitroAtom.element) + ' | x => ' + str(nitroAtom.x) + ' y => ' + str(nitroAtom.y) + ' z => ' + str(nitroAtom.z))
+        print('<!> Carboxy atom  <!>: ' + str(carboxyAtom.element) + ' | x => ' + str(carboxyAtom.x) + ' y => ' + str(carboxyAtom.y) + ' z => ' + str(carboxyAtom.z)+'\n')
+        print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
 
     anglePhi += 1/rotationSteps
-

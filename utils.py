@@ -1,9 +1,6 @@
 import atom
 
-class AngleCalculator():
-
-    def __init__(self):
-        print("init call")
+class Utils():
 
     def generateInitialConfig(self, aminoacids):
         print("generateInitialConfig")

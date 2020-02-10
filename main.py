@@ -1,5 +1,5 @@
 import sys
-import angleCalculator
+import utils
 import psiFour
 import atom
 import numpy as np
@@ -67,7 +67,7 @@ atoms = psi.getAtomsFromProtein(proteinName)
 #Calculate the connection between atoms
 atoms = calculateAtomConnection(atoms)
 
-aC = angleCalculator.AngleCalculator()
+tools = utils.Utils()
 
 '''
 for at in atoms:
@@ -79,10 +79,10 @@ for at in atoms:
     print("------")
 
 #Initial call minifold
-initialAngleConfiguration = aC.generateInitialConfig(aminoacids)
+initialAngleConfiguration = tools.generateInitialConfig(aminoacids)
 
 #reache initial configuration of angles
-atoms = aC.rotateAminoacid(atoms, initialAngleConfiguration)
+atoms = tools.rotateAminoacid(atoms, initialAngleConfiguration)
 '''
 
 
@@ -142,12 +142,12 @@ for at in atoms:
 anglePhi = 0
 for x in range(0, 64):
 
-    aC.rotate('phi', anglePhi, nitroAtom)
+    tools.rotate('phi', anglePhi, nitroAtom)
     anglePsi = 0
 
     for y in range(0, 64):
 
-        aC.rotate('psi', anglePsi, carboxyAtom)
+        tools.rotate('psi', anglePsi, carboxyAtom)
         anglePsi += rotationStep
 
         #Write file with all atoms rotated
@@ -169,9 +169,11 @@ for x in range(0, 64):
 
         psi.executePsiCommand('inputRotations', 'energyRotations')
 
-        break
-
-    break
+        with open('energyRotations.dat', 'r') as fileHandle:
+            for line in fileHandle:
+                if 'Final Energy' in line:
+                    energy = float(line.split(':')[1])
+                    print('energy: ' + str(energy))
 
     anglePhi += rotationStep
 

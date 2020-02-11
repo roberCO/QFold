@@ -37,7 +37,7 @@ class PsiFour():
     def executePsiCommand(self, inputFileName, outputFileName):
 
         #execute psi4 by command line (it generates the file output.dat with the information)
-        subprocess.run(["psi4", inputFileName+".dat", outputFileName+".dat"], stdout=None)
+        subprocess.run(["psi4", inputFileName+".dat", outputFileName+".dat"], stdout=subprocess.DEVNULL)
 
     def writeFileEnergies(self, atoms, nitroAtom, carboxyAtom, inputFilenameEnergyPSI4):
 
@@ -60,13 +60,19 @@ class PsiFour():
 
     def readEnergyFromFile(self, outputFilenameEnergyPSI4):
 
+        energy = 0
         with open(outputFilenameEnergyPSI4+'.dat', 'r') as fileHandle:
             for line in fileHandle:
-                if 'Final Energy' in line:
 
-                    #Return energy
-                    return float(line.split(':')[1])
-                    
+                #If the PSI4 algorithm converges
+                if 'Final Energy' in line:
+                    energy = float(line.split(':')[1])
+                
+                #If the PSI4 algorithm does not converge, the energy used is the calculated in the last iteration (iteration 100)
+                if 'iter 100:' in line:
+                    energy = float(line.split()[3])
+
+        return energy
 
     def parsePsiOutputFile(self, protein):
 

@@ -34,7 +34,7 @@ class Atom():
             warnings.warn('Are you sure atom1 and atom2 are different? They seem to have the same position')
         v /= np.linalg.norm(v)
         
-        r = R.from_rotvec(2*np.pi*angle * np.array([0, 0, 1]))
+        r = R.from_rotvec(2*np.pi*angle * v)
         M = r.as_matrix()
         
         #Firs thing we set a new coordinate system where v1 = [0,0,0] (translation only) so that we can perform the rotation of M

@@ -4,6 +4,68 @@ import psiFour
 import atom
 import numpy as np
 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+
+def plotting(list_of_atoms):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    #-----
+    VecStart_x = []
+    VecStart_y = []
+    VecStart_z = []
+    VecEnd_x = []
+    VecEnd_y = []
+    VecEnd_z  = []
+    
+    #Make list of conections
+    list_of_connections = []
+    for at1 in list_of_atoms:
+        for at2 in list_of_atoms:
+            if (at1,at2) not in list_of_connections and (at2,at1) not in list_of_connections and at2 in at1.linked_to:
+                list_of_connections += [(at1,at2)]    
+                
+    for tupl in list_of_connections:
+        VecStart_x += [tupl[0].x]
+        VecStart_y += [tupl[0].y]
+        VecStart_z += [tupl[0].z]
+        VecEnd_x += [tupl[1].x]
+        VecEnd_y += [tupl[1].y]
+        VecEnd_z  += [tupl[1].z]
+        
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    print(len(list_of_connections))    
+    
+    for i in range(len(list_of_connections)):
+        ax.plot([VecStart_x[i], VecEnd_x[i]], [VecStart_y[i],VecEnd_y[i]],zs=[VecStart_z[i],VecEnd_z[i]],color='grey')
+    #-----    
+    
+    xs = []
+    ys = []
+    zs = []
+    c = []
+    for at in list_of_atoms:
+        xs += [at.x]
+        ys += [at.y]
+        zs += [at.z]
+        if at.element == 'N':
+            c += ['blue']
+        elif at.element == 'C':
+            c += ['black']
+        elif at.element == 'O':
+            c += ['red']
+        elif at.element == 'H':
+            c += ['green']    
+    
+    print(c)
+    ax.scatter(xs, ys, zs,c=c,depthshade= False)
+    plt.show()
+    return ax
+
+
+
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
     print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")

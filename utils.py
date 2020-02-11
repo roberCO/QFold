@@ -22,7 +22,7 @@ class Utils():
                         at1.linked_to = [at2] + at1.linked_to 
                         at2.linked_to = [at1] + at2.linked_to
                         
-                    if at1.element == 'H' and at2.element == 'C' and self.distance(at1,at2)<1.3: 
+                    if at1.element == 'H' and self.distance(at1,at2)<1.3: 
                         at1.linked_to = [at2] + at1.linked_to 
                         at2.linked_to = [at1] + at2.linked_to
                         

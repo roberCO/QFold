@@ -39,7 +39,7 @@ class PsiFour():
         #execute psi4 by command line (it generates the file output.dat with the information)
         subprocess.run(["psi4", inputFileName+".dat", outputFileName+".dat"], stdout=subprocess.DEVNULL)
 
-    def writeFileEnergies(self, atoms, nitroAtom, carboxyAtom, inputFilenameEnergyPSI4):
+    def writeFileEnergies(self, atoms, inputFilenameEnergyPSI4):
 
         #Write file with all atoms rotated
         rotationHandle = open(inputFilenameEnergyPSI4+'.dat', 'w')
@@ -49,8 +49,6 @@ class PsiFour():
         for at in atoms:
             rotationHandle.write(" " + at.element + " " + str(at.x) + " " + str(at.y) + " " + str(at.z)+'\n')
         
-        rotationHandle.write(" " + nitroAtom.element + " " + str(nitroAtom.x) + " " + str(nitroAtom.y) + " " + str(nitroAtom.z)+'\n')
-        rotationHandle.write(" " + carboxyAtom.element + " " + str(carboxyAtom.x) + " " + str(carboxyAtom.y) + " " + str(carboxyAtom.z)+'\n')
         rotationHandle.write('}\n\n')
         rotationHandle.write("set basis cc-pvdz\n")
         rotationHandle.write("set reference rhf\n")
@@ -76,6 +74,7 @@ class PsiFour():
 
     def parsePsiOutputFile(self, protein):
 
+        atomId = 0
         with open("outputFile.dat","r") as filehandle:
 
             isDataLine = False
@@ -90,7 +89,8 @@ class PsiFour():
                 if(isDataLine and not '--' in line):
 
                     lineChunks = line.split()
-                    atoms += [atom.Atom(lineChunks[0], float(lineChunks[1]), float(lineChunks[2]), float(lineChunks[3]), float(lineChunks[4]))]
+                    atoms += [atom.Atom(atomId, lineChunks[0], float(lineChunks[1]), float(lineChunks[2]), float(lineChunks[3]), float(lineChunks[4]))]
+                    atomId += 1
 
                 if 'Center' in line:
                     isDataLine = True

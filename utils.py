@@ -79,10 +79,9 @@ class Utils():
         
         list_of_atoms_to_rotate = []
         list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type,starting_atom)
-        list_of_atoms_to_rotate += self.decorations_to_rotate(list_of_atoms_to_rotate)
+        list_of_atoms_to_rotate += self.decorations_to_rotate(list_of_atoms_to_rotate,starting_atom)
 
         for atom in list_of_atoms_to_rotate:
-            # The rotation angle is pi/16 and in order to maintain internal coherence 
             atom.rotate(atom_c_alpha, starting_atom, angle, angle_type)  
 
     def backbone_to_rotate(self, angle_type, starting_atom):
@@ -125,23 +124,24 @@ class Utils():
         return list_of_atoms_to_rotate
 
 
-    def decorations_to_rotate(self, backbone_list):
-        '''Input: list of backbone atoms. Returns a list of other atoms that must be rotated'''
-        list_of_atoms_to_rotate = []
-        addition_list = []
-        for back_atom in backbone_list:
-            for atom in back_atom.linked_to:
-                if atom.c_type == '' and atom not in list_of_atoms_to_rotate: #if empty check if not nitrogen
-                    addition_list += [atom]
-                    list_of_atoms_to_rotate += [atom]
+    #Input: list of backbone atoms. Returns a list of all atoms that must be rotated.
+    def decorations_to_rotate(self, backbone_list,starting_atom):
 
-            while addition_list != []:
-                old_list = addition_list
-                addition_list = []
-                for prev_atom in old_list:
-                    for atom in prev_atom.linked_to:
-                        if atom.c_type == '' and atom not in list_of_atoms_to_rotate: #if empty check if not nitrogen
-                            addition_list += [atom]
-                            list_of_atoms_to_rotate += [atom]
-
-        return list_of_atoms_to_rotate
+        newly_added = backbone_list
+        
+        while newly_added != []:
+            previously_added = newly_added #Don't want the changes made to newly_added to affect to previously added
+            newly_added = []
+            for prev_atom in previously_added:
+                for atom in prev_atom.linked_to:
+                    if atom not in backbone_list and atom not in newly_added and atom != starting_atom:
+                        newly_added += [atom]
+            backbone_list += newly_added
+            previously_added = []
+        
+        for atom in starting_atom.linked_to:
+            if atom.element != 'N' and atom.c_type != 'Carboxy' and atom.c_type != 'C_alpha':
+                backbone_list += [atom]
+        
+        #Perhaps use a method to eliminate duplicate references in the list? I think there shouldn't be any.
+        return backbone_list

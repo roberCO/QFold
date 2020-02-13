@@ -61,10 +61,11 @@ def plotting(list_of_atoms):
     
     print(c)
     ax.scatter(xs, ys, zs,c=c,depthshade= False)
+
+    for i in range(len(xs)): 
+        ax.text(xs[i],ys[i],zs[i],  '%s' % (str(i)))
     plt.show()
     return ax
-
-
 
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
@@ -91,10 +92,6 @@ carboxyConnections = [['C', 1], ['O', 2]]
 nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)
 carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
 
-#Remove the elements that are going to be modified, then the modified elements will be added
-atoms.remove(nitroAtom)
-atoms.remove(carboxyAtom)
-
 inputFilenameEnergyPSI4 = 'inputRotations'
 outputFilenameEnergyPSI4 = 'outputRotations'
 anglePhi = 0
@@ -103,17 +100,19 @@ anglePhi = 0
 #if it is scale to more aminoacids, it should be necessary to implement a recursive function
 for x in range(0, rotationSteps):
 
+    print('<!> Rotating phi '+ str(anglePhi) +'!')
     tools.rotate('phi', anglePhi, nitroAtom)
     anglePsi = 0
 
     for y in range(0, rotationSteps):
 
+        print('<@> Rotating psi '+str(anglePsi)+'!')
         tools.rotate('psi', anglePsi, carboxyAtom)
 
         anglePsi += 1/rotationSteps
 
         #Write the file with the actual rotations
-        psi.writeFileEnergies(atoms, nitroAtom, carboxyAtom, inputFilenameEnergyPSI4)
+        psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
 
         #Calculate the energy of the actual rotations using PSI4
         psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)

@@ -7,9 +7,8 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-def plotting(list_of_atoms):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+def plotting(list_of_atoms, title):
+    
     #-----
     VecStart_x = []
     VecStart_y = []
@@ -34,9 +33,8 @@ def plotting(list_of_atoms):
         VecEnd_z  += [tupl[1].z]
         
     fig = plt.figure()
+    fig.canvas.set_window_title(title)
     ax = fig.add_subplot(111, projection='3d')
-    
-    print(len(list_of_connections))    
     
     for i in range(len(list_of_connections)):
         ax.plot([VecStart_x[i], VecEnd_x[i]], [VecStart_y[i],VecEnd_y[i]],zs=[VecStart_z[i],VecEnd_z[i]],color='grey')
@@ -59,7 +57,6 @@ def plotting(list_of_atoms):
         elif at.element == 'H':
             c += ['green']    
     
-    print(c)
     ax.scatter(xs, ys, zs,c=c,depthshade= False)
 
     for i in range(len(xs)): 
@@ -108,6 +105,7 @@ for x in range(0, rotationSteps):
 
         print('<@> Rotating psi '+str(anglePsi)+'!')
         tools.rotate('psi', anglePsi, carboxyAtom)
+        plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi))
 
         anglePsi += 1/rotationSteps
 

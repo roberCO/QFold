@@ -79,7 +79,7 @@ class Utils():
         
         list_of_atoms_to_rotate = []
         list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type,starting_atom)
-        list_of_atoms_to_rotate += self.decorations_to_rotate(list_of_atoms_to_rotate,starting_atom)
+        list_of_atoms_to_rotate = self.decorations_to_rotate(list_of_atoms_to_rotate,starting_atom)
 
         for atom in list_of_atoms_to_rotate:
             atom.rotate(atom_c_alpha, starting_atom, angle, angle_type)  

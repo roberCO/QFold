@@ -4,8 +4,8 @@ from scipy.spatial.transform import Rotation as R
 
 
 class Atom():
-    def __init__(self, number, element,x,y,z,mass,aminoacid = "" ,c_type = "",linked_to = [],vanderWals_r = 0):
-        self.number = number
+    def __init__(self, atomId, element,x,y,z,mass,aminoacid = "" ,c_type = "",linked_to = [],vanderWals_r = 0):
+        self.atomId = atomId
         self.element = element
         self.x = x
         self.y = y

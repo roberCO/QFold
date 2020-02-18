@@ -7,7 +7,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
-def plotting(list_of_atoms, title):
+def plotting(list_of_atoms, title, fig):
     
     #-----
     VecStart_x = []
@@ -32,7 +32,6 @@ def plotting(list_of_atoms, title):
         VecEnd_y += [tupl[1].y]
         VecEnd_z  += [tupl[1].z]
         
-    fig = plt.figure()
     fig.canvas.set_window_title(title)
     ax = fig.add_subplot(111, projection='3d')
     
@@ -44,6 +43,11 @@ def plotting(list_of_atoms, title):
     ys = []
     zs = []
     c = []
+
+    xsPlane = []
+    ysPlane = []
+    zsPlane = []
+
     for at in list_of_atoms:
         xs += [at.x]
         ys += [at.y]
@@ -55,13 +59,19 @@ def plotting(list_of_atoms, title):
         elif at.element == 'O':
             c += ['red']
         elif at.element == 'H':
-            c += ['green']    
-    
+            c += ['green']  
+
+        if at.atomId == 5 or at.atomId == 6:
+            xsPlane += [at.x]
+            ysPlane += [at.y]
+            zsPlane += [at.z]
+
     ax.scatter(xs, ys, zs,c=c,depthshade= False)
+    ax.plot_surface(np.array(xsPlane), np.array(ysPlane), np.array(zsPlane), color = 'r', alpha = 0.5)
 
     for i in range(len(xs)): 
         ax.text(xs[i],ys[i],zs[i],  '%s' % (str(i)))
-    plt.show()
+    #plt.show()
     return ax
 
 if(len(sys.argv) != 3):
@@ -101,25 +111,35 @@ for x in range(0, rotationSteps):
     tools.rotate('phi', anglePhi, nitroAtom)
     anglePsi = 0
 
+    #Fig is the container where the plots are added
+    fig = plt.figure()
+    previousPlot = None
+
     for y in range(0, rotationSteps):
 
         print('<@> Rotating psi '+str(anglePsi)+'!')
         tools.rotate('psi', anglePsi, carboxyAtom)
-        plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi))
+        
+        actualPlot = plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi), fig)
+
+        if(previousPlot != None):
+            plt.show()
+        
+        previousPlot = actualPlot
 
         anglePsi += 1/rotationSteps
 
         #Write the file with the actual rotations
-        psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
+        #psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
 
         #Calculate the energy of the actual rotations using PSI4
-        psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
+        #psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
 
         #Read the PSI4 output file and get the energy
-        energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
+        #energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
 
         print('<!>  Nitro atom   <!>: ' + str(nitroAtom.element) + ' | x => ' + str(nitroAtom.x) + ' y => ' + str(nitroAtom.y) + ' z => ' + str(nitroAtom.z))
         print('<!> Carboxy atom  <!>: ' + str(carboxyAtom.element) + ' | x => ' + str(carboxyAtom.x) + ' y => ' + str(carboxyAtom.y) + ' z => ' + str(carboxyAtom.z)+'\n')
-        print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
+        #print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
 
     anglePhi += 1/rotationSteps

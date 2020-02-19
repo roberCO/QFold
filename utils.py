@@ -1,5 +1,7 @@
 import atom
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 
 class Utils():
 
@@ -145,3 +147,100 @@ class Utils():
         
         #Perhaps use a method to eliminate duplicate references in the list? I think there shouldn't be any.
         return backbone_list
+
+    def plotting(self, list_of_atoms, title):
+    
+        #-----
+        VecStart_x = []
+        VecStart_y = []
+        VecStart_z = []
+        VecEnd_x = []
+        VecEnd_y = []
+        VecEnd_z  = []
+        
+        #Make list of conections
+        list_of_connections = []
+        for at1 in list_of_atoms:
+            for at2 in list_of_atoms:
+                if (at1,at2) not in list_of_connections and (at2,at1) not in list_of_connections and at2 in at1.linked_to:
+                    list_of_connections += [(at1,at2)]    
+                    
+        for tupl in list_of_connections:
+            VecStart_x += [tupl[0].x]
+            VecStart_y += [tupl[0].y]
+            VecStart_z += [tupl[0].z]
+            VecEnd_x += [tupl[1].x]
+            VecEnd_y += [tupl[1].y]
+            VecEnd_z  += [tupl[1].z]
+            
+        fig = plt.figure()
+        fig.canvas.set_window_title(title)
+        ax = fig.add_subplot(111, projection='3d')
+        
+        for i in range(len(list_of_connections)):
+            ax.plot([VecStart_x[i], VecEnd_x[i]], [VecStart_y[i],VecEnd_y[i]],zs=[VecStart_z[i],VecEnd_z[i]],color='grey')
+        #-----    
+        
+        xs = []
+        ys = []
+        zs = []
+        c = []
+
+        planePhiPoints = []
+        planePsiPoints = []
+
+        for at in list_of_atoms:
+            xs += [at.x]
+            ys += [at.y]
+            zs += [at.z]
+            if at.element == 'N':
+                c += ['blue']
+            elif at.element == 'C':
+                c += ['black']
+            elif at.element == 'O':
+                c += ['red']
+            elif at.element == 'H':
+                c += ['green']  
+
+            if at.atomId == 3 or at.atomId == 5 or at.atomId == 6:
+                planePhiPoints += [np.array([at.x, at.y, at.z])]
+            
+            if at.atomId == 4 or at.atomId == 6 or at.atomId == 7:
+                planePsiPoints += [np.array([at.x, at.y, at.z])]
+
+        ax.scatter(xs, ys, zs,c=c,depthshade= False)
+
+
+        XPhi, YPhi, ZPhi = self.calculatePlane(planePhiPoints)
+        XPsi, YPsi, ZPsi = self.calculatePlane(planePsiPoints)
+
+
+        # plot the mesh. Each array is 2D, so we flatten them to 1D arrays
+        ax.plot_surface(XPhi, YPhi, ZPhi, color = 'r', alpha = '0.5')
+        ax.plot_surface(XPsi, YPsi, ZPsi, color = 'g', alpha = '0.5')
+
+
+        for i in range(len(xs)): 
+            ax.text(xs[i],ys[i],zs[i],  '%s' % (str(i)))
+        plt.show()
+
+    def calculatePlane(self, planePoints):
+
+        # These two vectors are in the plane
+        v1 = planePoints[2] - planePoints[0]
+        v2 = planePoints[1] - planePoints[0]
+
+        # the cross product is a vector normal to the plane
+        cp = np.cross(v1, v2)
+        a, b, c = cp
+
+        # This evaluates a * x3 + b * y3 + c * z3 which equals d
+        d = np.dot(cp, planePoints[2])
+
+
+        #HARCODED values
+        X, Y = np.meshgrid(planePoints[0], planePoints[0])
+
+        Z = (d - a * X - b * Y) / c
+
+        return X, Y, Z

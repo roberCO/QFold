@@ -4,76 +4,6 @@ import psiFour
 import atom
 import numpy as np
 
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-
-def plotting(list_of_atoms, title, fig):
-    
-    #-----
-    VecStart_x = []
-    VecStart_y = []
-    VecStart_z = []
-    VecEnd_x = []
-    VecEnd_y = []
-    VecEnd_z  = []
-    
-    #Make list of conections
-    list_of_connections = []
-    for at1 in list_of_atoms:
-        for at2 in list_of_atoms:
-            if (at1,at2) not in list_of_connections and (at2,at1) not in list_of_connections and at2 in at1.linked_to:
-                list_of_connections += [(at1,at2)]    
-                
-    for tupl in list_of_connections:
-        VecStart_x += [tupl[0].x]
-        VecStart_y += [tupl[0].y]
-        VecStart_z += [tupl[0].z]
-        VecEnd_x += [tupl[1].x]
-        VecEnd_y += [tupl[1].y]
-        VecEnd_z  += [tupl[1].z]
-        
-    fig.canvas.set_window_title(title)
-    ax = fig.add_subplot(111, projection='3d')
-    
-    for i in range(len(list_of_connections)):
-        ax.plot([VecStart_x[i], VecEnd_x[i]], [VecStart_y[i],VecEnd_y[i]],zs=[VecStart_z[i],VecEnd_z[i]],color='grey')
-    #-----    
-    
-    xs = []
-    ys = []
-    zs = []
-    c = []
-
-    xsPlane = []
-    ysPlane = []
-    zsPlane = []
-
-    for at in list_of_atoms:
-        xs += [at.x]
-        ys += [at.y]
-        zs += [at.z]
-        if at.element == 'N':
-            c += ['blue']
-        elif at.element == 'C':
-            c += ['black']
-        elif at.element == 'O':
-            c += ['red']
-        elif at.element == 'H':
-            c += ['green']  
-
-        if at.atomId == 5 or at.atomId == 6:
-            xsPlane += [at.x]
-            ysPlane += [at.y]
-            zsPlane += [at.z]
-
-    ax.scatter(xs, ys, zs,c=c,depthshade= False)
-    ax.plot_surface(np.array(xsPlane), np.array(ysPlane), np.array(zsPlane), color = 'r', alpha = 0.5)
-
-    for i in range(len(xs)): 
-        ax.text(xs[i],ys[i],zs[i],  '%s' % (str(i)))
-    #plt.show()
-    return ax
-
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
     print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")
@@ -111,35 +41,37 @@ for x in range(0, rotationSteps):
     tools.rotate('phi', anglePhi, nitroAtom)
     anglePsi = 0
 
-    #Fig is the container where the plots are added
-    fig = plt.figure()
-    previousPlot = None
-
     for y in range(0, rotationSteps):
 
         print('<@> Rotating psi '+str(anglePsi)+'!')
-        tools.rotate('psi', anglePsi, carboxyAtom)
-        
-        actualPlot = plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi), fig)
 
-        if(previousPlot != None):
-            plt.show()
+        print('\n------------ DISTANCES BEFORE ROTATION --------------')
+        for atomConn in carboxyAtom.linked_to:
+            print('Distance between carboxy atom (id: '+str(carboxyAtom.atomId)+') and atom (id: ' + str(atomConn.atomId) + ') : ' + str(tools.distance(carboxyAtom, atomConn)))
+        print('------------ ------------------------ --------------')
+
+        tools.rotate('psi', anglePsi, carboxyAtom)
+
+        print('\n++++++++++++ DISTANCES AFTER ROTATION ++++++++++++++')
+        for atomConn in carboxyAtom.linked_to:
+            print('Distance between carboxy atom (id: '+str(carboxyAtom.atomId)+') and atom (id: ' + str(atomConn.atomId) + ') : ' + str(tools.distance(carboxyAtom, atomConn)))
+        print('++++++++++++ ++++++++++++++++++++++++ ++++++++++++++')
         
-        previousPlot = actualPlot
+        tools.plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi))
 
         anglePsi += 1/rotationSteps
 
         #Write the file with the actual rotations
-        #psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
+        psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
 
         #Calculate the energy of the actual rotations using PSI4
-        #psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
+        psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
 
         #Read the PSI4 output file and get the energy
-        #energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
+        energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
 
         print('<!>  Nitro atom   <!>: ' + str(nitroAtom.element) + ' | x => ' + str(nitroAtom.x) + ' y => ' + str(nitroAtom.y) + ' z => ' + str(nitroAtom.z))
         print('<!> Carboxy atom  <!>: ' + str(carboxyAtom.element) + ' | x => ' + str(carboxyAtom.x) + ' y => ' + str(carboxyAtom.y) + ' z => ' + str(carboxyAtom.z)+'\n')
-        #print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
+        print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
 
     anglePhi += 1/rotationSteps

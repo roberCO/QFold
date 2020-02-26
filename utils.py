@@ -2,6 +2,7 @@ import atom
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import struct
 
 class Utils():
 
@@ -244,3 +245,7 @@ class Utils():
         Z = (d - a * X - b * Y) / c
 
         return X, Y, Z
+
+    def floatToBits(self, f):
+        s = struct.pack('>f', f)
+        return struct.unpack('>l', s)[0]

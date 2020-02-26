@@ -3,6 +3,7 @@ import utils
 import psiFour
 import atom
 import numpy as np
+import copy
 
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
@@ -31,15 +32,15 @@ carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
 
 inputFilenameEnergyPSI4 = 'inputRotations'
 outputFilenameEnergyPSI4 = 'outputRotations'
-anglePhi = 0
+
+anglePhi = 1/rotationSteps
+anglePsi = 1/rotationSteps
 
 #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
 #if it is scale to more aminoacids, it should be necessary to implement a recursive function
 for x in range(0, rotationSteps):
 
     print('<!> Rotating phi '+ str(anglePhi) +'!')
-    tools.rotate('phi', anglePhi, nitroAtom)
-    anglePsi = 0
 
     for y in range(0, rotationSteps):
 
@@ -50,19 +51,25 @@ for x in range(0, rotationSteps):
             print('Distance between carboxy atom (id: '+str(carboxyAtom.atomId)+') and atom (id: ' + str(atomConn.atomId) + ') : ' + str(tools.distance(carboxyAtom, atomConn)))
         print('------------ ------------------------ --------------')
 
-        tools.rotate('psi', anglePsi, carboxyAtom)
+        #Perform the rotations over a copy
+        copied_atoms = copy.deepcopy(atoms)
+        copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
+        copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
+
+        #Always rotate from state (0,0)
+        tools.rotate('phi', x * anglePhi, copied_nitroAtom) 
+
+        tools.rotate('psi', y * anglePsi, copied_carboxyAtom)
 
         print('\n++++++++++++ DISTANCES AFTER ROTATION ++++++++++++++')
-        for atomConn in carboxyAtom.linked_to:
-            print('Distance between carboxy atom (id: '+str(carboxyAtom.atomId)+') and atom (id: ' + str(atomConn.atomId) + ') : ' + str(tools.distance(carboxyAtom, atomConn)))
+        for atomConn in copied_carboxyAtom.linked_to:
+            print('Distance between carboxy atom (id: '+str(copied_carboxyAtom.atomId)+') and atom (id: ' + str(atomConn.atomId) + ') : ' + str(tools.distance(carboxyAtom, atomConn)))
         print('++++++++++++ ++++++++++++++++++++++++ ++++++++++++++')
         
         tools.plotting(atoms, 'phi: ' + str(anglePhi) + ' psi: ' + str(anglePsi))
 
-        anglePsi += 1/rotationSteps
-
         #Write the file with the actual rotations
-        psi.writeFileEnergies(atoms, inputFilenameEnergyPSI4)
+        psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
 
         #Calculate the energy of the actual rotations using PSI4
         psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
@@ -74,4 +81,7 @@ for x in range(0, rotationSteps):
         print('<!> Carboxy atom  <!>: ' + str(carboxyAtom.element) + ' | x => ' + str(carboxyAtom.x) + ' y => ' + str(carboxyAtom.y) + ' z => ' + str(carboxyAtom.z)+'\n')
         print ('Energy => ' + str(energy)+'\n----------------------------------------------------------------\n\n')
 
-    anglePhi += 1/rotationSteps
+        # We eliminate previous copies
+        del copied_atoms
+        del copied_carboxyAtom
+        del copied_nitroAtom

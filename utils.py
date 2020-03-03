@@ -245,7 +245,3 @@ class Utils():
         Z = (d - a * X - b * Y) / c
 
         return X, Y, Z
-
-    def floatToBits(self, f):
-        s = struct.pack('>f', f)
-        return struct.unpack('>l', s)[0]

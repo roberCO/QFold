@@ -1,4 +1,4 @@
-import qiskit
+import qiskit.aqua.components.oracles as oracle
 
 class QuantumProcessor():
     def __init__(self):
@@ -6,5 +6,5 @@ class QuantumProcessor():
 
     def inputListOracle(self, inputList):
 
-        truthTableOracle = qiskit.TruthTableOracle(inputList)
+        truthTableOracle = oracle.TruthTableOracle(inputList)
 

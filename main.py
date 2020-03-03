@@ -13,6 +13,7 @@ if(len(sys.argv) != 3):
 
 #Global variable
 tools = utils.Utils()
+qProcessor = quantumProcessor.QuantumProcessor()
 
 proteinName = sys.argv[1]
 rotationSteps = pow(2, int(sys.argv[2]))
@@ -37,6 +38,7 @@ outputFilenameEnergyPSI4 = 'outputRotations'
 anglePhi = 1/rotationSteps
 anglePsi = 1/rotationSteps
 
+energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)] 
 anglesEnergy = []
 #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
 #if it is scale to more aminoacids, it should be necessary to implement a recursive function
@@ -70,7 +72,9 @@ for x in range(0, rotationSteps):
         anglesEnergy.append([anglePhi, anglePsi, normalizedEnergy])
         anglePsi += 1/rotationSteps
 
-        #print ('⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n⬤   Phi: ' + str(anglePhi) +'\n⬤   Psi: '+ str(anglePsi)+ '\n⬤   Energy: ' + str(energy) +'\n⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n\n')
+        energyList[x][y] = energy
+
+        #print ('⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n⬤   Phi('+str(x)+'): ' + str(anglePhi) +'\n⬤   Psi('+str(y)+'): '+ str(anglePsi)+ '\n⬤   Energy: ' + str(energy) +'\n⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n\n')
 
         # We eliminate previous copies
         del copied_atoms
@@ -79,6 +83,58 @@ for x in range(0, rotationSteps):
 
     anglePhi += 1/rotationSteps
 
+for x in range(len(energyList)):
+    for y in range(len(energyList[x])):
+        print('Phi: ' + str(x) + ' Psi: ' + str(y) + ' Energy: ' + str(energyList[x][y]))
+
+print('⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤')
+
+truthTableList = []
+for x in range(len(energyList)):
+    for y in range(len(energyList[x])):
+
+        energyReference = energyList[x][y]
+
+        #Phi +1
+        phiValue = (x+1) % rotationSteps
+        deltaEnergy = energyList[phiValue][y] - energyReference
+        probability = min(1, exp(deltaEnergy*beta))
+        truthTableList.append([phiValue, y, 0, +1, deltaEnergy])
+
+        #Phi -1
+        phiValue = (x-1) % rotationSteps
+        deltaEnergy = energyList[phiValue][y] - energyReference
+        probability = min(1, exp(deltaEnergy*beta))
+        truthTableList.append([phiValue, y, 0, -1, deltaEnergy])
+
+        #Psi +1
+        psiValue = (y+1) % rotationSteps
+        deltaEnergy = energyList[x][psiValue] - energyReference
+        probability = min(1, exp(deltaEnergy*beta))
+        truthTableList.append([x, psiValue, 1, +1, deltaEnergy])
+
+        #Psi -1
+        psiValue = (y-1) % rotationSteps
+        deltaEnergy = energyList[x][psiValue] - energyReference
+        probability = min(1, exp(deltaEnergy*beta))
+        truthTableList.append([x, psiValue, 1, -1, deltaEnergy])
+
+for inputValue in truthTableList:
+    print('Phi angle: ' + str(inputValue[0]) + ' psi angle: ' + str(inputValue[1]) + ' rotatedAngle: ' + str(inputValue[2]) + ' rotation value: ' + str(inputValue[3]) + ' delta energy:' + str(inputValue[4]))
+
+
+'''
+binaryInputOracle = []
 for element in anglesEnergy:
     
+    phiBinary = tools.floatToBits(element[0])
+    psiBinary = tools.floatToBits(element[1])
+    energyBinary = tools.floatToBits(float(element[2]))
+    elementBinary = str(phiBinary) + str(psiBinary) + str(energyBinary)
     print("Energy: " + str(tools.floatToBits(float(element[2]))) + " phi: " + str(tools.floatToBits(element[0])) + " psi: " + str(tools.floatToBits(element[1])))
+    print("Binary code: " + elementBinary)
+
+    binaryInputOracle += [elementBinary]
+
+qProcessor.inputListOracle(binaryInputOracle)
+'''

@@ -23,7 +23,7 @@ anglePhi = 1/rotationSteps
 anglePsi = 1/rotationSteps
 
 n_iterations = 100000
-scaling_factor = 1/10 # Modify this parameter to make it reasonable --------
+scaling_factor = 5000 # Modify this parameter to make it reasonable --------
 
 #call psi4 to get the atoms of the protein
 psi = psiFour.PsiFour()

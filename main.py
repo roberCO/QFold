@@ -5,6 +5,7 @@ import atom
 import numpy as np
 import quantumProcessor
 import copy
+import math
 
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
@@ -14,6 +15,8 @@ if(len(sys.argv) != 3):
 #Global variable
 tools = utils.Utils()
 qProcessor = quantumProcessor.QuantumProcessor()
+beta = 1
+scaling_factor = 200 # Modify this parameter to make it reasonable --------
 
 proteinName = sys.argv[1]
 rotationSteps = pow(2, int(sys.argv[2]))
@@ -97,30 +100,34 @@ for x in range(len(energyList)):
 
         #Phi +1
         phiValue = (x+1) % rotationSteps
-        deltaEnergy = energyList[phiValue][y] - energyReference
-        probability = min(1, exp(deltaEnergy*beta))
-        truthTableList.append([phiValue, y, 0, +1, deltaEnergy])
+        deltaEnergy = (energyList[phiValue][y] - energyReference) * scaling_factor
+        print('Delta energy: ' + str(deltaEnergy))
+        probability = min(1, math.exp(-1*deltaEnergy*beta))
+        truthTableList.append([phiValue, y, 0, +1, probability])
 
         #Phi -1
         phiValue = (x-1) % rotationSteps
-        deltaEnergy = energyList[phiValue][y] - energyReference
-        probability = min(1, exp(deltaEnergy*beta))
-        truthTableList.append([phiValue, y, 0, -1, deltaEnergy])
+        deltaEnergy = (energyList[phiValue][y] - energyReference) * scaling_factor
+        print('Delta energy: ' + str(deltaEnergy))
+        probability = min(1, math.exp(-1*deltaEnergy*beta))
+        truthTableList.append([phiValue, y, 0, -1, probability])
 
         #Psi +1
         psiValue = (y+1) % rotationSteps
-        deltaEnergy = energyList[x][psiValue] - energyReference
-        probability = min(1, exp(deltaEnergy*beta))
-        truthTableList.append([x, psiValue, 1, +1, deltaEnergy])
+        deltaEnergy = (energyList[x][psiValue] - energyReference) * scaling_factor
+        print('Delta energy: ' + str(deltaEnergy))
+        probability = min(1, math.exp(-1*deltaEnergy*beta))
+        truthTableList.append([x, psiValue, 1, +1, probability])
 
         #Psi -1
         psiValue = (y-1) % rotationSteps
-        deltaEnergy = energyList[x][psiValue] - energyReference
-        probability = min(1, exp(deltaEnergy*beta))
-        truthTableList.append([x, psiValue, 1, -1, deltaEnergy])
+        deltaEnergy = (energyList[x][psiValue] - energyReference) * scaling_factor
+        print('Delta energy: ' + str(deltaEnergy))
+        probability = min(1, math.exp(-1*deltaEnergy*beta))
+        truthTableList.append([x, psiValue, 1, -1, probability])
 
 for inputValue in truthTableList:
-    print('Phi angle: ' + str(inputValue[0]) + ' psi angle: ' + str(inputValue[1]) + ' rotatedAngle: ' + str(inputValue[2]) + ' rotation value: ' + str(inputValue[3]) + ' delta energy:' + str(inputValue[4]))
+    print('Phi angle: ' + str(inputValue[0]) + ' psi angle: ' + str(inputValue[1]) + ' rotatedAngle: ' + str(inputValue[2]) + ' rotation value: ' + str(inputValue[3]) + ' probability:' + str(inputValue[4]))
 
 
 '''

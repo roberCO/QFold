@@ -245,3 +245,16 @@ class Utils():
         Z = (d - a * X - b * Y) / c
 
         return X, Y, Z
+
+    def number2binary(self, number, numberBits):
+
+        if number < 1 and number != 0:
+
+            number = round(number, 3)
+            while(number < 1):
+                number *= 10
+
+        numberBinary = "{0:b}".format(int(number))
+        numberBinary = numberBinary.zfill(numberBits)
+
+        return numberBinary

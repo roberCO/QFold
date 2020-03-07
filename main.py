@@ -1,10 +1,8 @@
 import sys
 import utils
-import psiFour
 import atom
 import numpy as np
 import quantumProcessor
-import copy
 import math
 
 if(len(sys.argv) != 3):
@@ -25,70 +23,15 @@ rotationSteps = pow(2, int(numberBitsRotation))
 #Check if it existes a precalculated energy file with the same parameters
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
 
-#call psi4 to get the atoms of the protein
-psi = psiFour.PsiFour()
-atoms = psi.getAtomsFromProtein(proteinName)
-
-#Calculate the connection between atoms
-atoms = tools.calculateAtomConnection(atoms)
-
-
-nitroConnections = [['C', 2]]
-carboxyConnections = [['C', 1], ['O', 2]]
-
-nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)
-carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
-
-inputFilenameEnergyPSI4 = 'inputRotations'
-outputFilenameEnergyPSI4 = 'outputRotations'
-
-anglePhi = 1/rotationSteps
-anglePsi = 1/rotationSteps
+try:
+    f = open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json')
+    f.close()
+except IOError:
+    print('No precalculated energies file found. Calculating energies')
+    tools.calculateEnergies(proteinName, numberBitsRotation)
 
 energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)] 
-anglesEnergy = []
-#These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
-#if it is scale to more aminoacids, it should be necessary to implement a recursive function
-for x in range(0, rotationSteps):
-
-    for y in range(0, rotationSteps):
-
-        #Perform the rotations over a copy
-        copied_atoms = copy.deepcopy(atoms)
-        copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
-        copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
-
-        #Always rotate from state (0,0)
-        tools.rotate('phi', x * anglePhi, copied_nitroAtom) 
-
-        tools.rotate('psi', y * anglePsi, copied_carboxyAtom)
-        
-        #Write the file with the actual rotations
-        psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
-
-        #Calculate the energy of the actual rotations using PSI4
-        psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
-
-        #Read the PSI4 output file and get the energy
-        energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
-        normalizedEnergy = energy*-1
-        normalizedEnergy = "%.6f" % normalizedEnergy
-
-        anglesEnergy.append([anglePhi, anglePsi, normalizedEnergy])
-        anglePsi += 1/rotationSteps
-
-        energyList[x][y] = energy
-
-        #print ('⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n⬤   Phi('+str(x)+'): ' + str(anglePhi) +'\n⬤   Psi('+str(y)+'): '+ str(anglePsi)+ '\n⬤   Energy: ' + str(energy) +'\n⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n\n')
-
-        # We eliminate previous copies
-        del copied_atoms
-        del copied_carboxyAtom
-        del copied_nitroAtom
-
-    anglePhi += 1/rotationSteps
-
-#Create json with calculated energies
+energyList = tools.readEnergyJson(proteinName, numberBitsRotation)
 
 '''
 for x in range(len(energyList)):
@@ -127,6 +70,9 @@ for x in range(len(energyList)):
         deltaEnergy = (energyList[x][psiValue] - energyReference) * scaling_factor
         probability = min(1, math.exp(-1*deltaEnergy*beta))
         truthTableList.append([x, psiValue, 1, 0, probability])
+
+#sort truthTableList using as key phi, psi and m
+tools.sortByAngleMovements(truthTableList)
 
 for inputValue in truthTableList:
     print('Phi angle: ' + tools.number2binary(inputValue[0], numberBitsRotation) + ' psi angle: ' + tools.number2binary(inputValue[1], numberBitsRotation) + ' rotatedAngle: ' + tools.number2binary(inputValue[2], 1) + ' rotation value: ' + tools.number2binary(inputValue[0], 1) + ' probability:' + tools.number2binary(inputValue[4], 10))

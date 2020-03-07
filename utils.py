@@ -3,6 +3,9 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import struct
+import json
+import psiFour
+import copy
 
 class Utils():
 
@@ -225,6 +228,101 @@ class Utils():
             ax.text(xs[i],ys[i],zs[i],  '%s' % (str(i)))
         plt.show()
 
+    def calculateEnergies(self, proteinName, numberBitsRotation):
+
+        energiesJson = {}
+        energiesJson['protein'] = proteinName
+        energiesJson['numberBitsRotation'] = numberBitsRotation
+        energiesJson['energies'] = []
+        rotationSteps = pow(2, int(numberBitsRotation))
+
+        #call psi4 to get the atoms of the protein
+        psi = psiFour.PsiFour()
+        atoms = psi.getAtomsFromProtein(proteinName)
+
+        #Calculate the connection between atoms
+        atoms = self.calculateAtomConnection(atoms)
+
+        nitroConnections = [['C', 2]]
+        carboxyConnections = [['C', 1], ['O', 2]]
+
+        nitroAtom = self.findAtom(atoms, 'N', '', nitroConnections)
+        carboxyAtom = self.findAtom(atoms, '', 'Carboxy', carboxyConnections)
+
+        inputFilenameEnergyPSI4 = 'inputRotations'
+        outputFilenameEnergyPSI4 = 'outputRotations'
+
+        anglePhi = 1/rotationSteps
+        anglePsi = 1/rotationSteps
+
+        anglesEnergy = []
+        #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
+        #if it is scale to more aminoacids, it should be necessary to implement a recursive function
+        for x in range(0, rotationSteps):
+
+            for y in range(0, rotationSteps):
+
+                #Perform the rotations over a copy
+                copied_atoms = copy.deepcopy(atoms)
+                copied_nitroAtom = self.findAtom(copied_atoms, 'N', '', nitroConnections)
+                copied_carboxyAtom = self.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
+
+                #Always rotate from state (0,0)
+                self.rotate('phi', x * anglePhi, copied_nitroAtom) 
+
+                self.rotate('psi', y * anglePsi, copied_carboxyAtom)
+                
+                #Write the file with the actual rotations
+                psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
+
+                #Calculate the energy of the actual rotations using PSI4
+                psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
+
+                #Read the PSI4 output file and get the energy
+                energy = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
+                normalizedEnergy = energy*-1
+                normalizedEnergy = "%.6f" % normalizedEnergy
+
+                anglesEnergy.append([anglePhi, anglePsi, normalizedEnergy])
+                anglePsi += 1/rotationSteps
+
+                #print ('⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n⬤   Phi('+str(x)+'): ' + str(anglePhi) +'\n⬤   Psi('+str(y)+'): '+ str(anglePsi)+ '\n⬤   Energy: ' + str(energy) +'\n⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤⬤\n\n')
+                energiesJson['energies'].append({
+                    'phi': x,
+                    'psi': y,
+                    'energy': energy,
+                })
+
+                # We eliminate previous copies
+                del copied_atoms
+                del copied_carboxyAtom
+                del copied_nitroAtom
+
+            anglePhi += 1/rotationSteps
+
+        #Create json with calculated energies
+        with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
+            json.dump(energiesJson, outfile)
+
+    def readEnergyJson(self, proteinName, numberBitsRotation):
+
+        rotationSteps = pow(2, int(numberBitsRotation))
+
+        with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
+            data = json.load(json_file)
+
+            #Create an empty memory structure with the rotation steps dimension
+            energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)]
+
+            #Get each entry with energies of the json
+            for angle in data['energies']:
+
+                x = angle['phi']
+                y = angle['psi']
+                energyList[x][y] = angle['energy']
+
+            return energyList
+
     def calculatePlane(self, planePoints):
 
         # These two vectors are in the plane
@@ -250,11 +348,21 @@ class Utils():
 
         if number < 1 and number != 0:
 
+            #Round HARDCODED
             number = round(number, 3)
-            while(number < 1):
+            while(number < 1000):
                 number *= 10
 
         numberBinary = "{0:b}".format(int(number))
         numberBinary = numberBinary.zfill(numberBits)
 
         return numberBinary
+
+    def sortAngleMovement(self, value):
+
+        #the number to sort is composed by values of phi, psi, m (angle 0->phi/1->psi), m (rotation 0->-1/1->1)
+        composedNumber = str(value[0]) + str(value[1]) + str(value[2]) + str(value[3])
+        return int(composedNumber)
+
+    def sortByAngleMovements(self, listToSort):
+        listToSort.sort(key=self.sortAngleMovement)

@@ -74,22 +74,10 @@ for x in range(len(energyList)):
 #sort truthTableList using as key phi, psi and m
 tools.sortByAngleMovements(truthTableList)
 
-for inputValue in truthTableList:
-    print('Phi angle: ' + tools.number2binary(inputValue[0], numberBitsRotation) + ' psi angle: ' + tools.number2binary(inputValue[1], numberBitsRotation) + ' rotatedAngle: ' + tools.number2binary(inputValue[2], 1) + ' rotation value: ' + tools.number2binary(inputValue[0], 1) + ' probability:' + tools.number2binary(inputValue[4], 10))
+#Construct the bitmap
+energyValues = []
+for values in truthTableList:
+    energyValues.append(values[4])
 
-
-'''
-binaryInputOracle = []
-for element in anglesEnergy:
-    
-    phiBinary = tools.floatToBits(element[0])
-    psiBinary = tools.floatToBits(element[1])
-    energyBinary = tools.floatToBits(float(element[2]))
-    elementBinary = str(phiBinary) + str(psiBinary) + str(energyBinary)
-    print("Energy: " + str(tools.floatToBits(float(element[2]))) + " phi: " + str(tools.floatToBits(element[0])) + " psi: " + str(tools.floatToBits(element[1])))
-    print("Binary code: " + elementBinary)
-
-    binaryInputOracle += [elementBinary]
-
+binaryInputOracle = tools.constructBitMapFromList(energyValues)
 qProcessor.inputListOracle(binaryInputOracle)
-'''

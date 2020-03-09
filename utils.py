@@ -366,3 +366,22 @@ class Utils():
 
     def sortByAngleMovements(self, listToSort):
         listToSort.sort(key=self.sortAngleMovement)
+
+    def constructBitMapFromList(self, values):
+
+        #Convert the received values to binary
+        binaryValues = []
+        for val in values:
+            binaryValues.append(self.number2binary(val, 10))
+
+        #Iterate over the binary values to build the bitmap
+        bitmap = []
+        for x in range(0, 10):
+
+            bitmapEntry = ""
+            for y in range(0, len(binaryValues)):
+                bitmapEntry += binaryValues[y][x]
+
+            bitmap.append(bitmapEntry)
+
+        return bitmap

@@ -19,8 +19,8 @@ rotationSteps = pow(2, int(sys.argv[2]))
 # Scaling factor
 
 # Get the minimum angle rotation
-anglePhi = 1/rotationSteps
-anglePsi = 1/rotationSteps
+delta_anglePhi = 1/rotationSteps
+delta_anglePsi = 1/rotationSteps
 
 n_iterations = 100000
 scaling_factor = 5000 # Modify this parameter to make it reasonable --------
@@ -59,9 +59,9 @@ copied_atoms = copy.deepcopy(atoms)
 copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
 copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
 
-#rotate according to the angles anglePhi_old and anglePsi_old. Notice that anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
-tools.rotate('phi', anglePhi_old * anglePhi, copied_nitroAtom) 
-tools.rotate('psi', anglePsi_old * anglePsi, copied_carboxyAtom)
+#rotate according to the angles anglePhi_old and anglePsi_old. Notice that delta_anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
+tools.rotate('phi', anglePhi_old * delta_anglePhi, copied_nitroAtom) 
+tools.rotate('psi', anglePsi_old * delta_anglePsi, copied_carboxyAtom)
 
 #Write the file with the actual rotations
 psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
@@ -90,14 +90,14 @@ for iteration in range(n_iterations):
 
     # Calculate the new angles
     if change_angle == 'phi':
-        anglePhi_new = anglePhi_new + change_plus_minus * anglePhi
-        anglePsi_new = anglePsi_new
+        anglePhi_new = anglePhi_old + change_plus_minus * delta_anglePhi
+        anglePsi_new = anglePsi_old
     elif change_angle == 'psi':
-        anglePhi_new = anglePhi_new
-        anglePsi_new = anglePsi_new + change_plus_minus * anglePsi
+        anglePhi_new = anglePhi_old
+        anglePsi_new = anglePsi_new + change_plus_minus * delta_anglePsi
     
     # Calculate the new energy
-    if energies_dictionary((anglePhi_new,anglePsi_new)) != None:
+    if energies_dictionary[(anglePhi_new,anglePsi_new)] != None:
         E_new = energies_dictionary[(anglePhi_new,anglePsi_new)]
 
     else:
@@ -106,9 +106,9 @@ for iteration in range(n_iterations):
         copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
         copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
 
-        #rotate according to the angles anglePhi_old and anglePsi_old. Notice that anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
-        tools.rotate('phi', anglePhi_old * anglePhi, copied_nitroAtom) 
-        tools.rotate('psi', anglePsi_old * anglePsi, copied_carboxyAtom)
+        #rotate according to the angles anglePhi_old and anglePsi_old. Notice that delta_anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
+        tools.rotate('phi', anglePhi_old * delta_anglePhi, copied_nitroAtom) 
+        tools.rotate('psi', anglePsi_old * delta_anglePsi, copied_carboxyAtom)
 
         #Write the file with the actual rotations
         psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)

@@ -35,6 +35,12 @@ scaling_factor = 5000 # Modify this parameter to make it reasonable --------
 # Create a dictionary of already calculated energies 
 energies_dictionary = {}
 
+
+# Random starting combination of angles
+anglePsi_old = np.random.choice(rotationSteps)
+anglePhi_old = np.random.choice(rotationSteps)
+
+
 for iteration in range(n_iterations):
 
     # First retrieve the present energy

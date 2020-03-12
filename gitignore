@@ -1,0 +1,11 @@
+.gitignore
+.vscode/
+__pycache__/
+atom.pyc
+inputFile.dat
+inputRotations.dat
+outputFile.dat
+outputRotations.dat
+utils.pyc
+psi.*
+timer.dat

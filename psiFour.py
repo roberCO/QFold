@@ -2,6 +2,7 @@ import subprocess
 import pandas as pd
 import re
 import atom
+import json
 
 class PsiFour():
 
@@ -96,3 +97,22 @@ class PsiFour():
                     isDataLine = True
                         
         return atoms
+
+    def readEnergyJson(self, proteinName, numberBitsRotation):
+
+        rotationSteps = pow(2, int(numberBitsRotation))
+
+        with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
+            data = json.load(json_file)
+
+            #Create an empty memory structure with the rotation steps dimension
+            energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)]
+
+            #Get each entry with energies of the json
+            for angle in data['energies']:
+
+                x = angle['phi']
+                y = angle['psi']
+                energyList[x][y] = angle['energy']
+
+            return energyList

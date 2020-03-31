@@ -3,26 +3,34 @@ import math
 
 class AngleCalculator():
 
-    def __init__(self, rotationSteps, scaling_factor, beta):
+    def __init__(self, rotationSteps, scaling_factor, beta, option = 0):
 
         self.rotationSteps = rotationSteps
         self.scaling_factor = scaling_factor
         self.beta = beta
         self.qTools = quantumUtils.QuantumUtils()
+        self.option = option
 
     def calculate3DStructure(self, energyList):
 
-        truthTableList = self.createTruthTableList(energyList)
+        #Quantum calculation option for 3D structure
+        if self.option == 0: 
 
-        #Construct the bitmap
-        energyValues = []
-        for values in truthTableList:
-            energyValues.append(values[4])
-        
-        binaryInputOracle = self.qTools.constructBitMapFromList(energyValues)
+            truthTableList = self.createTruthTableList(energyList)
 
-        
-        self.qTools.inputListOracle(binaryInputOracle)
+            #Construct the bitmap
+            energyValues = []
+            for values in truthTableList:
+                energyValues.append(values[4])
+            
+            binaryInputOracle = self.qTools.constructBitMapFromList(energyValues)
+
+            self.qTools.inputListOracle(binaryInputOracle)
+
+        #Classical calculation option for 3D structure
+        elif self.option == 1:
+
+            print('Classical metropoli')
 
     def createTruthTableList(self, energyList):
 

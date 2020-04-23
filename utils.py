@@ -6,6 +6,48 @@ import struct
 import copy
 
 class Utils():
+    def get_dihedral(coords1, coords2, coords3, coords4):
+        """Returns the dihedral angle in degrees."""
+
+        a1 = coords2 - coords1
+        a2 = coords3 - coords2
+        a3 = coords4 - coords3
+
+        v1 = np.cross(a1, a2)
+        v1 = v1 / (v1 * v1).sum(-1)**0.5
+        v2 = np.cross(a2, a3)
+        v2 = v2 / (v2 * v2).sum(-1)**0.5
+        porm = np.sign((v1 * a3).sum(-1))
+        rad = np.arccos((v1*v2).sum(-1) / ((v1**2).sum(-1) * (v2**2).sum(-1))**0.5)
+        if not porm == 0:
+            rad = rad * porm
+        return rad
+
+    def calculateAngle(atom1, atom2, atom3, atom4, angle_type):
+        'Uses get dihedral to calculate angles between atoms'
+        if angle_type == 'phi':
+            assert(atom1.c_type == 'Carboxy' and atom2.c_type =='C_alpha' and atom3.element == 'N' and atom4.c_type == 'Carboxy')
+            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
+            coords1 = np.array([atom1.x, atom1.y, atom1.z])
+            coords2 = np.array([atom2.x, atom2.y, atom2.z])
+            coords3 = np.array([atom3.x, atom3.y, atom3.z])
+            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+
+            return get_dihedral(coords1, coords2, coords3, coords4)
+
+        elif angle_type == 'psi':
+            assert(atom1.element == 'N' and atom2.c_type =='C_alpha' and atom3.c_type == 'Carboxy' and atom4.element == 'N')
+            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
+            coords1 = np.array([atom1.x, atom1.y, atom1.z])
+            coords2 = np.array([atom2.x, atom2.y, atom2.z])
+            coords3 = np.array([atom3.x, atom3.y, atom3.z])
+            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+
+            return get_dihedral(coords1, coords2, coords3, coords4)
+
+        else:
+            raise('Angle not recognised!:'+str(angle_type))
+
 
     def distance(self, atom, atom2):
         return np.sqrt((atom.x-atom2.x)**2+(atom.y-atom2.y)**2+(atom.z-atom2.z)**2)

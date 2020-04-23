@@ -35,11 +35,41 @@ atoms = tools.calculateAtomConnection(atoms)
 nitroConnections = [['C', 2]]
 carboxyConnections = [['C', 1], ['O', 2]]
 
-nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)
+nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)  # Is this right???
 carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
 
 inputFilenameEnergyPSI4 = 'inputRotations'
 outputFilenameEnergyPSI4 = 'outputRotations'
+
+# Let us calculate the phi angle.
+atom3_phi = nitroAtom
+for atom in nitroAtom.linked_to:
+    if atom.c_type == 'C_alpha':
+        atom2_phi = atom
+    elif atom.c_type == 'Carboxy':
+        atom4_phi = atom
+for atom in atom2.linked_to:
+    if atom.c_type == 'Carboxy':
+        atom1_phi = atom
+
+phi = utils.calculateAngle(atom1_phi,atom2_phi,atom3_phi,atom4_phi,'phi')
+
+# Let us calculate the psi angle.
+
+atom3_psi = carboxyAtom
+for atom in carboxyAtom.linked_to:
+    if atom.c_type == 'C_alpha':
+        atom2_psi = atom
+    elif atom.element == 'N':
+        atom4_psi = atom
+for atom in atom2.linked_to:
+    if atom.element == 'N':
+        atom1_psi = atom
+
+psi = utils.calculateAngle(atom1_psi,atom2_psi,atom3_psi,atom4_psi,'psi')
+
+# No se me ocurre mejor manera de guardarlos
+list_of_angles = [phi, psi]
 
 # Create a dictionary of already calculated energies 
 energies_dictionary = {}

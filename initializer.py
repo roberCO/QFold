@@ -2,6 +2,7 @@ import utils
 import psiFour
 import json
 import copy
+import minifold
 
 class Initializer():
 
@@ -26,14 +27,17 @@ class Initializer():
         #It contains the energy of each angle combination
         self.anglesEnergy = []
 
+        #Initialization options (0: random, 1: minifold)
+        self.initialization_option = 1
+
     #Calculate all posible energies for the protein and the number of rotations given
-    def calculateEnergies(self, proteinName, numberBitsRotation):
+    def calculateEnergies(self, proteinName, numberBitsRotation, aminoacids):
 
         #Get all atoms from the protein with x/y/z positions and connections
         atoms = self.extractAtoms(proteinName)
 
         #Get initial structure of the protein to rotate from it
-        atoms = self.calculateInitialStructure(atoms)
+        atoms = self.calculateInitialStructure(atoms, aminoacids)
 
         #Identify the nitro and carboxy atoms
         nitroAtom = self.findAtom(atoms, 'N', '', self.nitroConnections)
@@ -84,11 +88,18 @@ class Initializer():
                     else:
                         raise Exception('Element '+at.element+' not found with the proper connections of '+linkedElement+'! '+str(counterLinkedElements)+' found but there should be ' + str(numberLinkedElements))
 
-    def calculateInitialStructure(self, atoms):
+    def calculateInitialStructure(self, atoms, aminoacids):
 
         #TODO: random
+        if self.initialization_option == 0:
+            print('Random angle inizialition')
 
-        #TODO: minifold
+        #minifold
+        elif self.initialization_option == 1:
+
+            minifold = minifold.Minifold()
+            phi_rotation, psi_rotation = minifold.predictAngles(aminoacids)
+
 
         return atoms
 

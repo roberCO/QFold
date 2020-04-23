@@ -8,6 +8,9 @@ if(len(sys.argv) != 3):
     print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")
     sys.exit(0)
 
+#HARDCODED
+aminoacids = 'GG'
+
 proteinName = sys.argv[1]
 numberBitsRotation = int(sys.argv[2])
 rotationSteps = pow(2, int(numberBitsRotation))
@@ -26,7 +29,7 @@ try:
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies')
-    angleInitializer.calculateEnergies(proteinName, numberBitsRotation)
+    angleInitializer.calculateEnergies(proteinName, numberBitsRotation, aminoacids)
 
 #Create an empty list of enery list
 #HARDCODED for proteins with only to aminoacids

@@ -4,6 +4,7 @@ class Minifold:
 
     def __init__(self):
 
+        #HARDCODED to Minifold
         if not os.path.isfile("./models/protein_under_200.h5"):
 
             raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: python trainAnglePredictor.py')

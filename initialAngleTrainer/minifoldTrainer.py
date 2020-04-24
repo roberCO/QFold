@@ -7,7 +7,22 @@
 
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
+# Import libraries
+import keras
+import keras.backend as K
+from keras.models import Model
+# Optimizer and regularization
+from keras.regularizers import l2
+from keras.losses import mean_squared_error, mean_absolute_error
+# Keras layers
+from keras.layers.convolutional import Conv1D
+from keras.layers import Dense, Dropout, Flatten, Input, BatchNormalization, Activation
+from keras.layers.pooling import MaxPooling1D, AveragePooling1D, MaxPooling2D, AveragePooling2D
+
+# Model architecture
+from resnet_1d_angles import *
 
 class MinifoldTrainer():
     
@@ -22,22 +37,29 @@ class MinifoldTrainer():
         self.input_AA_path = '../data/angles/input_aa.txt'
         self.input_PSSM_path = '../data/angles/input_pssm.txt'
 
+        #HARDCODED parameters
+        self.maximum_aminoacid_length = 200
+
         if not os.path.isfile(inputPath):
             raise IOError('<!> ERROR: %s does not exist!' %inputPath)
     
     def train(self):
 
-        #Get protein under 200
+        #Get protein under defined maximum aminoacid length
+        self.getProteinsFromRaw(self.maximum_aminoacid_length)
 
         #Get angles froom coords
+        self.getAnglesFromCoords()
 
         #Angle data preparation
+        self.angleDataPreparation()
 
-        #Predicting angles (uses resnet_1d_angles)
+        #Generate model (using resnet_1d_angles)
+        self.generateModel()
 
 
 
-    def getProteinsFromRaw(max_aminoacid_length):
+    def getProteinsFromRaw(self, max_aminoacid_length):
 
         # Scan first n proteins
         names = []
@@ -116,7 +138,7 @@ class MinifoldTrainer():
                     writedlm(f, dists[aux[length(aux)]])
 
 
-    def getAnglesFromCoords():
+    def getAnglesFromCoords(self):
 
         names = []
         seqs = []
@@ -192,7 +214,7 @@ class MinifoldTrainer():
                     f.write(stringify(psis[k]))
 
 
-    def angle_data_preparation():
+    def angleDataPreparation(self):
 
         # Opn file and read text
         with open(self.full_extracted_aminoacids_path, "r") as f:
@@ -258,6 +280,67 @@ class MinifoldTrainer():
                 f.write("\nNEW\n")
                 for j in range(len(input_pssm[k])):
                     f.write(stringify(input_pssm[k][j])+"\n")
+
+    def generateModel():
+
+        ## LOAD DATASET ##
+
+        # Load outputs/labels from file
+        outputs = np.genfromtxt(self.output_path)
+
+        # Get inputs data
+        aas = get_ins()
+        pssms = get_ins(pssm=True)
+
+        ## REMOVE nan VALUES FROM DATASET
+        #If there is a nan in the outputs list is necessary to discard the row in the aa and pssm list
+        outputs_no_nan = []
+        aas_no_nan = []
+        pssms_no_nan = []
+
+        for index in range(0, len(outputs)):
+            if(str(outputs[index][0]) != 'nan'):
+                outputs_no_nan.append(outputs[index])
+                aas_no_nan.append(aas[index])
+                pssms_no_nan.append(pssms[index])
+            
+        outputs = np.array(outputs_no_nan)
+        aas = np.array(aas_no_nan)
+        pssms = np.array(pssms_no_nan)
+
+        #######
+
+        out = []
+        out.append(np.sin(outputs[:,0]))
+        out.append(np.cos(outputs[:,0]))
+        out.append(np.sin(outputs[:,1]))
+        out.append(np.cos(outputs[:,1]))
+        out = np.array(out).T
+        print('out shape: ', out.shape)
+
+
+        # Concatenate input features
+        inputs = np.concatenate((aas[:, :, :20], pssms[:, :, :20], aas[:, :, 20:]), axis=2) 
+        np.set_printoptions(threshold=np.inf)
+
+        # Separate data between training and testing
+        split = 38700
+        x_train, x_test = inputs[:split], inputs[split:]
+        y_train, y_test = out[:split], out[split:]
+
+        ## LOADING MODEL ##
+        from keras.optimizers import Adam
+
+        # Using AMSGrad optimizer for speed 
+        kernel_size, filters = 3, 16
+        adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, amsgrad=True)
+        # Create model
+        model = resnet_v2(input_shape=(17*2,42), depth=20, num_classes=4, conv_first=True)
+        model.compile(optimizer=adam, loss=custom_mse_mae, metrics=["mean_absolute_error", "mean_squared_error"])
+
+        # Resnet (pre-act structure) with 34*42 columns as inputs - leaving a subset for validation
+        his = model.fit(x_train, y_train, epochs=5, batch_size=16, verbose=1, shuffle=True, validation_data=(x_test, y_test))
+
 
     # Helper function to save data to a .txt file
     def stringify(vec):
@@ -367,5 +450,25 @@ class MinifoldTrainer():
             line = line+str(v)+" "
         return line
 
-    
+    def get_ins(path = self.input_AA_path, pssm=None):
+        """ Gets inputs from both AminoAcids (input_aa) and PSSM (input_pssm)"""
+        # handles both files
+        if pssm: path = self.input_PSSM_path
+        # Open file and read text
+        with open(path, "r") as f:
+            lines = f.read().split('\n')
+        # Extract numeric data from text
+        pre_ins = []
+        for i,line in enumerate(lines):
+            # Read each protein separately
+            if line == "NEW":
+                prot = []
+                raw = lines[i+1:i+(17*2+1)]
+                # Read each line as a vector + ensemble one-hot vectors as a matrix
+                for r in raw:
+                    prot.append(np.array([float(x) for x in r.split(" ") if x != ""]))
+                # Add prot to dataset
+                pre_ins.append(np.array(prot))  
+        
+        return np.array(pre_ins)
 

@@ -1,18 +1,23 @@
 import os.path
+from keras.models import load_model
+import numpy as np
+from keras.losses import mean_squared_error, mean_absolute_error
 
 class Minifold:
 
     def __init__(self):
 
+        self.model_path = './models/protein_under_200.h5'
+
         #HARDCODED to Minifold
-        if not os.path.isfile("./models/protein_under_200.h5"):
+        if not os.path.isfile(self.model_path):
 
             raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: python trainAnglePredictor.py')
 
     def predictAngles(self, aminoacids):
 
         #Load existing model
-        model = load_model("/home/rco/Desktop/qFold/MiniFold/models/angles/resnet_1d_angles.h5", custom_objects={'custom_mse_mae': custom_mse_mae})
+        model = load_model(self.model_path, custom_objects={'custom_mse_mae': self.custom_mse_mae})
 
         input_values = self.generate_input_values(aminoacids)
 
@@ -25,11 +30,31 @@ class Minifold:
         return angles
 
     # Metric defined in: https://github.com/EricAlcaide/MiniFold/blob/master/models/angles/resnet_1d_angles.py#L14
-    def custom_mse_mae(y_true, y_pred):
+    def custom_mse_mae(self, y_true, y_pred):
         """ Custom loss function - MSE + MAE """
-        return mean_squared_error(y_true, y_pred)+mean_absolute_error(y_true, y_pred)
+        return mean_squared_error(y_true, y_pred)+ mean_absolute_error(y_true, y_pred)
 
     def generate_input_values(self, aminoacids):
+
+        protein_sequence = 'GG'
+
+        input_aas = []
+
+        key = "HRKDENQSYTCPAVLIGFWM"
+
+        # Van der Waals radius
+        vdw_radius = {"H": 118, "R": 148, "K": 135, "D": 91, "E": 109, "N": 96, "Q": 114,
+                        "S": 73, "Y": 141, "T": 93, "C": 86, "P": 90, "A": 67, "V": 105,
+                        "L": 124, "I": 124, "G": 48, "F": 135, "W": 163, "M": 124}
+        radius_rel = vdw_radius.values()
+        basis = min(radius_rel)/max(radius_rel)
+        # Surface exposure 
+        surface = {"H": 151, "R": 196, "K": 167, "D": 106, "E": 138, "N": 113, "Q": 144,
+                        "S": 80, "Y": 187, "T": 102, "C": 104, "P": 105, "A": 67, "V": 117,
+                        "L": 137, "I": 140, "G": 0, "F": 175, "W": 217, "M": 160}
+        surface_rel = surface.values()
+        surface_basis = min(surface_rel)/max(surface_rel)
+
 
         #Method 1
 
@@ -86,7 +111,7 @@ class Minifold:
 
         return aas
 
-
+    '''
         #Method 2
 
         row_input_aas = []
@@ -190,8 +215,10 @@ class Minifold:
         input_aas.append(row_input_aas)
 
         return input_aas
-
+    '''
     def extract_angles(self, predicted_angles):
+
+        angles = []
 
         for prediction in predicted_angles:
             angles_row = []

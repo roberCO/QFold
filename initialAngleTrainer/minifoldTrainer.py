@@ -20,6 +20,7 @@ from keras.losses import mean_squared_error, mean_absolute_error
 from keras.layers.convolutional import Conv1D
 from keras.layers import Dense, Dropout, Flatten, Input, BatchNormalization, Activation
 from keras.layers.pooling import MaxPooling1D, AveragePooling1D, MaxPooling2D, AveragePooling2D
+from keras.optimizers import Adam
 
 # Model architecture
 from resnet_1d_angles import *
@@ -329,7 +330,6 @@ class MinifoldTrainer():
         y_train, y_test = out[:split], out[split:]
 
         ## LOADING MODEL ##
-        from keras.optimizers import Adam
 
         # Using AMSGrad optimizer for speed 
         kernel_size, filters = 3, 16
@@ -471,4 +471,3 @@ class MinifoldTrainer():
                 pre_ins.append(np.array(prot))  
         
         return np.array(pre_ins)
-

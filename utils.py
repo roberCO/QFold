@@ -6,7 +6,7 @@ import struct
 import copy
 
 class Utils():
-    def get_dihedral(coords1, coords2, coords3, coords4):
+    def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
 
         a1 = coords2 - coords1
@@ -23,7 +23,7 @@ class Utils():
             rad = rad * porm
         return rad
 
-    def calculateAngle(atom1, atom2, atom3, atom4, angle_type):
+    def calculateAngle(self, atom1, atom2, atom3, atom4, angle_type):
         'Uses get dihedral to calculate angles between atoms'
         if angle_type == 'phi':
             assert(atom1.c_type == 'Carboxy' and atom2.c_type =='C_alpha' and atom3.element == 'N' and atom4.c_type == 'Carboxy')
@@ -33,7 +33,7 @@ class Utils():
             coords3 = np.array([atom3.x, atom3.y, atom3.z])
             coords4 = np.array([atom4.x, atom4.y, atom4.z])
 
-            return get_dihedral(coords1, coords2, coords3, coords4)
+            return self.get_dihedral(coords1, coords2, coords3, coords4)
 
         elif angle_type == 'psi':
             assert(atom1.element == 'N' and atom2.c_type =='C_alpha' and atom3.c_type == 'Carboxy' and atom4.element == 'N')
@@ -43,7 +43,7 @@ class Utils():
             coords3 = np.array([atom3.x, atom3.y, atom3.z])
             coords4 = np.array([atom4.x, atom4.y, atom4.z])
 
-            return get_dihedral(coords1, coords2, coords3, coords4)
+            return self.get_dihedral(coords1, coords2, coords3, coords4)
 
         else:
             raise('Angle not recognised!:'+str(angle_type))

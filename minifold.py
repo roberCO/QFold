@@ -12,7 +12,7 @@ class Minifold:
         #HARDCODED to Minifold
         if not os.path.isfile(self.model_path):
 
-            raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: python trainAnglePredictor.py')
+            raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: initialAngleTrainer/initialAngleTrainer.py')
 
     def predictAngles(self, aminoacids):
 
@@ -214,7 +214,7 @@ class Minifold:
             
         input_aas.append(row_input_aas)
 
-        return input_aas
+        return np.array(input_aas)
     '''
     def extract_angles(self, predicted_angles):
 

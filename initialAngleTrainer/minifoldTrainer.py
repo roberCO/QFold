@@ -8,6 +8,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 # Import libraries
 import keras
@@ -23,7 +24,7 @@ from keras.layers.pooling import MaxPooling1D, AveragePooling1D, MaxPooling2D, A
 from keras.optimizers import Adam
 
 # Model architecture
-from resnet_1d_angles import *
+from resnet_1d_angles import resnet_v2, custom_mse_mae
 
 class MinifoldTrainer():
     
@@ -32,17 +33,21 @@ class MinifoldTrainer():
         self.inputPath = inputPath
 
         #HARDCODED paths
-        self.extracted_aminoacids_path = '../data/full_under_200.txt'
-        self.full_extracted_aminoacids_path = '../data/angles/full_angles_under_200.txt'
-        self.output_path = '../data/angles/outputs.txt'
-        self.input_AA_path = '../data/angles/input_aa.txt'
-        self.input_PSSM_path = '../data/angles/input_pssm.txt'
+        self.extracted_aminoacids_path = './data/full_under_200.txt'
+        self.full_extracted_aminoacids_path = './data/full_angles_under_200.txt'
+        self.output_path = './data/outputs.txt'
+        self.input_AA_path = './data/input_aa.txt'
+        self.input_PSSM_path = './data/input_pssm.txt'
 
         #HARDCODED parameters
         self.maximum_aminoacid_length = 200
 
         if not os.path.isfile(inputPath):
             raise IOError('<!> ERROR: %s does not exist!' %inputPath)
+
+        #Create the path to store the data
+        if not os.path.exists('./data/'):
+            os.mkdir('./data/')
     
     def train(self):
 
@@ -58,8 +63,6 @@ class MinifoldTrainer():
         #Generate model (using resnet_1d_angles)
         self.generateModel()
 
-
-
     def getProteinsFromRaw(self, max_aminoacid_length):
 
         # Scan first n proteins
@@ -69,7 +72,7 @@ class MinifoldTrainer():
         pssms = []
 
         with open(self.inputPath) as f:
-            lines = readlines(f)
+            lines = f.readlines()
 
             for index in range(1, len(lines)):
                 
@@ -77,17 +80,17 @@ class MinifoldTrainer():
                     break
                 
                 # Start recording
-                if lines[index] == "[ID]":
+                if lines[index] == "[ID]\n":
                     names.append(lines[index+1])
                 
-                elif lines[index] == "[PRIMARY]":
+                elif lines[index] == "[PRIMARY]\n":
                     seqs.append(lines[index+1])
 
-                elif lines[index] == "[TERTIARY]":
-                    coords.append(coords_split(lines[index+1:index+3], "\t"))
+                elif lines[index] == "[TERTIARY]\n":
+                    coords.append(self.coords_split(lines[index+1:index+3], "\t"))
 
-                elif lines[index] == "[EVOLUTIONARY]":
-                    pssms.append(coords_split(lines[index+1:i+21], "\t"))
+                elif lines[index] == "[EVOLUTIONARY]\n":
+                    pssms.append(self.coords_split(lines[index+1:index+21], "\t"))
 
         under = []
         for index in range (1, len(seqs)):
@@ -106,38 +109,39 @@ class MinifoldTrainer():
                     aad = [] # Distance to every AA from a given AA
                     for j in range(1, len(coords[k][1])):
                         if j%3 == 2:
-                            aad.append(norm([coords[k][1][i],coords[k][2][i],coords[k][3][i]]-[coords[k][1][j],coords[k][2][j],coords[k][3][j]])))
+                            aad.append(self.norm([coords[k][1][i],coords[k][2][i],coords[k][3][i]]-[coords[k][1][j],coords[k][2][j],coords[k][3][j]]))
                     
                     dist.append(aad)
             
             dists.append(dist)
             
-        # Data is OK. Save it to a file.
-        f = open(self.extracted_aminoacids_path, 'w')
+        # Data is OK. Save it to a file.       
+        with open(self.extracted_aminoacids_path, 'w+') as f:
             aux = [0]
             for k in under:
-                aux.append(aux[length(aux)]+1)
+                aux.append(aux[len(aux)]+1)
                 # ID
-                write(f, "\n[ID]\n")
-                write(f, names[k])
+                f.write("\n[ID]\n")
+                f.write(names[k])
                 # Seq
-                write(f, "\n[PRIMARY]\n")
-                write(f, seqs[k])
+                f.write("\n[PRIMARY]\n")
+                f.write(seqs[k])
                 # PSSMS
-                write(f, "\n[EVOLUTIONARY]\n")
-                writedlm(f, pssms[k])
+                f.write("\n[EVOLUTIONARY]\n")
+                f.writedlm(pssms[k])
                 # Coords
-                write(f, "\n[TERTIARY]\n")
-                writedlm(f, coords[k])
+                f.write("\n[TERTIARY]\n")
+                f.writedlm(coords[k])
                 # Dists
-                write(f, "\n[DIST]\n")
+                f.write("\n[DIST]\n")
                 # Check that saved proteins are less than 200 AAs
-                if len(dists[aux[length(aux)]][1])>200:
-                    print("error when checking protein in dists n: ", aux[length(aux)], " length: ", length(dists[aux[length(aux)]][1]))
+                if len(dists[aux[len(aux)]][1])>200:
+                    print("error when checking protein in dists n: ", aux[len(aux)], " length: ", len(dists[aux[len(aux)]][1]))
                     break
-                else
-                    writedlm(f, dists[aux[length(aux)]])
+                else:
+                    f.writedlm(dists[aux[len(aux)]])
 
+            print('<i> File ', self.extracted_aminoacids_path, 'written')
 
     def getAnglesFromCoords(self):
 
@@ -163,18 +167,17 @@ class MinifoldTrainer():
             elif line == "[PRIMARY]":
                 seqs.append(lines[i+1])
             elif line == "[EVOLUTIONARY]":
-                pssms.append(parse_line(lines[i+1:i+22]))
+                pssms.append(self.parse_line_angle_from_coords(lines[i+1:i+22]))
             elif line == "[TERTIARY]":
-                coords.append(parse_line(lines[i+1:i+3+1]))
+                coords.append(self.parse_line_angle_from_coords(lines[i+1:i+3+1]))
 
         # Organize by atom type
-        coords_nterm = [separate_coords(full_coords, 0) for full_coords in coords]
-        coords_calpha = [separate_coords(full_coords, 1) for full_coords in coords]
-        coords_cterm = [separate_coords(full_coords, 2) for full_coords in coords]
+        coords_nterm = [self.separate_coords(full_coords, 0) for full_coords in coords]
+        coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in coords]
+        coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in coords]
 
         # Compute angles for a protein
         phis, psis = [], [] # phi always starts with a 0 and psi ends with a 0
-        ph_angle_dists, ps_angle_dists = [], []
         for k in range(len(coords)):
             phi, psi = [0.0], []
             # Use our own functions inspired from bioPython
@@ -182,11 +185,11 @@ class MinifoldTrainer():
                 # Calculate phi, psi
                 # CALCULATE PHI - Can't calculate for first residue
                 if i>0:
-                    phi.append(get_dihedral(coords_cterm[k][i-1], coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i])) # my_calc
+                    phi.append(self.get_dihedral(coords_cterm[k][i-1], coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i])) # my_calc
                     
                 # CALCULATE PSI - Can't calculate for last residue
                 if i<len(coords_calpha[k])-1: 
-                    psi.append(get_dihedral(coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i], coords_nterm[k][i+1])) # my_calc
+                    psi.append(self.get_dihedral(coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i], coords_nterm[k][i+1])) # my_calc
                 
             # Add an extra 0 to psi (unable to claculate angle with next aa)
             psi.append(0)
@@ -195,7 +198,7 @@ class MinifoldTrainer():
             psis.append(psi)
 
             # Data is OK. Can save it to file.
-            with open(self.full_extracted_aminoacids_path, "w") as f:
+            with open(self.full_extracted_aminoacids_path, 'w+') as f:
                 for k in range(len(names)-1):
                     # ID
                     f.write("\n[ID]\n")
@@ -206,13 +209,16 @@ class MinifoldTrainer():
                     # PSSMS
                     f.write("\n[EVOLUTIONARY]\n")
                     for j in range(len(pssms[k])):
-                        f.write(stringify(pssms[k][j])+"\n")
+                        f.write(self.stringify_angle_from_coords(pssms[k][j])+"\n")
                     # PHI
                     f.write("\n[PHI]\n")
-                    f.write(stringify(phis[k]))
+                    f.write(self.stringify_angle_from_coords(phis[k]))
                     # PSI
                     f.write("\n[PSI]\n")
-                    f.write(stringify(psis[k]))
+                    f.write(self.stringify_angle_from_coords(psis[k]))
+
+                print('<i> File ', self.full_extracted_aminoacids_path, 'written')
+        
 
 
     def angleDataPreparation(self):
@@ -238,11 +244,11 @@ class MinifoldTrainer():
             elif line == "[PRIMARY]":
                 seqs.append(lines[i+1])
             elif line == "[EVOLUTIONARY]":
-                pssms.append(parse_lines(lines[i+1:i+22]))
+                pssms.append(self.parse_lines(lines[i+1:i+22]))
             elif lines[i] == "[PHI]":
-                phis.append(parse_line(lines[i+1]))
+                phis.append(self.parse_line_angle_data_preparation(lines[i+1]))
             elif lines[i] == "[PSI]":
-                psis.append(parse_line(lines[i+1]))
+                psis.append(self.parse_line_angle_data_preparation(lines[i+1]))
 
         input_aa = []
         input_pssm = []
@@ -255,8 +261,8 @@ class MinifoldTrainer():
                 long += len(seqs[i])-17*2
                 for j in range(17,len(seqs[i])-17):
                 # Padd sequence
-                    input_aa.append(onehotter_aa(seqs[i], j))
-                    input_pssm.append(pssm_cropper(pssms[i], j))
+                    input_aa.append(self.onehotter_aa(seqs[i], j))
+                    input_pssm.append(self.pssm_cropper(pssms[i], j))
                     outputs.append([phis[i][j], psis[i][j]])
                     # break
 
@@ -264,25 +270,32 @@ class MinifoldTrainer():
         input_pssm = np.array(input_pssm).reshape(len(input_pssm), 17*2, 21)
 
         # Save outputs to txt file
-        with open(self.output_path, "w") as f:
+        with open(self.output_path, "w+") as f:
             for o in outputs:
-                f.write(stringify(o)+"\n")
+                f.write(self.stringify_angle_data_preparation(o)+"\n")
+            
+            print('<i> File ', self.output_path, 'written')
+
 
         # Save AAs & PSSMs data to different files (together makes a 3dims tensor)
         # Will concat later
-        with open(self.input_AA_path, "w") as f:
+        with open(self.input_AA_path, "w+") as f:
             for aas in input_aa:
                 f.write("\nNEW\n")
                 for j in range(len(aas)):
-                    f.write(stringify(aas[j])+"\n")
+                    f.write(self.stringify_angle_data_preparation(aas[j])+"\n")
+            
+            print('<i> File ', self.input_AA_path, 'written')
 
-        with open(self.input_PSSM_path, "w") as f:
+        with open(self.input_PSSM_path, "w+") as f:
             for k in range(len(input_pssm)):
                 f.write("\nNEW\n")
                 for j in range(len(input_pssm[k])):
-                    f.write(stringify(input_pssm[k][j])+"\n")
+                    f.write(self.stringify_angle_data_preparation(input_pssm[k][j])+"\n")
+            
+            print('<i> File ', self.input_PSSM_path, 'written')
 
-    def generateModel():
+    def generateModel(self):
 
         ## LOAD DATASET ##
 
@@ -290,8 +303,8 @@ class MinifoldTrainer():
         outputs = np.genfromtxt(self.output_path)
 
         # Get inputs data
-        aas = get_ins()
-        pssms = get_ins(pssm=True)
+        aas = self.get_ins()
+        pssms = self.get_ins(pssm=True)
 
         ## REMOVE nan VALUES FROM DATASET
         #If there is a nan in the outputs list is necessary to discard the row in the aa and pssm list
@@ -332,38 +345,37 @@ class MinifoldTrainer():
         ## LOADING MODEL ##
 
         # Using AMSGrad optimizer for speed 
-        kernel_size, filters = 3, 16
         adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, amsgrad=True)
         # Create model
         model = resnet_v2(input_shape=(17*2,42), depth=20, num_classes=4, conv_first=True)
         model.compile(optimizer=adam, loss=custom_mse_mae, metrics=["mean_absolute_error", "mean_squared_error"])
 
         # Resnet (pre-act structure) with 34*42 columns as inputs - leaving a subset for validation
-        his = model.fit(x_train, y_train, epochs=5, batch_size=16, verbose=1, shuffle=True, validation_data=(x_test, y_test))
+        model.fit(x_train, y_train, epochs=5, batch_size=16, verbose=1, shuffle=True, validation_data=(x_test, y_test))
 
 
     # Helper function to save data to a .txt file
-    def stringify(vec):
+    def stringify_angle_data_preparation(self, vec):
         return "".join(str(v)+" " for v in vec)
 
     # Helper functions to extract numeric data from text
-    def parse_lines(raw):
+    def parse_lines(self, raw):
         return np.array([[float(x) for x in line.split(" ") if x != ""] for line in raw])
 
-    def parse_line(line):
+    def parse_line_angle_data_preparation(self, line):
         return np.array([float(x) for x in line.split(" ") if x != ""])
 
-    def coords_split(lister, splice):
+    def coords_split(self, lister, splice):
         # Split all passed sequences by "splice" and return an array of them
         # Convert string fragments to float 
         coords = []
-        for c in lister
-            coords.append([float(a) for a in split(c, splice)])
+        for c in lister:
+            coords.append([float(a) for a in c.split(splice)])
         
         return coords
 
     # Length of masking - 17x2 AAs
-    def onehotter_aa(seq, pos):
+    def onehotter_aa(self, seq, pos):
         pad = 17
         # Pad sequence
         key = "HRKDENQSYTCPAVLIGFWM"
@@ -400,23 +412,23 @@ class MinifoldTrainer():
         return np.array(one_hot)
 
     #Crops the PSSM matrix
-    def pssm_cropper(pssm, pos):
+    def pssm_cropper(self, pssm, pos):
         pssm_out = []
         pad = 17
-        for i,row in enumerate(pssm):
+        for row in enumerate(pssm):
             pssm_out.append(row[pos-pad:pos+pad])
         # PSSM is Lx21 - solution: transpose
         return np.array(pssm_out)
 
     # Could use "Using LinearAlgebra + built-in norm()" but gotta learn Julia
-    def norm(vector):
-        return sqrt(sum([v*v for v in vector]))
+    def norm(self, vector):
+        return math.sqrt(sum([v*v for v in vector]))
 
-    def parse_line(raw):
+    def parse_line_angle_from_coords(self, raw):
         return np.array([[float(x) for x in line.split("\t") if x != ""] for line in raw])
 
     #Get the coordinates for 1 atom type
-    def separate_coords(full_coords, pos): # pos can be either 0(n_term), 1(calpha), 2(cterm)
+    def separate_coords(self, full_coords, pos): # pos can be either 0(n_term), 1(calpha), 2(cterm)
         res = []
         for i in range(len(full_coords[1])):
             if i%3 == pos:
@@ -425,7 +437,7 @@ class MinifoldTrainer():
         return np.array(res)
 
     # Helper functions
-    def get_dihedral(coords1, coords2, coords3, coords4):
+    def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
 
         a1 = coords2 - coords1
@@ -443,14 +455,18 @@ class MinifoldTrainer():
 
         return rad
 
-    def stringify(vec):
+    def stringify_angle_from_coords(self, vec):
         """ Helper function to save data to .txt file. """
         line = ""
         for v in vec:
             line = line+str(v)+" "
         return line
 
-    def get_ins(path = self.input_AA_path, pssm=None):
+    def get_ins(self, path = 'default', pssm=None):
+
+        if (path == 'default'):
+            path = self.input_AA_path
+
         """ Gets inputs from both AminoAcids (input_aa) and PSSM (input_pssm)"""
         # handles both files
         if pssm: path = self.input_PSSM_path

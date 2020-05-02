@@ -71,10 +71,12 @@ class MinifoldTrainer():
         coords = []
         pssms = []
 
+        name_index = 1
+
         with open(self.inputPath) as f:
             lines = f.readlines()
 
-            for index in range(1, len(lines)):
+            for index in range(0, len(lines)):
                 
                 if len(coords) == 995:
                     break
@@ -82,34 +84,44 @@ class MinifoldTrainer():
                 # Start recording
                 if lines[index] == "[ID]\n":
                     names.append(lines[index+1])
+                    #print('Name => Name index: ', name_index, 'names length: ', len(names))
+                    name_index += 1
                 
                 elif lines[index] == "[PRIMARY]\n":
                     seqs.append(lines[index+1])
+                    #print('Seqs => Name index: ', name_index-1, 'seqs length: ', len(seqs), '\n')
 
                 elif lines[index] == "[TERTIARY]\n":
-                    coords.append(self.coords_split(lines[index+1:index+3], "\t"))
+                    coords.append(self.coords_split(lines[index+1:index+4], "\t"))
 
                 elif lines[index] == "[EVOLUTIONARY]\n":
-                    pssms.append(self.coords_split(lines[index+1:index+21], "\t"))
+                    pssms.append(self.coords_split(lines[index+1:index+22], "\t"))
 
         under = []
         for index in range (1, len(seqs)):
             if len(seqs[index]) < max_aminoacid_length:
                 under.append(index)
 
+        print("Total number of proteins: ", len(seqs))
+        print("Number of proteins under ", max_aminoacid_length, ": ", len(under))
+
         dists = []
         # Get distances btwn pairs of AAs - only for prots under 200
         for k in under:
             # Get distances from coordinates
             dist = []
-            for i in range(1, len(coords[k][1])):
+            for i in range(0, len(coords[k][1])):
                 # Only pick coords for C-alpha carbons! - position (1/3 of total data)
                 # i%3 == 2 Because juia arrays start at 1 - Python: i%3 == 1
                 if i%3 == 2:
                     aad = [] # Distance to every AA from a given AA
-                    for j in range(1, len(coords[k][1])):
+                    for j in range(0, len(coords[k][1])):
                         if j%3 == 2:
-                            aad.append(self.norm([coords[k][1][i],coords[k][2][i],coords[k][3][i]]-[coords[k][1][j],coords[k][2][j],coords[k][3][j]]))
+                            #print('k: ', k, ' i: ', i, ' j: ', j)
+                            #print('Len coords: ', len(coords))
+                            #print('Len coords[k]: ', len(coords[k]))
+                            #print('Len coords[k][1]: ', len(coords[k][1]))
+                            aad.append(self.norm([coords[k][0][i]-coords[k][0][j], coords[k][1][i] - coords[k][1][j], coords[k][2][i]-coords[k][2][j]]))
                     
                     dist.append(aad)
             
@@ -119,7 +131,7 @@ class MinifoldTrainer():
         with open(self.extracted_aminoacids_path, 'w+') as f:
             aux = [0]
             for k in under:
-                aux.append(aux[len(aux)]+1)
+                aux.append(aux[len(aux)-1]+1)
                 # ID
                 f.write("\n[ID]\n")
                 f.write(names[k])
@@ -128,18 +140,21 @@ class MinifoldTrainer():
                 f.write(seqs[k])
                 # PSSMS
                 f.write("\n[EVOLUTIONARY]\n")
-                f.writedlm(pssms[k])
+                f.write(str(pssms[k]))
                 # Coords
                 f.write("\n[TERTIARY]\n")
-                f.writedlm(coords[k])
+                f.write(str(coords[k]))
                 # Dists
                 f.write("\n[DIST]\n")
                 # Check that saved proteins are less than 200 AAs
-                if len(dists[aux[len(aux)]][1])>200:
+
+                if k == 994:
+                    print('STOP! aux[len(aux)-1]: ', aux[len(aux)-1])
+                if len(dists[aux[len(aux)-1]-1][1])>200:
                     print("error when checking protein in dists n: ", aux[len(aux)], " length: ", len(dists[aux[len(aux)]][1]))
                     break
                 else:
-                    f.writedlm(dists[aux[len(aux)]])
+                    f.write(str(dists[aux[len(aux)-1]-1]))
 
             print('<i> File ', self.extracted_aminoacids_path, 'written')
 

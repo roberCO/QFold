@@ -48,302 +48,143 @@ class MinifoldTrainer():
         #Create the path to store the data
         if not os.path.exists('./data/'):
             os.mkdir('./data/')
+
+        #Global variables used to preprocess data
+        self.names = []
+        self.seqs = []
+        self.coords = []
+        self.pssms = []
+        self.phis = []
+        self.psis = []
+        self.input_aa = []
+        self.input_pssm = []
+        self.outputs = []
     
     def train(self):
 
         #Get protein under defined maximum aminoacid length
         self.getProteinsFromRaw(self.maximum_aminoacid_length)
+        print('<i>', len(self.names),'proteins with less than', self.maximum_aminoacid_length, 'aminoacids from raw data extracted')
 
         #Get angles froom coords
         self.getAnglesFromCoords()
+        print('<i> Angles extracted from protein coordinates')
 
         #Angle data preparation
         self.angleDataPreparation()
+        print('<i> Angle data input for trained prepared from angles')
 
         #Generate model (using resnet_1d_angles)
         self.generateModel()
+        print('<i> Knowledge model generated')
 
-    def getProteinsFromRaw(self, max_aminoacid_length):
-
-        # Scan first n proteins
-        names = []
-        seqs = []
-        coords = []
-        pssms = []
-
-        name_index = 1
+    def getProteinsFromRaw(self, max_aminoacid_length):        
 
         with open(self.inputPath) as f:
             lines = f.readlines()
 
+            name = ''
+            seq = []
+            coord = []
+            pssm = []
+
             for index in range(0, len(lines)):
                 
-                if len(coords) == 995:
+                if len(self.coords) == 995:
                     break
                 
                 # Start recording
                 if lines[index] == "[ID]\n":
-                    names.append(lines[index+1])
-                    #print('Name => Name index: ', name_index, 'names length: ', len(names))
-                    name_index += 1
+                    name = lines[index+1]
                 
                 elif lines[index] == "[PRIMARY]\n":
-                    seqs.append(lines[index+1])
-                    #print('Seqs => Name index: ', name_index-1, 'seqs length: ', len(seqs), '\n')
+                    seq = lines[index+1]
 
                 elif lines[index] == "[TERTIARY]\n":
-                    coords.append(self.coords_split(lines[index+1:index+4], "\t"))
+                    coord = self.coords_split(lines[index+1:index+4], "\t")
 
                 elif lines[index] == "[EVOLUTIONARY]\n":
-                    pssms.append(self.coords_split(lines[index+1:index+22], "\t"))
+                    pssm = self.coords_split(lines[index+1:index+22], "\t")
 
-        under = []
-        for index in range (1, len(seqs)):
-            if len(seqs[index]) < max_aminoacid_length:
-                under.append(index)
+                elif lines[index] == "\n":
 
-        print("Total number of proteins: ", len(seqs))
-        print("Number of proteins under ", max_aminoacid_length, ": ", len(under))
-
-        dists = []
-        # Get distances btwn pairs of AAs - only for prots under 200
-        for k in under:
-            # Get distances from coordinates
-            dist = []
-            for i in range(0, len(coords[k][1])):
-                # Only pick coords for C-alpha carbons! - position (1/3 of total data)
-                # i%3 == 2 Because juia arrays start at 1 - Python: i%3 == 1
-                if i%3 == 2:
-                    aad = [] # Distance to every AA from a given AA
-                    for j in range(0, len(coords[k][1])):
-                        if j%3 == 2:
-                            #print('k: ', k, ' i: ', i, ' j: ', j)
-                            #print('Len coords: ', len(coords))
-                            #print('Len coords[k]: ', len(coords[k]))
-                            #print('Len coords[k][1]: ', len(coords[k][1]))
-                            aad.append(self.norm([coords[k][0][i]-coords[k][0][j], coords[k][1][i] - coords[k][1][j], coords[k][2][i]-coords[k][2][j]]))
-                    
-                    dist.append(aad)
-            
-            dists.append(dist)
-            
-        # Data is OK. Save it to a file.       
-        with open(self.extracted_aminoacids_path, 'w+') as f:
-            aux = [0]
-            for k in under:
-                aux.append(aux[len(aux)-1]+1)
-                # ID
-                f.write("\n[ID]\n")
-                f.write(names[k])
-                # Seq
-                f.write("\n[PRIMARY]\n")
-                f.write(seqs[k])
-                # PSSMS
-                f.write("\n[EVOLUTIONARY]\n")
-                f.write(str(pssms[k]))
-                # Coords
-                f.write("\n[TERTIARY]\n")
-                f.write(str(coords[k]))
-                # Dists
-                f.write("\n[DIST]\n")
-                # Check that saved proteins are less than 200 AAs
-
-                if k == 994:
-                    print('STOP! aux[len(aux)-1]: ', aux[len(aux)-1])
-                if len(dists[aux[len(aux)-1]-1][1])>200:
-                    print("error when checking protein in dists n: ", aux[len(aux)], " length: ", len(dists[aux[len(aux)]][1]))
-                    break
-                else:
-                    f.write(str(dists[aux[len(aux)-1]-1]))
-
-            print('<i> File ', self.extracted_aminoacids_path, 'written')
+                    #Save all attributes of the protein only if it shorter than the maximum aminoacids length
+                    if len(seq) <= max_aminoacid_length:
+                        self.names.append(name)
+                        self.seqs.append(seq)
+                        self.coords.append(coord)
+                        self.pssms.append(pssm)
 
     def getAnglesFromCoords(self):
 
-        names = []
-        seqs = []
-        psis = []
-        phis = []
-        pssms = []
-        coords = []
-
-        # Opn file and read text
-        with open(self.extracted_aminoacids_path, "r") as f:
-            lines = f.read().split('\n')
-
-        # Extract numeric data from text
-        for i,line in enumerate(lines):
-            if len(names) == 601:
-                break
-
-            # Read each protein separately
-            if line == "[ID]":
-                names.append(lines[i+1])
-            elif line == "[PRIMARY]":
-                seqs.append(lines[i+1])
-            elif line == "[EVOLUTIONARY]":
-                pssms.append(self.parse_line_angle_from_coords(lines[i+1:i+22]))
-            elif line == "[TERTIARY]":
-                coords.append(self.parse_line_angle_from_coords(lines[i+1:i+3+1]))
-
         # Organize by atom type
-        coords_nterm = [self.separate_coords(full_coords, 0) for full_coords in coords]
-        coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in coords]
-        coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in coords]
+        coords_nterm = [self.separate_coords(full_coords, 0) for full_coords in self.coords]
+        coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in self.coords]
+        coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in self.coords]
 
         # Compute angles for a protein
-        phis, psis = [], [] # phi always starts with a 0 and psi ends with a 0
-        for k in range(len(coords)):
+        for k in range(len(self.coords)):
             phi, psi = [0.0], []
             # Use our own functions inspired from bioPython
             for i in range(len(coords_calpha[k])):
                 # Calculate phi, psi
                 # CALCULATE PHI - Can't calculate for first residue
                 if i>0:
-                    phi.append(self.get_dihedral(coords_cterm[k][i-1], coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i])) # my_calc
+                    result = self.get_dihedral(coords_cterm[k][i-1], coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i])
+                    if result != 'error':
+                        phi.append(result) # my_calc
                     
                 # CALCULATE PSI - Can't calculate for last residue
                 if i<len(coords_calpha[k])-1: 
-                    psi.append(self.get_dihedral(coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i], coords_nterm[k][i+1])) # my_calc
+                    result = self.get_dihedral(coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i], coords_nterm[k][i+1])
+                    if result != 'error':
+                        psi.append(result) # my_calc
                 
             # Add an extra 0 to psi (unable to claculate angle with next aa)
             psi.append(0)
             # Add protein info to register
-            phis.append(phi)
-            psis.append(psi)
+            self.phis.append(phi)
+            self.psis.append(psi)
 
-            # Data is OK. Can save it to file.
-            with open(self.full_extracted_aminoacids_path, 'w+') as f:
-                for k in range(len(names)-1):
-                    # ID
-                    f.write("\n[ID]\n")
-                    f.write(names[k])
-                    # Seq
-                    f.write("\n[PRIMARY]\n")
-                    f.write(seqs[k])
-                    # PSSMS
-                    f.write("\n[EVOLUTIONARY]\n")
-                    for j in range(len(pssms[k])):
-                        f.write(self.stringify_angle_from_coords(pssms[k][j])+"\n")
-                    # PHI
-                    f.write("\n[PHI]\n")
-                    f.write(self.stringify_angle_from_coords(phis[k]))
-                    # PSI
-                    f.write("\n[PSI]\n")
-                    f.write(self.stringify_angle_from_coords(psis[k]))
-
-                print('<i> File ', self.full_extracted_aminoacids_path, 'written')
-        
-
+        print('Name shape: ', len(self.names))
+        print('Seqs shape: ', len(self.seqs))
+        print('Coords shp: ', len(self.coords))
+        print('Pssms shap: ', len(self.pssms))
+        print('Phis shape: ', len(self.phis))
+        print('Psis shape: ', len(self.psis))
 
     def angleDataPreparation(self):
 
-        # Opn file and read text
-        with open(self.full_extracted_aminoacids_path, "r") as f:
-            lines = f.read().split('\n')
-
-        # Scan first n proteins
-        names = []
-        seqs = []
-        psis = []
-        phis = []
-        pssms = []
-
-        # Extract numeric data from text
-        for i,line in enumerate(lines):
-            if len(names) == 601:
-                break
-            # Read each protein separately
-            if line == "[ID]":
-                names.append(lines[i+1])
-            elif line == "[PRIMARY]":
-                seqs.append(lines[i+1])
-            elif line == "[EVOLUTIONARY]":
-                pssms.append(self.parse_lines(lines[i+1:i+22]))
-            elif lines[i] == "[PHI]":
-                phis.append(self.parse_line_angle_data_preparation(lines[i+1]))
-            elif lines[i] == "[PSI]":
-                psis.append(self.parse_line_angle_data_preparation(lines[i+1]))
-
-        input_aa = []
-        input_pssm = []
-        outputs = []
-
         long = 0 # Counter to ensure everythings fine
 
-        for i in range(len(seqs)): 
-            if len(seqs[i])>17*2:
-                long += len(seqs[i])-17*2
-                for j in range(17,len(seqs[i])-17):
+        for i in range(len(self.seqs)): 
+            if len(self.seqs[i])>17*2:
+                long += len(self.seqs[i])-17*2
+                for j in range(17,len(self.seqs[i])-17):
                 # Padd sequence
-                    input_aa.append(self.onehotter_aa(seqs[i], j))
-                    input_pssm.append(self.pssm_cropper(pssms[i], j))
-                    outputs.append([phis[i][j], psis[i][j]])
+                    self.input_aa.append(self.onehotter_aa(self.seqs[i], j))
+                    self.input_pssm.append(self.pssm_cropper(self.pssms[i], j))
+                    self.outputs.append([self.phis[i][j], self.psis[i][j]])
                     # break
 
-        input_aa = np.array(input_aa).reshape(len(input_aa), 17*2, 22)
-        input_pssm = np.array(input_pssm).reshape(len(input_pssm), 17*2, 21)
-
-        # Save outputs to txt file
-        with open(self.output_path, "w+") as f:
-            for o in outputs:
-                f.write(self.stringify_angle_data_preparation(o)+"\n")
-            
-            print('<i> File ', self.output_path, 'written')
-
-
-        # Save AAs & PSSMs data to different files (together makes a 3dims tensor)
-        # Will concat later
-        with open(self.input_AA_path, "w+") as f:
-            for aas in input_aa:
-                f.write("\nNEW\n")
-                for j in range(len(aas)):
-                    f.write(self.stringify_angle_data_preparation(aas[j])+"\n")
-            
-            print('<i> File ', self.input_AA_path, 'written')
-
-        with open(self.input_PSSM_path, "w+") as f:
-            for k in range(len(input_pssm)):
-                f.write("\nNEW\n")
-                for j in range(len(input_pssm[k])):
-                    f.write(self.stringify_angle_data_preparation(input_pssm[k][j])+"\n")
-            
-            print('<i> File ', self.input_PSSM_path, 'written')
+        self.input_aa = np.array(self.input_aa).reshape(len(self.input_aa), 17*2, 22)
+        self.input_pssm = np.array(self.input_pssm).reshape(len(self.input_pssm), 17*2, 21)
 
     def generateModel(self):
 
         ## LOAD DATASET ##
-
-        # Load outputs/labels from file
-        outputs = np.genfromtxt(self.output_path)
-
+        
         # Get inputs data
         aas = self.get_ins()
         pssms = self.get_ins(pssm=True)
 
-        ## REMOVE nan VALUES FROM DATASET
-        #If there is a nan in the outputs list is necessary to discard the row in the aa and pssm list
-        outputs_no_nan = []
-        aas_no_nan = []
-        pssms_no_nan = []
-
-        for index in range(0, len(outputs)):
-            if(str(outputs[index][0]) != 'nan'):
-                outputs_no_nan.append(outputs[index])
-                aas_no_nan.append(aas[index])
-                pssms_no_nan.append(pssms[index])
-            
-        outputs = np.array(outputs_no_nan)
-        aas = np.array(aas_no_nan)
-        pssms = np.array(pssms_no_nan)
-
-        #######
+        self.outputs = np.array(self.outputs)
 
         out = []
-        out.append(np.sin(outputs[:,0]))
-        out.append(np.cos(outputs[:,0]))
-        out.append(np.sin(outputs[:,1]))
-        out.append(np.cos(outputs[:,1]))
+        out.append(np.sin(self.outputs[:,0]))
+        out.append(np.cos(self.outputs[:,0]))
+        out.append(np.sin(self.outputs[:,1]))
+        out.append(np.cos(self.outputs[:,1]))
         out = np.array(out).T
         print('out shape: ', out.shape)
 
@@ -418,10 +259,6 @@ class MinifoldTrainer():
                     vec[-2] = vdw_radius[key[j]]/max(radius_rel)-basis
                     vec[-1] = surface[key[j]]/max(surface_rel)-surface_basis
 
-                    print('AA: ', key[j], ' VDW radius: ', vec[-2], ' a: ', vdw_radius[key[j]], ' b: ', max(radius_rel), ' c: ', basis)
-                    print('AA: ', key[j], ' surface:    ', vec[-1], ' a: ', surface[key[j]], ' b: ', max(surface_rel), ' c: ', surface_basis, '\n')
-
-            
             one_hot.append(vec) 
         
         return np.array(one_hot)
@@ -460,9 +297,19 @@ class MinifoldTrainer():
         a3 = coords4 - coords3
 
         v1 = np.cross(a1, a2)
+        #If all components of the vector are 0 the division is 0/0 so an error is returned
+        #if v1[0] == 0 and v1[1] == 0 and v1[2] == 0:
+        #    return 'error'
+        #else:
         v1 = v1 / (v1 * v1).sum(-1)**0.5
+
         v2 = np.cross(a2, a3)
+        #If all components of the vector are 0 the division is 0/0 so an error is returned
+        #if v2[0] == 0 and v2[1] == 0 and v2[2] == 0:
+        #    return 'error'
+        #else: 
         v2 = v2 / (v2 * v2).sum(-1)**0.5
+        
         porm = np.sign((v1 * a3).sum(-1))
         rad = np.arccos((v1*v2).sum(-1) / ((v1**2).sum(-1) * (v2**2).sum(-1))**0.5)
         if not porm == 0:

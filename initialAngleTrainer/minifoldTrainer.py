@@ -41,6 +41,7 @@ class MinifoldTrainer():
 
         #HARDCODED parameters
         self.maximum_aminoacid_length = 200
+        self.window_size = 17
 
         if not os.path.isfile(inputPath):
             raise IOError('<!> ERROR: %s does not exist!' %inputPath)
@@ -122,6 +123,8 @@ class MinifoldTrainer():
         coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in self.coords]
         coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in self.coords]
 
+        index_to_remove = []
+
         # Compute angles for a protein
         for k in range(len(self.coords)):
             phi, psi = [0.0], []
@@ -131,44 +134,60 @@ class MinifoldTrainer():
                 # CALCULATE PHI - Can't calculate for first residue
                 if i>0:
                     result = self.get_dihedral(coords_cterm[k][i-1], coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i])
-                    if result != 'error':
-                        phi.append(result) # my_calc
+                    phi.append(result) # my_calc
                     
                 # CALCULATE PSI - Can't calculate for last residue
                 if i<len(coords_calpha[k])-1: 
                     result = self.get_dihedral(coords_nterm[k][i], coords_calpha[k][i], coords_cterm[k][i], coords_nterm[k][i+1])
-                    if result != 'error':
-                        psi.append(result) # my_calc
+                    psi.append(result) # my_calc
+
+                if result == 'error':
+                    #If there was an error (the angle is nan because the coords were wrong), it is necessary to save the k index to delete it
+                    index_to_remove.append(k)
+
+                    #Depending on the coord that is wrong, the previous or the next (or both) angles are wrong calculated (it is also necessary to remove them)
+                    if coords_cterm[k][i][0] == 0.0:
+                        index_to_remove.append(k+1)
+                    if coords_nterm[k][i][0] == 0.0:
+                        index_to_remove.append(k-1)
                 
             # Add an extra 0 to psi (unable to claculate angle with next aa)
             psi.append(0)
+
+            #Delete of selected positions
+            for index in index_to_remove:
+                del self.coords[k][index]
+                del self.seqs[k][index]
+                del self.pssms[k][index]
+
+                if index > 0:
+                    del phi[index-1]
+                
+                if index < len(psi)-1:
+                    del psi[index]
+
             # Add protein info to register
             self.phis.append(phi)
             self.psis.append(psi)
-
-        print('Name shape: ', len(self.names))
-        print('Seqs shape: ', len(self.seqs))
-        print('Coords shp: ', len(self.coords))
-        print('Pssms shap: ', len(self.pssms))
-        print('Phis shape: ', len(self.phis))
-        print('Psis shape: ', len(self.psis))
 
     def angleDataPreparation(self):
 
         long = 0 # Counter to ensure everythings fine
 
         for i in range(len(self.seqs)): 
-            if len(self.seqs[i])>17*2:
-                long += len(self.seqs[i])-17*2
-                for j in range(17,len(self.seqs[i])-17):
+            if len(self.seqs[i])>self.window_size*2:
+                long += len(self.seqs[i])-self.window_size*2
+                print('i: ', i, 'len seqs[i]:', len(self.seqs[i]), 'len phis[i]:', len(self.phis[i]), 'len psis[i]', len(self.psis[i]), '\n')
+
+                for j in range(self.window_size,len(self.seqs[i])-self.window_size):
                 # Padd sequence
                     self.input_aa.append(self.onehotter_aa(self.seqs[i], j))
                     self.input_pssm.append(self.pssm_cropper(self.pssms[i], j))
                     self.outputs.append([self.phis[i][j], self.psis[i][j]])
                     # break
 
-        self.input_aa = np.array(self.input_aa).reshape(len(self.input_aa), 17*2, 22)
-        self.input_pssm = np.array(self.input_pssm).reshape(len(self.input_pssm), 17*2, 21)
+        self.input_aa = np.array(self.input_aa).reshape(len(self.input_aa), self.window_size*2, 22)
+        self.input_pssm = np.array(self.input_pssm).reshape(len(self.input_pssm), self.window_size*2, 21)
 
     def generateModel(self):
 
@@ -203,7 +222,7 @@ class MinifoldTrainer():
         # Using AMSGrad optimizer for speed 
         adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, amsgrad=True)
         # Create model
-        model = resnet_v2(input_shape=(17*2,42), depth=20, num_classes=4, conv_first=True)
+        model = resnet_v2(input_shape=(self.window_size*2,42), depth=20, num_classes=4, conv_first=True)
         model.compile(optimizer=adam, loss=custom_mse_mae, metrics=["mean_absolute_error", "mean_squared_error"])
 
         # Resnet (pre-act structure) with 34*42 columns as inputs - leaving a subset for validation
@@ -230,9 +249,8 @@ class MinifoldTrainer():
         
         return coords
 
-    # Length of masking - 17x2 AAs
+    # Length of masking - window_sizex2 AAs
     def onehotter_aa(self, seq, pos):
-        pad = 17
         # Pad sequence
         key = "HRKDENQSYTCPAVLIGFWM"
         # Van der Waals radius
@@ -249,7 +267,7 @@ class MinifoldTrainer():
         surface_basis = min(surface_rel)/max(surface_rel)
         # One-hot encoding
         one_hot = []
-        for i in range(pos-pad, pos+pad): # alponer los guiones ya tiramos la seq para un lado
+        for i in range(pos-self.window_size, pos+self.window_size):
             vec = [0 for i in range(22)]
             # mark as 1 the corresponding indexes
             for j in range(len(key)):
@@ -266,9 +284,8 @@ class MinifoldTrainer():
     #Crops the PSSM matrix
     def pssm_cropper(self, pssm, pos):
         pssm_out = []
-        pad = 17
         for row in enumerate(pssm):
-            pssm_out.append(row[pos-pad:pos+pad])
+            pssm_out.append(row[pos-self.window_size:pos+self.window_size])
         # PSSM is Lx21 - solution: transpose
         return np.array(pssm_out)
 
@@ -298,17 +315,17 @@ class MinifoldTrainer():
 
         v1 = np.cross(a1, a2)
         #If all components of the vector are 0 the division is 0/0 so an error is returned
-        #if v1[0] == 0 and v1[1] == 0 and v1[2] == 0:
-        #    return 'error'
-        #else:
-        v1 = v1 / (v1 * v1).sum(-1)**0.5
+        if v1[0] == 0 and v1[1] == 0 and v1[2] == 0:
+            return 'error'
+        else:
+            v1 = v1 / (v1 * v1).sum(-1)**0.5
 
         v2 = np.cross(a2, a3)
         #If all components of the vector are 0 the division is 0/0 so an error is returned
-        #if v2[0] == 0 and v2[1] == 0 and v2[2] == 0:
-        #    return 'error'
-        #else: 
-        v2 = v2 / (v2 * v2).sum(-1)**0.5
+        if v2[0] == 0 and v2[1] == 0 and v2[2] == 0:
+            return 'error'
+        else: 
+            v2 = v2 / (v2 * v2).sum(-1)**0.5
         
         porm = np.sign((v1 * a3).sum(-1))
         rad = np.arccos((v1*v2).sum(-1) / ((v1**2).sum(-1) * (v2**2).sum(-1))**0.5)
@@ -341,7 +358,7 @@ class MinifoldTrainer():
             # Read each protein separately
             if line == "NEW":
                 prot = []
-                raw = lines[i+1:i+(17*2+1)]
+                raw = lines[i+1:i+(self.window_size*2+1)]
                 # Read each line as a vector + ensemble one-hot vectors as a matrix
                 for r in raw:
                     prot.append(np.array([float(x) for x in r.split(" ") if x != ""]))

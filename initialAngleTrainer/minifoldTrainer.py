@@ -162,21 +162,21 @@ class MinifoldTrainer():
                 #Split and merge string without the index position
                 self.seqs[k] = self.seqs[k][0:index] + delete_caracter + self.seqs[k][(index+1):len(self.seqs[k])]
                 if index > 0:
-                    phi[index-1] = delete_caracter
+                    phi[index] = delete_caracter
                 
                 if index < len(psi)-1:
                     psi[index] = delete_caracter
 
             self.seqs[k] = self.seqs[k].replace(delete_caracter, '')
             index = 0
-            while index < len(phi)-1:
+            while index < len(phi):
                 if(phi[index] == delete_caracter):
                     del phi[index]
                 else:
                     index += 1
 
             index = 0
-            while index < len(psi)-1:
+            while index < len(psi):
                 if(psi[index] == delete_caracter):
                     del psi[index]
                 else:
@@ -209,8 +209,12 @@ class MinifoldTrainer():
         ## LOAD DATASET ##
         
         # Get inputs data
-        aas = self.get_ins()
-        pssms = self.get_ins(pssm=True)
+        #aas = self.get_ins()
+        #pssms = self.get_ins(pssm=True)
+        aas = self.input_aa
+        pssms = self.input_pssm
+        self.outputs = np.array(self.outputs)
+
 
         self.outputs = np.array(self.outputs)
 
@@ -220,7 +224,6 @@ class MinifoldTrainer():
         out.append(np.sin(self.outputs[:,1]))
         out.append(np.cos(self.outputs[:,1]))
         out = np.array(out).T
-        print('out shape: ', out.shape)
 
 
         # Concatenate input features
@@ -299,7 +302,7 @@ class MinifoldTrainer():
     #Crops the PSSM matrix
     def pssm_cropper(self, pssm, pos):
         pssm_out = []
-        for row in enumerate(pssm):
+        for row in pssm:
             pssm_out.append(row[pos-self.window_size:pos+self.window_size])
         # PSSM is Lx21 - solution: transpose
         return np.array(pssm_out)

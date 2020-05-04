@@ -123,11 +123,12 @@ class MinifoldTrainer():
         coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in self.coords]
         coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in self.coords]
 
-        index_to_remove = []
 
         # Compute angles for a protein
         for k in range(len(self.coords)):
             phi, psi = [0.0], []
+            index_to_remove = []
+
             # Use our own functions inspired from bioPython
             for i in range(len(coords_calpha[k])):
                 # Calculate phi, psi
@@ -143,28 +144,43 @@ class MinifoldTrainer():
 
                 if result == 'error':
                     #If there was an error (the angle is nan because the coords were wrong), it is necessary to save the k index to delete it
-                    index_to_remove.append(k)
+                    index_to_remove.append(i)
 
                     #Depending on the coord that is wrong, the previous or the next (or both) angles are wrong calculated (it is also necessary to remove them)
-                    if coords_cterm[k][i][0] == 0.0:
-                        index_to_remove.append(k+1)
-                    if coords_nterm[k][i][0] == 0.0:
-                        index_to_remove.append(k-1)
+                    if coords_cterm[k][i][0] == 0.0 and i<len(coords_calpha[k])-1:
+                        index_to_remove.append(i+1)
+                    if coords_nterm[k][i][0] == 0.0 and i > 0:
+                        index_to_remove.append(i-1)
                 
             # Add an extra 0 to psi (unable to claculate angle with next aa)
             psi.append(0)
 
+            index_to_remove = set(index_to_remove)
             #Delete of selected positions
-            for index in index_to_remove:
-                del self.coords[k][index]
-                del self.seqs[k][index]
-                del self.pssms[k][index]
-
+            delete_caracter = '@'
+            for index in set(index_to_remove):
+                #Split and merge string without the index position
+                self.seqs[k] = self.seqs[k][0:index] + delete_caracter + self.seqs[k][(index+1):len(self.seqs[k])]
                 if index > 0:
-                    del phi[index-1]
+                    phi[index-1] = delete_caracter
                 
                 if index < len(psi)-1:
+                    psi[index] = delete_caracter
+
+            self.seqs[k] = self.seqs[k].replace(delete_caracter, '')
+            index = 0
+            while index < len(phi)-1:
+                if(phi[index] == delete_caracter):
+                    del phi[index]
+                else:
+                    index += 1
+
+            index = 0
+            while index < len(psi)-1:
+                if(psi[index] == delete_caracter):
                     del psi[index]
+                else:
+                    index += 1
 
             # Add protein info to register
             self.phis.append(phi)
@@ -177,7 +193,6 @@ class MinifoldTrainer():
         for i in range(len(self.seqs)): 
             if len(self.seqs[i])>self.window_size*2:
                 long += len(self.seqs[i])-self.window_size*2
-                print('i: ', i, 'len seqs[i]:', len(self.seqs[i]), 'len phis[i]:', len(self.phis[i]), 'len psis[i]', len(self.psis[i]), '\n')
 
                 for j in range(self.window_size,len(self.seqs[i])-self.window_size):
                 # Padd sequence

@@ -1,170 +1,61 @@
-import sys
-import utils
-import psiFour
-import atom
 import numpy as np
-import copy
 
-if(len(sys.argv) != 3):
-    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
-    print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")
-    sys.exit(0)
+class Metropolis():
 
-#Global variable
-tools = utils.Utils()
+    def __init__(self, n_iterations, scaling_factor, energies):
 
-proteinName = sys.argv[1]
-rotationSteps = pow(2, int(sys.argv[2]))
+        self.n_iterations = n_iterations
+        self.scaling_factor = scaling_factor 
+        self.energies = energies
 
-# Scaling factor
+    def execute_metropolis(self):
 
-# Get the minimum angle rotation
-delta_anglePhi = 1/rotationSteps
-delta_anglePsi = 1/rotationSteps
+        calculated_3d_structure = None
 
-n_iterations = 100000
-scaling_factor = 5000 # Modify this parameter to make it reasonable --------
+        # Random starting combination of angles
+        anglePsi_old = np.random.choice(len(self.energies))
+        anglePhi_old = np.random.choice(len(self.energies))
 
-#call psi4 to get the atoms of the protein
-psi = psiFour.PsiFour()
-atoms = psi.getAtomsFromProtein(proteinName)
+        for iteration in range(self.n_iterations):
 
-#Calculate the connection between atoms
-atoms = tools.calculateAtomConnection(atoms)
+            # First retrieve the present energy
+            E_old = self.energies[(anglePhi_old,anglePsi_old)]
+            
+            # Propose a change
+            change_angle = np.random.choice(('phi','psi'))
+            change_plus_minus = np.random.choice((1,-1))
 
-nitroConnections = [['C', 2]]
-carboxyConnections = [['C', 1], ['O', 2]]
+            # Calculate the new angles
+            if change_angle == 'phi':
+                #Change just +1 or -1 step in the energies dictionary
+                anglePhi_new = anglePhi_old + change_plus_minus * 1
+                anglePsi_new = anglePsi_old
+            elif change_angle == 'psi':
+                #Change just +1 or -1 step in the energies dictionary
+                anglePhi_new = anglePhi_old
+                anglePsi_new = anglePsi_new + change_plus_minus * 1
+            
+            # Calculate the new energy
+            if self.energies[(anglePhi_new,anglePsi_new)] != None:
+                E_new = self.energies[(anglePhi_new,anglePsi_new)]
 
-nitroAtom = tools.findAtom(atoms, 'N', '', nitroConnections)  # Is this right???
-carboxyAtom = tools.findAtom(atoms, '', 'Carboxy', carboxyConnections)
+            else:
 
-inputFilenameEnergyPSI4 = 'inputRotations'
-outputFilenameEnergyPSI4 = 'outputRotations'
+                #Read the PSI4 output file and get the energy
+                E_new = self.energies()
+                self.energies[(anglePhi_new,anglePsi_new)] = E_new
 
-# Let us calculate the phi angle.
-atom3_phi = nitroAtom
-for atom in nitroAtom.linked_to:
-    if atom.c_type == 'C_alpha':
-        atom2_phi = atom
-    elif atom.c_type == 'Carboxy':
-        atom4_phi = atom
-for atom in atom2.linked_to:
-    if atom.c_type == 'Carboxy':
-        atom1_phi = atom
+            Delta_E = (E_new - E_old) * self.scaling_factor
 
-phi = utils.calculateAngle(atom1_phi,atom2_phi,atom3_phi,atom4_phi,'phi')
+            # Lets use a non_optimal simple schedule
+            beta = iteration / self.n_iterations
+            probability_threshold = np.exp(-beta*Delta_E)
+            random_number = np.random.random_sample
 
-# Let us calculate the psi angle.
+            # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
+            # If beta small, np.exp(-beta*Delta_E) approx 1.
+            if random_number < min(1,probability_threshold): # Accept the change
+                anglePhi_old = anglePhi_new
+                anglePsi_old = anglePsi_new
 
-atom3_psi = carboxyAtom
-for atom in carboxyAtom.linked_to:
-    if atom.c_type == 'C_alpha':
-        atom2_psi = atom
-    elif atom.element == 'N':
-        atom4_psi = atom
-for atom in atom2.linked_to:
-    if atom.element == 'N':
-        atom1_psi = atom
-
-psi = utils.calculateAngle(atom1_psi,atom2_psi,atom3_psi,atom4_psi,'psi')
-
-# No se me ocurre mejor manera de guardarlos
-list_of_angles = [phi, psi]
-
-# Create a dictionary of already calculated energies 
-energies_dictionary = {}
-
-for Phi in range (rotationSteps):
-    for Psi in range (rotationSteps):
-        energies_dictionary[(Phi,Psi)] = None
-
-
-# Random starting combination of angles
-anglePsi_old = np.random.choice(rotationSteps)
-anglePhi_old = np.random.choice(rotationSteps)
-
-# Calculate energy for the first state:
-# From the initial state deepcopy the molecule
-copied_atoms = copy.deepcopy(atoms)
-copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
-copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
-
-#rotate according to the angles anglePhi_old and anglePsi_old. Notice that delta_anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
-tools.rotate('phi', anglePhi_old * delta_anglePhi, copied_nitroAtom) 
-tools.rotate('psi', anglePsi_old * delta_anglePsi, copied_carboxyAtom)
-
-#Write the file with the actual rotations
-psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
-
-#Calculate the energy of the actual rotations using PSI4
-psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
-
-#Read the PSI4 output file and get the energy
-E_old = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
-
-del copied_atoms
-del copied_carboxyAtom
-del copied_nitroAtom
-
-
-
-
-for iteration in range(n_iterations):
-
-    # First retrieve the present energy
-    E_old = energies_dictionary[(anglePhi_old,anglePsi_old)]
-    
-    # Propose a change
-    change_angle = np.random.choice(('phi','psi'))
-    change_plus_minus = np.random.choice((1,-1))
-
-    # Calculate the new angles
-    if change_angle == 'phi':
-        anglePhi_new = anglePhi_old + change_plus_minus * delta_anglePhi
-        anglePsi_new = anglePsi_old
-    elif change_angle == 'psi':
-        anglePhi_new = anglePhi_old
-        anglePsi_new = anglePsi_new + change_plus_minus * delta_anglePsi
-    
-    # Calculate the new energy
-    if energies_dictionary[(anglePhi_new,anglePsi_new)] != None:
-        E_new = energies_dictionary[(anglePhi_new,anglePsi_new)]
-
-    else:
-        # From the initial state deepcopy the molecule
-        copied_atoms = copy.deepcopy(atoms)
-        copied_nitroAtom = tools.findAtom(copied_atoms, 'N', '', nitroConnections)
-        copied_carboxyAtom = tools.findAtom(copied_atoms, '', 'Carboxy', carboxyConnections)
-
-        #rotate according to the angles anglePhi_old and anglePsi_old. Notice that delta_anglePhi is 1/rotationSteps and anglePhi_old is between (0, rotationSteps). Same for Psi
-        tools.rotate('phi', anglePhi_old * delta_anglePhi, copied_nitroAtom) 
-        tools.rotate('psi', anglePsi_old * delta_anglePsi, copied_carboxyAtom)
-
-        #Write the file with the actual rotations
-        psi.writeFileEnergies(copied_atoms, inputFilenameEnergyPSI4)
-
-        #Calculate the energy of the actual rotations using PSI4
-        psi.executePsiCommand(inputFilenameEnergyPSI4, outputFilenameEnergyPSI4)
-
-        #Read the PSI4 output file and get the energy
-        E_new = psi.readEnergyFromFile(outputFilenameEnergyPSI4)
-        energies_dictionary[(anglePhi_new,anglePsi_new)] = E_new
-
-        del copied_atoms
-        del copied_carboxyAtom
-        del copied_nitroAtom
-
-    Delta_E = (E_new - E_old) * scaling_factor
-
-    # Lets use a non_optimal simple schedule
-    beta = iteration / n_iterations
-    probability_threshold = np.exp(-beta*Delta_E)
-    random_number = np.random.random_sample
-
-    # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
-    # If beta small, np.exp(-beta*Delta_E) approx 1.
-    if random_number < min(1,probability_threshold): # Accept the change
-        anglePhi_old = anglePhi_new
-        anglePsi_old = anglePsi_new
-
-
+        return calculated_3d_structure

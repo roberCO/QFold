@@ -1,5 +1,6 @@
 import quantumUtils
 import math
+import metropolis
 
 class AngleCalculator():
 
@@ -12,6 +13,8 @@ class AngleCalculator():
         self.option = option
 
     def calculate3DStructure(self, energyList):
+
+        calculated_3d_estructure = None
 
         #Quantum calculation option for 3D structure
         if self.option == 0: 
@@ -30,7 +33,12 @@ class AngleCalculator():
         #Classical calculation option for 3D structure
         elif self.option == 1:
 
-            print('Classical metropoli')
+            n_iterations = 100000
+            scaling_factor = 5000 
+            classical_metropolis = metropolis.Metropolis(n_iterations, scaling_factor, energyList)
+            calculated_3d_estructure = classical_metropolis.execute_metropolis()
+
+        return calculated_3d_estructure
 
     def createTruthTableList(self, energyList):
 

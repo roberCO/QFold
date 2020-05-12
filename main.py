@@ -19,7 +19,7 @@ rotationSteps = pow(2, int(numberBitsRotation))
 beta = 1
 scaling_factor = 80 # Modify this parameter to make it reasonable --------
 angleInitializer = initializer.Initializer()
-angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta)
+angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta, 1)
 psi = psiFour.PsiFour()
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
@@ -32,7 +32,7 @@ except IOError:
     angleInitializer.calculateEnergies(proteinName, numberBitsRotation, aminoacids)
 
 #Create an empty list of enery list
-#HARDCODED for proteins with only to aminoacids
+#HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)] 
 energyList = psi.readEnergyJson(proteinName, numberBitsRotation)

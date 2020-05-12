@@ -37,12 +37,12 @@ class Initializer():
         #Get all atoms from the protein with x/y/z positions and connections
         atoms = self.extractAtoms(proteinName)
 
-        #Get initial structure of the protein to rotate from it
-        predictions = self.calculateInitialStructure(atoms, aminoacids)
-
         #Identify the nitro and carboxy atoms
         nitroAtom = self.findAtom(atoms, 'N', '', self.nitroConnections)
         carboxyAtom = self.findAtom(atoms, '', 'Carboxy', self.carboxyConnections)
+
+        #Get initial structure of the protein to rotate from it
+        predictions = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
 
         real_angle_phi = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
         real_angle_psi = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
@@ -138,7 +138,22 @@ class Initializer():
                     else:
                         raise Exception('Element '+at.element+' not found with the proper connections of '+linkedElement+'! '+str(counterLinkedElements)+' found but there should be ' + str(numberLinkedElements))
 
-    def calculateInitialStructure(self, atoms, aminoacids):
+    def calculateInitialStructure(self, atoms, aminoacids, nitro_atom, carboxy_atom):       
+    
+        #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
+        #Get the value of angles returned by psi4
+        angle_phi = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
+        angle_psi = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
+
+
+        #Rotate the inverse angles of psi4 to get angles to 0
+        self.tools.rotate('phi', angle_phi, nitro_atom) 
+        #self.tools.rotate('psi', -angle_psi, carboxy_atom)
+
+        print('Angle phi:\nbefore moved to 0:', angle_phi,'\nmovement:', angle_phi,'\nafter moved to 0:', self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi'), '\n')
+        #print('Angle psi:\nbefore moved to 0:', angle_psi,'\nmovement:', -angle_psi,'\nafter moved to 0:', self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi'), '\n')
+
+        #Apply the calculated rotations for the angles
 
         #TODO: random
         if self.initialization_option == 0:

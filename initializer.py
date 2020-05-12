@@ -4,6 +4,7 @@ import json
 import copy
 import minifold
 import math
+import random
 
 class Initializer():
 
@@ -42,56 +43,7 @@ class Initializer():
         carboxyAtom = self.findAtom(atoms, '', 'Carboxy', self.carboxyConnections)
 
         #Get initial structure of the protein to rotate from it
-        predictions = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
-
-        real_angle_phi = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
-        real_angle_psi = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
-
-        estimation_angle_phi = predictions[0][0]
-        estimation_angle_psi = predictions[0][1]
-
-        phi_precision = 0
-        psi_precision = 0
-
-        if estimation_angle_phi > real_angle_phi:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - estimation_angle_phi) + abs(-math.pi - real_angle_phi)
-            option_2 = abs(estimation_angle_phi - real_angle_phi)
-
-            minimum_option = min(option_1, option_2)
-            phi_precision = (1-(minimum_option / math.pi))*100
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - real_angle_phi) + abs(-math.pi - estimation_angle_phi)
-            option_2 = abs(estimation_angle_phi - real_angle_phi)
-
-            minimum_option = min(option_1, option_2)
-            phi_precision = (1-(minimum_option / math.pi))*100
-
-        if estimation_angle_psi > real_angle_psi:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - estimation_angle_psi) + abs(-math.pi - real_angle_psi)
-            option_2 = abs(estimation_angle_psi - real_angle_psi)
-
-            minimum_option = min(option_1, option_2)
-            psi_precision = (1-(minimum_option / math.pi))*100
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - real_angle_psi) + abs(-math.pi - estimation_angle_psi)
-            option_2 = abs(estimation_angle_psi - real_angle_psi)
-
-            minimum_option = min(option_1, option_2)
-            psi_precision = (1-(minimum_option / math.pi))*100
-
-        print('PHI precision: ', phi_precision, '%')
-        print('PSI precision: ', psi_precision, '%')
-
+        atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
 
         #Calculate all posible energies for the phi and psi angles
         energiesJson = self.calculateAllEnergiesOfRotations(atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation)
@@ -142,28 +94,40 @@ class Initializer():
     
         #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
         #Get the value of angles returned by psi4
-        angle_phi = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
-        angle_psi = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
+        phi_angle_psi4 = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
+        psi_angle_psi4 = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
 
 
-        #Rotate the inverse angles of psi4 to get angles to 0
-        self.tools.rotate('phi', -angle_phi, nitro_atom) 
-        self.tools.rotate('psi', -angle_psi, carboxy_atom)
+        #Rotate the inverse (*-1) angles of psi4 to get angles to 0
+        self.tools.rotate('phi', -phi_angle_psi4, nitro_atom) 
+        self.tools.rotate('psi', -psi_angle_psi4, carboxy_atom)
 
         #Apply the calculated rotations for the angles
+        phi_initial_rotation = 0
+        psi_initial_rotation = 0
 
         #TODO: random
         if self.initialization_option == 0:
-            print('Random angle inizialition')
+            phi_initial_rotation = random.uniform(-math.pi, math.pi)
+            psi_initial_rotation = random.uniform(-math.pi, math.pi)
 
         #minifold
         elif self.initialization_option == 1:
 
             mfold = minifold.Minifold()
             angles = mfold.predictAngles(aminoacids)
+            phi_initial_rotation = angles[0][0]
+            psi_initial_rotation = angles[0][1]
+
+        #Rotate the inverse angles of psi4 to get angles to 0
+        self.tools.rotate('phi', -phi_initial_rotation, nitro_atom) 
+        self.tools.rotate('psi', -psi_initial_rotation, carboxy_atom)
 
 
-        return angles
+        #Calculate the precision in constrast of the real value calculated by psi4
+        self.calculatePrecisionOfInitialPredictor(phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation)
+
+        return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
     def calculateAllEnergiesOfRotations(self, atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation):
@@ -246,3 +210,47 @@ class Initializer():
         #TODO: extract the path to a config file
         with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
             json.dump(energiesJson, outfile)
+
+    def calculatePrecisionOfInitialPredictor(self, phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation):
+
+        phi_precision = 0
+        psi_precision = 0
+
+        if phi_initial_rotation > phi_angle_psi4:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - phi_initial_rotation) + abs(-math.pi - phi_angle_psi4)
+            option_2 = abs(phi_initial_rotation - phi_angle_psi4)
+
+            minimum_option = min(option_1, option_2)
+            phi_precision = (1-(minimum_option / math.pi))*100
+
+        else:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - phi_angle_psi4) + abs(-math.pi - phi_initial_rotation)
+            option_2 = abs(phi_initial_rotation - phi_angle_psi4)
+
+            minimum_option = min(option_1, option_2)
+            phi_precision = (1-(minimum_option / math.pi))*100
+
+        if psi_initial_rotation > psi_angle_psi4:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - psi_initial_rotation) + abs(-math.pi - psi_angle_psi4)
+            option_2 = abs(psi_initial_rotation - psi_angle_psi4)
+
+            minimum_option = min(option_1, option_2)
+            psi_precision = (1-(minimum_option / math.pi))*100
+
+        else:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - psi_angle_psi4) + abs(-math.pi - psi_initial_rotation)
+            option_2 = abs(psi_initial_rotation - psi_angle_psi4)
+
+            minimum_option = min(option_1, option_2)
+            psi_precision = (1-(minimum_option / math.pi))*100
+
+        print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
+        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)

@@ -148,7 +148,7 @@ class Initializer():
 
         #Rotate the inverse angles of psi4 to get angles to 0
         self.tools.rotate('phi', -angle_phi, nitro_atom) 
-        self.tools.rotate('psi', -angle_psi)/(2*math.pi, carboxy_atom)
+        self.tools.rotate('psi', -angle_psi, carboxy_atom)
 
         #Apply the calculated rotations for the angles
 

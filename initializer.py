@@ -147,11 +147,8 @@ class Initializer():
 
 
         #Rotate the inverse angles of psi4 to get angles to 0
-        self.tools.rotate('phi', angle_phi, nitro_atom) 
-        #self.tools.rotate('psi', -angle_psi, carboxy_atom)
-
-        print('Angle phi:\nbefore moved to 0:', angle_phi,'\nmovement:', angle_phi,'\nafter moved to 0:', self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi'), '\n')
-        #print('Angle psi:\nbefore moved to 0:', angle_psi,'\nmovement:', -angle_psi,'\nafter moved to 0:', self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi'), '\n')
+        self.tools.rotate('phi', -angle_phi, nitro_atom) 
+        self.tools.rotate('psi', -angle_psi)/(2*math.pi, carboxy_atom)
 
         #Apply the calculated rotations for the angles
 
@@ -196,8 +193,8 @@ class Initializer():
                 copied_carboxyAtom = self.findAtom(copied_atoms, '', 'Carboxy', self.carboxyConnections)
 
                 #Always rotate from state (0,0)
-                self.tools.rotate('phi', x * anglePhi, copied_nitroAtom) 
-                self.tools.rotate('psi', y * anglePsi, copied_carboxyAtom)
+                self.tools.rotate('phi', x * 2*math.pi * anglePhi, copied_nitroAtom) 
+                self.tools.rotate('psi', y * 2*math.pi * anglePsi, copied_carboxyAtom)
                 
                 #Calculate the energy of the protein structure after the previous rotations
                 energy = self.calculateEnergyOfRotation(copied_atoms)

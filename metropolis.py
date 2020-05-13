@@ -10,7 +10,7 @@ class Metropolis():
 
     def execute_metropolis(self):
 
-        calculated_3d_structure = None
+        #Final structure calculated with metropolis. This variable will be returned to angle calculator
 
         # Random starting combination of angles
         anglePsi_old = np.random.choice(len(self.energies))
@@ -19,8 +19,8 @@ class Metropolis():
         for iteration in range(self.n_iterations):
 
             # First retrieve the present energy
-            E_old = self.energies[(anglePhi_old,anglePsi_old)]
-            
+            E_old = self.energies[anglePhi_old][anglePsi_old]
+
             # Propose a change
             change_angle = np.random.choice(('phi','psi'))
             change_plus_minus = np.random.choice((1,-1))
@@ -28,29 +28,21 @@ class Metropolis():
             # Calculate the new angles
             if change_angle == 'phi':
                 #Change just +1 or -1 step in the energies dictionary
-                anglePhi_new = anglePhi_old + change_plus_minus * 1
+                anglePhi_new = (anglePhi_old + change_plus_minus) % len(self.energies)
                 anglePsi_new = anglePsi_old
             elif change_angle == 'psi':
                 #Change just +1 or -1 step in the energies dictionary
                 anglePhi_new = anglePhi_old
-                anglePsi_new = anglePsi_new + change_plus_minus * 1
+                anglePsi_new = (anglePsi_old + change_plus_minus) % len(self.energies)
             
             # Calculate the new energy
-            if self.energies[(anglePhi_new,anglePsi_new)] != None:
-                E_new = self.energies[(anglePhi_new,anglePsi_new)]
-
-            else:
-
-                #Read the PSI4 output file and get the energy
-                E_new = self.energies()
-                self.energies[(anglePhi_new,anglePsi_new)] = E_new
-
+            E_new = self.energies[anglePhi_new][anglePsi_new]
             Delta_E = (E_new - E_old) * self.scaling_factor
 
             # Lets use a non_optimal simple schedule
             beta = iteration / self.n_iterations
             probability_threshold = np.exp(-beta*Delta_E)
-            random_number = np.random.random_sample
+            random_number = np.random.random_sample()
 
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
@@ -58,4 +50,4 @@ class Metropolis():
                 anglePhi_old = anglePhi_new
                 anglePsi_old = anglePsi_new
 
-        return calculated_3d_structure
+        return [anglePhi_old, anglePsi_old]

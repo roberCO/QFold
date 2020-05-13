@@ -106,7 +106,7 @@ class Initializer():
         phi_initial_rotation = 0
         psi_initial_rotation = 0
 
-        #TODO: random
+        #random between -π and π
         if self.initialization_option == 0:
             phi_initial_rotation = random.uniform(-math.pi, math.pi)
             psi_initial_rotation = random.uniform(-math.pi, math.pi)
@@ -125,7 +125,7 @@ class Initializer():
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
-        self.calculatePrecisionOfInitialPredictor(phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation)
+        self.tools.calculatePrecisionOfAngles(phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation)
 
         return atoms
 
@@ -142,6 +142,8 @@ class Initializer():
         energiesJson = {}
         energiesJson['protein'] = proteinName
         energiesJson['numberBitsRotation'] = numberBitsRotation
+        energiesJson['initialPhiAngle'] = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
+        energiesJson['initialPsiAngle'] = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
         energiesJson['energies'] = []
 
         #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
@@ -210,47 +212,3 @@ class Initializer():
         #TODO: extract the path to a config file
         with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
             json.dump(energiesJson, outfile)
-
-    def calculatePrecisionOfInitialPredictor(self, phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation):
-
-        phi_precision = 0
-        psi_precision = 0
-
-        if phi_initial_rotation > phi_angle_psi4:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_initial_rotation) + abs(-math.pi - phi_angle_psi4)
-            option_2 = abs(phi_initial_rotation - phi_angle_psi4)
-
-            minimum_option = min(option_1, option_2)
-            phi_precision = (1-(minimum_option / math.pi))*100
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_angle_psi4) + abs(-math.pi - phi_initial_rotation)
-            option_2 = abs(phi_initial_rotation - phi_angle_psi4)
-
-            minimum_option = min(option_1, option_2)
-            phi_precision = (1-(minimum_option / math.pi))*100
-
-        if psi_initial_rotation > psi_angle_psi4:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_initial_rotation) + abs(-math.pi - psi_angle_psi4)
-            option_2 = abs(psi_initial_rotation - psi_angle_psi4)
-
-            minimum_option = min(option_1, option_2)
-            psi_precision = (1-(minimum_option / math.pi))*100
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_angle_psi4) + abs(-math.pi - psi_initial_rotation)
-            option_2 = abs(psi_initial_rotation - psi_angle_psi4)
-
-            minimum_option = min(option_1, option_2)
-            psi_precision = (1-(minimum_option / math.pi))*100
-
-        print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
-        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)

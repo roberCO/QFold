@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import struct
 import copy
+import math
 
 class Utils():
     def get_dihedral(self, coords1, coords2, coords3, coords4):
@@ -263,3 +264,54 @@ class Utils():
         Z = (d - a * X - b * Y) / c
 
         return X, Y, Z
+
+    def decode_angle_from_index(self, numberBitsRotation, value_angle_psi4, index):
+
+        step = (2*math.pi)/(2**numberBitsRotation)
+        calculated_angle_value = value_angle_psi4 + index*step
+
+        if calculated_angle_value > math.pi:
+            calculated_angle_value -= 2*math.pi
+
+        return calculated_angle_value
+
+    def calculatePrecisionOfAngles(self, phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation):
+
+        phi_precision = 0
+        psi_precision = 0
+
+        option_1 = 0
+        option_2 = 0
+
+        if phi_initial_rotation > phi_angle_psi4:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - phi_initial_rotation) + abs(-math.pi - phi_angle_psi4)
+
+        else:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - phi_angle_psi4) + abs(-math.pi - phi_initial_rotation)
+
+        #option_2 is common for both previous cases
+        option_2 = abs(phi_initial_rotation - phi_angle_psi4)
+        
+        minimum_option = min(option_1, option_2)
+        phi_precision = (1-(minimum_option / (2*math.pi)))*100
+
+        if psi_initial_rotation > psi_angle_psi4:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - psi_initial_rotation) + abs(-math.pi - psi_angle_psi4)
+
+        else:
+
+            #Calculate the distance if the angles go to zero and starts again
+            option_1 = abs(math.pi - psi_angle_psi4) + abs(-math.pi - psi_initial_rotation)
+            
+        option_2 = abs(psi_initial_rotation - psi_angle_psi4)
+        minimum_option = min(option_1, option_2)
+        psi_precision = (1-(minimum_option / (2*math.pi)))*100
+
+        print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
+        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)

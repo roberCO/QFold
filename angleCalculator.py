@@ -14,8 +14,6 @@ class AngleCalculator():
 
     def calculate3DStructure(self, energyList):
 
-        calculated_3d_estructure = None
-
         #Quantum calculation option for 3D structure
         if self.option == 0: 
 
@@ -30,15 +28,16 @@ class AngleCalculator():
 
             self.qTools.inputListOracle(binaryInputOracle)
 
+            #return call quantum metropolis
+
         #Classical calculation option for 3D structure
         elif self.option == 1:
 
             n_iterations = 100000
             scaling_factor = 5000 
             classical_metropolis = metropolis.Metropolis(n_iterations, scaling_factor, energyList)
-            calculated_3d_estructure = classical_metropolis.execute_metropolis()
-
-        return calculated_3d_estructure
+            
+            return classical_metropolis.execute_metropolis()
 
     def createTruthTableList(self, energyList):
 

@@ -2,6 +2,7 @@ import sys
 import initializer
 import angleCalculator
 import psiFour
+import utils
 
 if(len(sys.argv) != 3):
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
@@ -11,7 +12,7 @@ if(len(sys.argv) != 3):
 #HARDCODED
 aminoacids = 'GG'
 
-proteinName = sys.argv[1]
+proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])
 rotationSteps = pow(2, int(numberBitsRotation))
 
@@ -21,6 +22,7 @@ scaling_factor = 80 # Modify this parameter to make it reasonable --------
 angleInitializer = initializer.Initializer()
 angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta, 1)
 psi = psiFour.PsiFour()
+tools = utils.Utils()
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
@@ -34,7 +36,13 @@ except IOError:
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)] 
-energyList = psi.readEnergyJson(proteinName, numberBitsRotation)
+[energyList, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
-angleCalculator.calculate3DStructure(energyList)
+[phi_index, psi_index] = angleCalculator.calculate3DStructure(energyList)
+
+#From phi/psi index get the real angles using the number of bits per rotation
+print('phi index:', phi_index, 'psi index:', psi_index)
+calculated_phi_value = tools.decode_angle_from_index(numberBitsRotation, phi_angle_psi4, phi_index)
+calculated_psi_value = tools.decode_angle_from_index(numberBitsRotation, psi_angle_psi4, psi_index)
+
+tools.calculatePrecisionOfAngles(phi_angle_psi4, psi_angle_psi4, calculated_phi_value, calculated_psi_value)

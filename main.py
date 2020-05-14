@@ -20,7 +20,7 @@ rotationSteps = pow(2, int(numberBitsRotation))
 beta = 1
 scaling_factor = 80 # Modify this parameter to make it reasonable --------
 angleInitializer = initializer.Initializer()
-angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta, 1)
+angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta, 0)
 psi = psiFour.PsiFour()
 tools = utils.Utils()
 

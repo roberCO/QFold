@@ -23,7 +23,7 @@ class QuantumUtils():
 
     def inputListOracle(self, inputList):
 
-        truthTableOracle = oracle.TruthTableOracle(inputList)
+        return oracle.TruthTableOracle(inputList)
 
     def sortAngleMovement(self, value):
 

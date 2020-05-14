@@ -1,6 +1,7 @@
 import quantumUtils
 import math
 import metropolis
+import quantumMetropolis
 
 class AngleCalculator():
 
@@ -26,9 +27,13 @@ class AngleCalculator():
             
             binaryInputOracle = self.qTools.constructBitMapFromList(energyValues)
 
-            self.qTools.inputListOracle(binaryInputOracle)
+            input_oracle = self.qTools.inputListOracle(binaryInputOracle)
 
             #return call quantum metropolis
+            n_precision_bits = 3
+            n_ancilla_bits = 4
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_precision_bits, n_ancilla_bits, input_oracle)
+            qMetropolis.execute_quantum_metropolis()
 
         #Classical calculation option for 3D structure
         elif self.option == 1:

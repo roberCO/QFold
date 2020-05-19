@@ -2,7 +2,7 @@ from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 
 import math
 
-class beta_precalc_TruthTableOracle(TruthTableOracle):
+class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
     def __init__(self, energies_dictionary, beta, out_bits, optimization=True, mct_mode='noancilla'):
         self.beta = beta
@@ -44,7 +44,7 @@ class beta_precalc_TruthTableOracle(TruthTableOracle):
             # Convert it into an integer and a string
             #int_angle = format(int(angle*2**self.out_bits), 'b')
             #str_angle = str(int_angle) 
-            str_angle2 = int_angle_func(angle,self.out_bits)
+            str_angle2 = self.int_angle_func(angle,self.out_bits)
             # Convert it to binary
             #int_angle = format(int(angle*2**out_bits), 'b')
             '''
@@ -72,3 +72,17 @@ class beta_precalc_TruthTableOracle(TruthTableOracle):
         #print('angles',angles)
         #print('bitmap',new_bitmap)
         self.bitmap = new_bitmap
+
+    #Method to convert angles int to binary
+    def int_angle_func(self, angle,out_bits):
+        out_str = ''
+        a = angle
+        for bits in range(1,out_bits+1):
+
+            if a + 1e-10 > 1/(2**(bits)):
+                out_str += '1'
+                a -= 1/(2**bits)
+            else:
+                out_str += '0'
+        
+        return out_str

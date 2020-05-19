@@ -7,11 +7,13 @@ import qiskit.quantum_info as qi
 import qiskit
 from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit, Clbit, Gate, Parameter, InstructionSet
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
+from qiskit import BasicAer
 import numpy as np
 import math
 from copy import deepcopy
 
 import logging
+import beta_precalc_TruthTableOracle
 
 from sympy.combinatorics.graycode import GrayCode
 from math import pi
@@ -201,20 +203,6 @@ class QuantumMetropolis():
         
         circuit.x(qubit_string)
 
-    #Method to convert angles int to binary
-    def int_angle_func(self, angle,out_bits):
-        out_str = ''
-        a = angle
-        for bits in range(1,out_bits+1):
-
-            if a + 1e-10 > 1/(2**(bits)):
-                out_str += '1'
-                a -= 1/(2**bits)
-            else:
-                out_str += '0'
-        
-        return out_str
-        
     def coin_flip(self, circuit,coin,ancilla):
         '''
         Prepares the coin with the probability encoded in the ancilla.
@@ -330,16 +318,25 @@ class QuantumMetropolis():
         # Let us create the energy dictionary        
         energies_dictionary0 = {}
 
-        for item in self.input_oracle:
+        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
+        #Create dictionary with binary values for phi and psi as key and energies as values 
+        for index_phi in range(len(self.input_oracle)):
+            for index_psi in range(len(self.input_oracle[index_phi])):
+
+                #Phi to binary
+                phi = format(index_phi,'b')
+                phi = '0'*(self.n_precision_bits - len(phi)) + phi
+
+                #Psi to binary
+                psi = format(index_psi,'b')
+                psi = '0'*(self.n_precision_bits - len(psi)) + psi
+
+                #Insert energy for these phi and psi
+                energy = self.input_oracle[index_phi][index_psi]
+                energies_dictionary0[phi + psi] = energy
             
-            phi = format(int(item['phi']),'b')
-            phi = '0'*(self.n_precision_bits - len(phi)) + phi
-            psi = format(int(item['psi']),'b')
-            psi = '0'*(self.n_precision_bits - len(psi)) + psi
-            energy = item['energy']
-            energies_dictionary0[phi + psi] = energy
-            
-            
+        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
+        #Calculate Δ of rotations (difference between energies after rotate one of the angles)
         energies_dictionary = {}
         for phi, psi in product(range(2**self.n_precision_bits),range(2**self.n_precision_bits)):    
             int_phi = format(phi,'b')
@@ -369,8 +366,6 @@ class QuantumMetropolis():
                     energies_dictionary[int_phi + int_psi + str(phipsi) + str(plusminus)] = new_E - old_E
                     
 
-        #print(energies_dictionary)
-
         # State definition. All angles range from 0 to 2pi
         g_angle_phi = QuantumRegister(self.n_precision_bits, name = 'angle_phi')
         g_angle_psi = QuantumRegister(self.n_precision_bits, name = 'angle_psi') 
@@ -388,46 +383,31 @@ class QuantumMetropolis():
         # Circuit
         qc = QuantumCircuit(g_angle_phi,g_angle_psi,g_move_id,g_move_value,g_coin,g_ancilla)
 
+        #HARDCODED
         # Define number of steps
         L=2
         beta_max = 2
-        # Read energies_dictionary
 
-        # Metropolis algorithm
-        lista = []
+        # Metropolis algorithm (create one input oracle for each beta)
+        list_gates = []
         for i in range(L):
             beta = (1+i)/L*beta_max
             
-            oracle = beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
+            #It creates one different oracle for each beta
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
             
             W_gate = self.W_func(oracle)
             
-            lista.append(W_gate) # We deepcopy W_gate to not interfere with other calls
-            #lista[i].params[0]= beta
+            list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
+            #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
-        print('Check whether the redefinition affects previous',lista[0] == lista[1])
+        print('Check whether the redefinition affects previous',list_gates[0] == list_gates[1])
 
-        # If we want to measure repeatedly
-        # Add measurements
-        #qc.barrier(range(32))
-
-
-        phi = ClassicalRegister(g_angle_phi.size)
-        psi = ClassicalRegister(g_angle_psi.size)
-        qc += QuantumCircuit(phi,psi)
-
-        # map the quantum measurement to the classical bits
-        qc.measure(g_angle_phi,phi)
-        qc.measure(g_angle_psi,psi)
-        t2_start = process_time()
-        print('results')
         # Execute the circuit
         backend = BasicAer.get_backend('qasm_simulator')
         job = execute(qc, backend, shots=1024) # Start with that and move to 4096
         job.result().get_counts(qc)
-        t2_stop = process_time()
-        print("Elapsed time:", t2_stop-t2_start)
 
         # If instead we want to return the statevector
         state = qi.Statevector.from_instruction(qc)
@@ -435,15 +415,13 @@ class QuantumMetropolis():
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
 
-        print(probabilities)
-
-        relevant_probabilities = {}
+        relevant_probabilities = []
+        probs = []
         for i in range(2**(self.n_precision_bits *2)):
-            integer = str(format(int(i), 'b'))
-            integer = '0'* (self.n_precision_bits *2 -len(integer)) + integer
-            integer = integer[:self.n_precision_bits] + ' ' + integer[self.n_precision_bits:] #Divide it in two parts corresponding to phi and psi
-            probability = probabilities[i]
-            if probability > 1e-3:
-                relevant_probabilities[integer]= probability
 
-        print(relevant_probabilities)
+            probs.append(probabilities[i])
+            if (i+1) % 2**self.n_precision_bits == 0:
+                relevant_probabilities.append(probs)
+                probs = []
+
+        return relevant_probabilities

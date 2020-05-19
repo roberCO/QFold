@@ -20,7 +20,7 @@ rotationSteps = pow(2, int(numberBitsRotation))
 beta = 1
 scaling_factor = 80 # Modify this parameter to make it reasonable --------
 angleInitializer = initializer.Initializer()
-angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor, beta, 0)
+angleCalculator = angleCalculator.AngleCalculator(rotationSteps, scaling_factor)
 psi = psiFour.PsiFour()
 tools = utils.Utils()
 
@@ -38,11 +38,8 @@ except IOError:
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [energyList, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
-[phi_index, psi_index] = angleCalculator.calculate3DStructure(energyList)
+quantum_probabilities_matrix = angleCalculator.calculate3DStructure(energyList, 0)
+classical_probabilities_matrix = angleCalculator.calculate3DStructure(energyList, 1)
 
-#From phi/psi index get the real angles using the number of bits per rotation
-print('phi index:', phi_index, 'psi index:', psi_index)
-calculated_phi_value = tools.decode_angle_from_index(numberBitsRotation, phi_angle_psi4, phi_index)
-calculated_psi_value = tools.decode_angle_from_index(numberBitsRotation, psi_angle_psi4, psi_index)
-
-tools.calculatePrecisionOfAngles(phi_angle_psi4, psi_angle_psi4, calculated_phi_value, calculated_psi_value)
+print('Quantum Metropolis has a', quantum_probabilities_matrix[0][0]*100,'% of getting the correct structure')
+print('Classical Metropolis has a', classical_probabilities_matrix[0][0]*100,'% of getting the correct structure')

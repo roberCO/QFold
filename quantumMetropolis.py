@@ -27,10 +27,12 @@ from time import process_time
 
 class QuantumMetropolis():
 
-    def __init__(self, n_precision_bits, n_ancilla_bits, input_oracle):
+    def __init__(self, n_repetitions, n_precision_bits, n_ancilla_bits, input_oracle):
 
         #Global variables
 
+        # Number steps
+        self.n_repetitions = n_repetitions
         # Dipeptide: Indicate number of precision bits
         self.n_precision_bits = n_precision_bits
         #Oracle ancilla bits
@@ -385,12 +387,16 @@ class QuantumMetropolis():
 
         #HARDCODED
         # Define number of steps
-        L=2
+        L = self.n_repetitions
         beta_max = 2
 
         # Metropolis algorithm (create one input oracle for each beta)
         list_gates = []
         for i in range(L):
+
+            if i % 100 == 0:
+                print('step:',i)
+            
             beta = (1+i)/L*beta_max
             
             #It creates one different oracle for each beta
@@ -402,19 +408,15 @@ class QuantumMetropolis():
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
-        print('Check whether the redefinition affects previous',list_gates[0] == list_gates[1])
-
-        # Execute the circuit
-        backend = BasicAer.get_backend('qasm_simulator')
-        job = execute(qc, backend, shots=1024) # Start with that and move to 4096
-        job.result().get_counts(qc)
-
+        print('Calculating statevector')
         # If instead we want to return the statevector
         state = qi.Statevector.from_instruction(qc)
 
+        print('Generating probabilities')
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
 
+        print('Relevant probabilities')
         relevant_probabilities = []
         probs = []
         for i in range(2**(self.n_precision_bits *2)):

@@ -5,27 +5,29 @@ import quantumMetropolis
 
 class AngleCalculator():
 
-    def __init__(self, rotationSteps, scaling_factor):
+    def __init__(self, bits_rotation, n_ancilla_bits, scaling_factor):
 
-        self.rotationSteps = rotationSteps
+        self.bits_rotation = bits_rotation
+        self.rotationSteps = 2**bits_rotation
+        self.n_ancilla_bits = n_ancilla_bits
         self.scaling_factor = scaling_factor
         self.qTools = quantumUtils.QuantumUtils()
 
-    def calculate3DStructure(self, energyList, option=0):
+    def calculate3DStructure(self, energyList, n_repetitions, option=0):
 
         #Quantum calculation option for 3D structure
         if option == 0: 
 
-            #HARDCODED
-            n_precision_bits = 2
-            n_ancilla_bits = 4
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_precision_bits, n_ancilla_bits, energyList)
+            print('<i> Quantum Metropolis calculating p_t for', n_repetitions,'steps')
+
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, energyList)
             return qMetropolis.execute_quantum_metropolis()
 
         #Classical calculation option for 3D structure
         elif option == 1:
 
-            n_repetitions = 100
+            print('<i> Classical Metropolis calculating p_t for', n_repetitions,'steps')
+
             probabilities_matrix = [[0]*self.rotationSteps for x in range(self.rotationSteps)]
             
             for _ in range(n_repetitions):

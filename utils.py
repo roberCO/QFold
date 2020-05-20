@@ -315,3 +315,7 @@ class Utils():
 
         print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
         print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)
+
+    def calculateTTS(self, precision_solution, t, p_t):
+
+        return t * (math.log(1-precision_solution)/(math.log(1-p_t)))

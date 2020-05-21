@@ -53,7 +53,7 @@ class PsiFour():
         rotationHandle.write('}\n\n')
         rotationHandle.write("set basis cc-pvdz\n")
         rotationHandle.write("set reference rhf\n")
-        rotationHandle.write("energy('scf')\n")
+        rotationHandle.write("energy('mp2')\n")
 
         rotationHandle.close()
 

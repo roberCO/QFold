@@ -393,9 +393,6 @@ class QuantumMetropolis():
         # Metropolis algorithm (create one input oracle for each beta)
         list_gates = []
         for i in range(L):
-
-            if i % 100 == 0:
-                print('step:',i)
             
             beta = (1+i)/L*beta_max
             
@@ -408,15 +405,12 @@ class QuantumMetropolis():
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
-        print('Calculating statevector')
         # If instead we want to return the statevector
         state = qi.Statevector.from_instruction(qc)
 
-        print('Generating probabilities')
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
 
-        print('Relevant probabilities')
         relevant_probabilities = []
         probs = []
         for i in range(2**(self.n_precision_bits *2)):

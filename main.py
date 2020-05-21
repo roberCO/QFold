@@ -20,6 +20,7 @@ rotationSteps = pow(2, int(numberBitsRotation))
 scaling_factor = 80 # Modify this parameter to make it reasonable --------
 precision_solution = 0.9 #Calculate the solution for this precision value
 n_ancilla_bits = 4 # Number of ancilla bits for the quantum metropolis
+t = 100 #Number steps
 
 angleInitializer = initializer.Initializer()
 angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, n_ancilla_bits, scaling_factor)
@@ -40,9 +41,9 @@ except IOError:
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [energyList, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
-t = 1000 #Number steps
 quantum_p_t = angleCalculator.calculate3DStructure(energyList, t, 0)[0][0]
-classical_p_t = angleCalculator.calculate3DStructure(energyList, t, 1)[0][0]
+classical_matrix = angleCalculator.calculate3DStructure(energyList, t, 1)
+classical_p_t = classical_matrix[0][0]
 
 quantum_TTS = tools.calculateTTS(precision_solution, t, quantum_p_t)
 classical_TTS = tools.calculateTTS(precision_solution, t, classical_p_t)

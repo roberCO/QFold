@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Metropolis():
 
@@ -37,7 +38,7 @@ class Metropolis():
             
             # Calculate the new energy
             E_new = self.energies[anglePhi_new][anglePsi_new]
-            Delta_E = (E_new - E_old) * self.scaling_factor
+            Delta_E = np.log10((E_old - E_new) * self.scaling_factor)
 
             # Lets use a non_optimal simple schedule
             beta = iteration / self.n_iterations

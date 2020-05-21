@@ -33,7 +33,7 @@ class AngleCalculator():
             for _ in range(n_repetitions):
 
                 n_iterations = 10000
-                scaling_factor = 5000 
+                scaling_factor = 10000
                 classical_metropolis = metropolis.Metropolis(n_iterations, scaling_factor, energyList)
                 
                 [phi, psi] = classical_metropolis.execute_metropolis()

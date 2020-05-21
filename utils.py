@@ -318,4 +318,4 @@ class Utils():
 
     def calculateTTS(self, precision_solution, t, p_t):
 
-        return t * (math.log(1-precision_solution)/(math.log(1-p_t)))
+        return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))

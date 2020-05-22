@@ -16,21 +16,30 @@ proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])
 rotationSteps = pow(2, int(numberBitsRotation))
 
-#Global variable
-scaling_factor = 80 # Modify this parameter to make it reasonable --------
-precision_solution = 0.9 #Calculate the solution for this precision value
-n_ancilla_bits = 4 # Number of ancilla bits for the quantum metropolis
-t = 100 #Number steps
+#Read config file with the QFold configuration variables
+config_path = './config/config.json'
 
-angleInitializer = initializer.Initializer()
-angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, n_ancilla_bits, scaling_factor)
-psi = psiFour.PsiFour()
-tools = utils.Utils()
+tools = utils.Utils(config_path)
+config_variables = tools.get_config_variables()
+angleInitializer = initializer.Initializer(
+    config_variables['psi4_path'],
+    config_variables['input_filename_energy_psi4'], 
+    config_variables['output_filename_energy_psi4'],
+    config_variables['energy_method'],
+    config_variables['precalculated_energies_path'], 
+    config_variables['model_path'], 
+    config_variables['window_size'], 
+    config_variables['maximum_aminoacid_length'],
+    config_variables['initialization_option']
+    )
+
+angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, config_variables['ancilla_bits'], config_variables['scaling_factor'], config_variables['number_iterations'])
+psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_filename_energy_psi4'], config_variables['output_filename_energy_psi4'], config_variables['precalculated_energies_path'], config_variables['energy_method'])
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
-    f = open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json')
+    f = open(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies')
@@ -41,12 +50,12 @@ except IOError:
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [energyList, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
-quantum_p_t = angleCalculator.calculate3DStructure(energyList, t, 0)[0][0]
-classical_matrix = angleCalculator.calculate3DStructure(energyList, t, 1)
+quantum_p_t = angleCalculator.calculate3DStructure(energyList, config_variables['steps'], config_variables['beta_max'], 0)[0][0]
+classical_matrix = angleCalculator.calculate3DStructure(energyList, config_variables['steps'], config_variables['beta_max'], 1)
 classical_p_t = classical_matrix[0][0]
 
-quantum_TTS = tools.calculateTTS(precision_solution, t, quantum_p_t)
-classical_TTS = tools.calculateTTS(precision_solution, t, classical_p_t)
+quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], config_variables['steps'], quantum_p_t)
+classical_TTS = tools.calculateTTS(config_variables['precision_solution'], config_variables['steps'], classical_p_t)
 
 print('Quantum Metropolis => TTS:', quantum_TTS)
 print('Classical Metropolis => TTS:', classical_TTS)

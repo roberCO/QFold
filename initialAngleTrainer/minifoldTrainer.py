@@ -28,44 +28,30 @@ from resnet_1d_angles import resnet_v2, custom_mse_mae
 
 class MinifoldTrainer():
     
-    def __init__(self, inputPath):
+    def __init__(self, inputPath, model_path, max_aa_length, window_size):
 
         self.inputPath = inputPath
-
-        #HARDCODED paths
-        self.extracted_aminoacids_path = './data/full_under_200.txt'
-        self.full_extracted_aminoacids_path = './data/full_angles_under_200.txt'
-        self.output_path = './data/outputs.txt'
-        self.input_AA_path = './data/input_aa.txt'
-        self.input_PSSM_path = './data/input_pssm.txt'
-
-        #HARDCODED parameters
-        self.maximum_aminoacid_length = 200
-        self.window_size = 17
+        self.model_path = model_path
+        self.max_aa_length = max_aa_length
+        self.window_size = window_size
 
         if not os.path.isfile(inputPath):
             raise IOError('<!> ERROR: %s does not exist!' %inputPath)
-
-        #Create the path to store the data
-        if not os.path.exists('./data/'):
-            os.mkdir('./data/')
 
         #Global variables used to preprocess data
         self.names = []
         self.seqs = []
         self.coords = []
-        self.pssms = []
         self.phis = []
         self.psis = []
         self.input_aa = []
-        self.input_pssm = []
         self.outputs = []
     
     def train(self):
 
         #Get protein under defined maximum aminoacid length
-        self.getProteinsFromRaw(self.maximum_aminoacid_length)
-        print('<i>', len(self.names),'proteins with less than', self.maximum_aminoacid_length, 'aminoacids from raw data extracted')
+        self.getProteinsFromRaw(self.max_aa_length)
+        print('<i>', len(self.names),'proteins with less than', self.max_aa_length, 'aminoacids from raw data extracted')
 
         #Get angles froom coords
         self.getAnglesFromCoords()
@@ -87,7 +73,6 @@ class MinifoldTrainer():
             name = ''
             seq = []
             coord = []
-            pssm = []
 
             for index in range(0, len(lines)):
                 
@@ -104,9 +89,6 @@ class MinifoldTrainer():
                 elif lines[index] == "[TERTIARY]\n":
                     coord = self.coords_split(lines[index+1:index+4], "\t")
 
-                elif lines[index] == "[EVOLUTIONARY]\n":
-                    pssm = self.coords_split(lines[index+1:index+22], "\t")
-
                 elif lines[index] == "\n":
 
                     #Save all attributes of the protein only if it shorter than the maximum aminoacids length
@@ -114,7 +96,6 @@ class MinifoldTrainer():
                         self.names.append(name)
                         self.seqs.append(seq)
                         self.coords.append(coord)
-                        self.pssms.append(pssm)
 
     def getAnglesFromCoords(self):
 
@@ -197,25 +178,17 @@ class MinifoldTrainer():
                 for j in range(self.window_size,len(self.seqs[i])-self.window_size):
                 # Padd sequence
                     self.input_aa.append(self.onehotter_aa(self.seqs[i], j))
-                    self.input_pssm.append(self.pssm_cropper(self.pssms[i], j))
                     self.outputs.append([self.phis[i][j], self.psis[i][j]])
                     # break
 
         self.input_aa = np.array(self.input_aa).reshape(len(self.input_aa), self.window_size*2, 22)
-        self.input_pssm = np.array(self.input_pssm).reshape(len(self.input_pssm), self.window_size*2, 21)
 
     def generateModel(self):
 
         ## LOAD DATASET ##
         
         # Get inputs data
-        #aas = self.get_ins()
-        #pssms = self.get_ins(pssm=True)
         aas = self.input_aa
-        pssms = self.input_pssm
-        self.outputs = np.array(self.outputs)
-
-
         self.outputs = np.array(self.outputs)
 
         out = []
@@ -227,7 +200,7 @@ class MinifoldTrainer():
 
 
         # Concatenate input features
-        inputs = np.concatenate((aas[:, :, :20], pssms[:, :, :20], aas[:, :, 20:]), axis=2) 
+        inputs = np.concatenate((aas[:, :, :20], aas[:, :, 20:]), axis=2) 
         np.set_printoptions(threshold=np.inf)
 
         # Separate data between training and testing
@@ -240,11 +213,13 @@ class MinifoldTrainer():
         # Using AMSGrad optimizer for speed 
         adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.0, amsgrad=True)
         # Create model
-        model = resnet_v2(input_shape=(self.window_size*2,42), depth=20, num_classes=4, conv_first=True)
+        model = resnet_v2(input_shape=(self.window_size*2,22), depth=20, num_classes=4, conv_first=True)
         model.compile(optimizer=adam, loss=custom_mse_mae, metrics=["mean_absolute_error", "mean_squared_error"])
 
-        # Resnet (pre-act structure) with 34*42 columns as inputs - leaving a subset for validation
+        # Resnet (pre-act structure) with windows_size*22 columns as inputs - leaving a subset for validation
         model.fit(x_train, y_train, epochs=5, batch_size=16, verbose=1, shuffle=True, validation_data=(x_test, y_test))
+
+        model.save('../'+self.model_path+'protein_under_'+str(self.max_aa_length)+'.h5')
 
 
     # Helper function to save data to a .txt file
@@ -299,14 +274,6 @@ class MinifoldTrainer():
         
         return np.array(one_hot)
 
-    #Crops the PSSM matrix
-    def pssm_cropper(self, pssm, pos):
-        pssm_out = []
-        for row in pssm:
-            pssm_out.append(row[pos-self.window_size:pos+self.window_size])
-        # PSSM is Lx21 - solution: transpose
-        return np.array(pssm_out)
-
     # Could use "Using LinearAlgebra + built-in norm()" but gotta learn Julia
     def norm(self, vector):
         return math.sqrt(sum([v*v for v in vector]))
@@ -358,29 +325,3 @@ class MinifoldTrainer():
         for v in vec:
             line = line+str(v)+" "
         return line
-
-    def get_ins(self, path = 'default', pssm=None):
-
-        if (path == 'default'):
-            path = self.input_AA_path
-
-        """ Gets inputs from both AminoAcids (input_aa) and PSSM (input_pssm)"""
-        # handles both files
-        if pssm: path = self.input_PSSM_path
-        # Open file and read text
-        with open(path, "r") as f:
-            lines = f.read().split('\n')
-        # Extract numeric data from text
-        pre_ins = []
-        for i,line in enumerate(lines):
-            # Read each protein separately
-            if line == "NEW":
-                prot = []
-                raw = lines[i+1:i+(self.window_size*2+1)]
-                # Read each line as a vector + ensemble one-hot vectors as a matrix
-                for r in raw:
-                    prot.append(np.array([float(x) for x in r.split(" ") if x != ""]))
-                # Add prot to dataset
-                pre_ins.append(np.array(prot))  
-        
-        return np.array(pre_ins)

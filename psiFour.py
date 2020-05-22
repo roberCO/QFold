@@ -6,24 +6,29 @@ import json
 
 class PsiFour():
 
+    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method):
+
+        self.psi4_path = psi4_path
+        self.input_filename = input_filename
+        self.output_filename = output_filename
+        self.precalculated_energies_path = precalculated_energies_path
+        self.energy_method = energy_method
+
     def getAtomsFromProtein(self, protein):
-        
-        fileName = 'inputFile'
-        outputFileName = 'outputFile'
 
         #create input file
-        self.createInputFile(protein, fileName)
+        self.createInputFile(protein)
 
         #execute psi4
-        self.executePsiCommand(fileName, outputFileName)
+        self.executePsiCommand()
 
         #read/parse outputfile
         return self.parsePsiOutputFile(protein)
 
 
-    def createInputFile(self, protein, filename):
+    def createInputFile(self, protein):
 
-        inputFile = open(filename+'.dat', 'w')
+        inputFile = open(self.input_filename+'.dat', 'w')
 
         inputFile.write('molecule ' + protein + '{\n')
         inputFile.write(' pubchem: '+ protein+'\n')
@@ -35,15 +40,15 @@ class PsiFour():
 
         inputFile.close()
 
-    def executePsiCommand(self, inputFileName, outputFileName):
+    def executePsiCommand(self):
 
-        #HARDCODED: execute psi4 by command line (it generates the file output.dat with the information)
-        subprocess.run(["/home/rco/psi4conda/bin/psi4", inputFileName+".dat", outputFileName+".dat"], stdout=subprocess.DEVNULL)
+        # execute psi4 by command line (it generates the file output.dat with the information)
+        subprocess.run([self.psi4_path, self.input_filename+".dat", self.output_filename+".dat"], stdout=subprocess.DEVNULL)
 
-    def writeFileEnergies(self, atoms, inputFilenameEnergyPSI4):
+    def writeFileEnergies(self, atoms):
 
         #Write file with all atoms rotated
-        rotationHandle = open(inputFilenameEnergyPSI4+'.dat', 'w')
+        rotationHandle = open(self.input_filename+'.dat', 'w')
 
         rotationHandle.write('molecule glycylglycine{\n')
         #write input.dat with all rotated atoms
@@ -53,14 +58,14 @@ class PsiFour():
         rotationHandle.write('}\n\n')
         rotationHandle.write("set basis cc-pvdz\n")
         rotationHandle.write("set reference rhf\n")
-        rotationHandle.write("energy('mp2')\n")
+        rotationHandle.write("energy('" + self.energy_method + "')\n")
 
         rotationHandle.close()
 
-    def readEnergyFromFile(self, outputFilenameEnergyPSI4):
+    def readEnergyFromFile(self):
 
         energy = 0
-        with open(outputFilenameEnergyPSI4+'.dat', 'r') as fileHandle:
+        with open(self.output_filename+'.dat', 'r') as fileHandle:
             for line in fileHandle:
 
                 #If the PSI4 algorithm converges
@@ -102,7 +107,7 @@ class PsiFour():
 
         rotationSteps = pow(2, int(numberBitsRotation))
 
-        with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
+        with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
             data = json.load(json_file)
 
             phi_angle_psi4 = data['initialPhiAngle']

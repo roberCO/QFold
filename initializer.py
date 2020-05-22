@@ -5,15 +5,22 @@ import copy
 import minifold
 import math
 import random
+import sys
 
 class Initializer():
 
-    def __init__(self):
+    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option):
 
         ## PARAMETERS ##
 
+        self.model_path = model_path
+        self.window_size = window_size
+        self.max_aa_length = max_aa_length
+        self.initialization_option = initialization_option
+        self.precalculated_energies_path = precalculated_energies_path
+
         #Declare the instances to use the functions of these classes
-        self.psi = psiFour.PsiFour()
+        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method)
         self.tools = utils.Utils()
 
         #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that
@@ -21,16 +28,8 @@ class Initializer():
         self.nitroConnections = [['C', 2]]
         self.carboxyConnections = [['C', 1], ['O', 2]]
 
-        #HARDCODED. The name of files would be in a config file
-        #TODO: Extract these names to a config file
-        self.inputFilenameEnergyPSI4 = 'inputRotations'
-        self.outputFilenameEnergyPSI4 = 'outputRotations'
-
         #It contains the energy of each angle combination
         self.anglesEnergy = []
-
-        #Initialization options (0: random, 1: minifold)
-        self.initialization_option = 1
 
     #Calculate all posible energies for the protein and the number of rotations given
     def calculateEnergies(self, proteinName, numberBitsRotation, aminoacids):
@@ -107,14 +106,14 @@ class Initializer():
         psi_initial_rotation = 0
 
         #random between -π and π
-        if self.initialization_option == 0:
+        if self.initialization_option == 'random':
             phi_initial_rotation = random.uniform(-math.pi, math.pi)
             psi_initial_rotation = random.uniform(-math.pi, math.pi)
 
         #minifold
-        elif self.initialization_option == 1:
+        elif self.initialization_option == 'minifold':
 
-            mfold = minifold.Minifold()
+            mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
             phi_initial_rotation = angles[0][0]
             psi_initial_rotation = angles[0][1]
@@ -126,7 +125,6 @@ class Initializer():
 
         #Calculate the precision in constrast of the real value calculated by psi4
         self.tools.calculatePrecisionOfAngles(phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation)
-
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
@@ -195,20 +193,19 @@ class Initializer():
     def calculateEnergyOfRotation(self, copied_atoms):
 
         #Write the file with the actual rotations
-        self.psi.writeFileEnergies(copied_atoms, self.inputFilenameEnergyPSI4)
+        self.psi.writeFileEnergies(copied_atoms)
 
         #Calculate the energy of the actual rotations using PSI4
-        self.psi.executePsiCommand(self.inputFilenameEnergyPSI4, self.outputFilenameEnergyPSI4)
+        self.psi.executePsiCommand()
 
         #Read the PSI4 output file and get the energy
-        energy = self.psi.readEnergyFromFile(self.outputFilenameEnergyPSI4)
+        energy = self.psi.readEnergyFromFile()
 
         return energy
 
     def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation):
 
         #Create json with calculated energies
-        #HARDCODED path
         #TODO: extract the path to a config file
-        with open('./precalculated_energies/energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
+        with open(self.precalculated_energies_path+'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
             json.dump(energiesJson, outfile)

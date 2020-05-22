@@ -5,11 +5,11 @@ from keras.losses import mean_squared_error, mean_absolute_error
 
 class Minifold:
 
-    def __init__(self):
+    def __init__(self, model_path, window_size, max_aa_length):
 
-        self.model_path = './models/protein_under_200.h5'
+        self.model_path = model_path+'protein_under_'+str(max_aa_length)+'.h5'
+        self.window_size = window_size
 
-        #HARDCODED to Minifold
         if not os.path.isfile(self.model_path):
 
             raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: initialAngleTrainer/initialAngleTrainer.py')
@@ -60,18 +60,18 @@ class Minifold:
 
         row_input_aas = []
         protein_sequence_index = 0
-        for index_window in range(0, 34):
+        for index_window in range(0, self.window_size*2):
 
             column_window = []
 
             #Add the first aa
-            if index_window == 17 or index_window == 18:
+            if index_window == self.window_size/2 or index_window == (self.window_size/2)+1:
 
                 #This index stores the position in the key that the aminoacid was found
                 key_index = 0
 
-                #in each window is necessary to create an array with 42 positions
-                for index_onehotter_vector in range(0, 42):
+                #in each window is necessary to create an array with 22 positions
+                for index_onehotter_vector in range(0, 22):
             
                     #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
                     if index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] == key[index_onehotter_vector]:
@@ -90,10 +90,6 @@ class Minifold:
                     #Surface
                     elif index_onehotter_vector == 21:
                         column_window.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
-                    
-                    #PSSMs that are always with 0 values
-                    elif index_onehotter_vector > 21:
-                        column_window.append(0)
 
                 #The protein was found, so the point is to next protein in the sequence
                 protein_sequence_index += 1 
@@ -101,7 +97,7 @@ class Minifold:
             #Out of the columns 17 and 18, it is necessary to insert 0 padding
             else: 
 
-                for _ in range(0, 42):
+                for _ in range(0, 22):
                     column_window.append(0)
 
             row_input_aas.append(column_window)

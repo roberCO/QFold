@@ -27,7 +27,7 @@ from time import process_time
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, n_precision_bits, n_ancilla_bits, input_oracle):
+    def __init__(self, n_repetitions, n_precision_bits, n_ancilla_bits, beta_max, input_oracle):
 
         #Global variables
 
@@ -37,6 +37,7 @@ class QuantumMetropolis():
         self.n_precision_bits = n_precision_bits
         #Oracle ancilla bits
         self.n_ancilla_bits = n_ancilla_bits
+        self.beta_max = beta_max
 
         self.input_oracle = input_oracle
 
@@ -385,16 +386,11 @@ class QuantumMetropolis():
         # Circuit
         qc = QuantumCircuit(g_angle_phi,g_angle_psi,g_move_id,g_move_value,g_coin,g_ancilla)
 
-        #HARDCODED
-        # Define number of steps
-        L = self.n_repetitions
-        beta_max = 2
-
         # Metropolis algorithm (create one input oracle for each beta)
         list_gates = []
-        for i in range(L):
+        for i in range(self.n_repetitions):
             
-            beta = (1+i)/L*beta_max
+            beta = (1+i)/self.n_repetitions*self.beta_max
             
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)

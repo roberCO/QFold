@@ -1,0 +1,26 @@
+{
+
+    "maximum_aminoacid_length": 200,
+    "window_size": 5,
+    "model_path": "./models/",
+    "initialization_option": "minifold",
+    
+    "psi4_path": "/home/rco/psi4conda/bin/psi4",
+    "energy_method": "mp2",
+    "input_filename_energy_psi4": "inputRotations",
+    "output_filename_energy_psi4": "outputRotations",
+    "precalculated_energies_path": "./precalculated_energies/",
+
+    "steps": 100,
+    "ancilla_bits": 4,
+    "scaling_factor": 10.000, 
+    "number_iterations": 10000,
+    "beta_max": 2,
+    
+    "precision_solution": 0.9
+}
+
+
+
+
+

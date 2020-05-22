@@ -153,15 +153,3 @@ def resnet_v2(input_shape, depth, num_classes=4, conv_first=True):
     # Instantiate model.
     model = Model(inputs=inputs, outputs=outputs)
     return model
-
-# Check it's working
-if __name__ == "__main__":
-	# Using AMSGrad optimizer for speed 
-	kernel_size, filters = 3, 16
-	adam = keras.optimizers.Adam(amsgrad=True)
-	# Create model
-	model = resnet_v2(input_shape=(17*2,41), depth=20, num_classes=4)
-	model.compile(optimizer=adam, loss=custom_mse_mae,
-				  metrics=["mean_absolute_error", "mean_squared_error"])
-	model.summary()
-	print("Model file works perfectly")

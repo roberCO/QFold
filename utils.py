@@ -5,8 +5,26 @@ import matplotlib.pyplot as plt
 import struct
 import copy
 import math
+import json
 
 class Utils():
+
+    def __init__(self, config_path=''):
+
+        if(config_path != ''):
+            try:
+                f = open(config_path)
+                f.close()
+            except IOError:
+                print('<!> Info: No configuration file')
+                raise Exception('It is necessary to create a configuration file (.json) for some variables')
+
+            with open(config_path) as json_file:
+                        self.config_variables = json.load(json_file)
+
+    def get_config_variables(self):
+        return self.config_variables
+
     def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
 
@@ -258,7 +276,7 @@ class Utils():
         d = np.dot(cp, planePoints[2])
 
 
-        #HARCODED values
+        #HARDCODED values
         X, Y = np.meshgrid(planePoints[0], planePoints[0])
 
         Z = (d - a * X - b * Y) / c

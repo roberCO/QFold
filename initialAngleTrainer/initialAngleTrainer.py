@@ -1,5 +1,8 @@
 import sys
 import minifoldTrainer
+import sys 
+sys.path.insert(1, '../')
+import utils
 
 if len(sys.argv) == 2 and sys.argv[1] == 'list_trainers':
 
@@ -10,11 +13,17 @@ elif len(sys.argv) == 3 and sys.argv[1] == 'trainer':
 
     option = int(sys.argv[2])
 
+    #Read config file with the QFold configuration variables
+    config_path = '../config/config.json'
+
+    tools = utils.Utils(config_path)
+    config_variables = tools.get_config_variables()
+
     if option == 0:
 
         pathInputFile = input("Path input file: ")
 
-        minifold = minifoldTrainer.MinifoldTrainer(pathInputFile) 
+        minifold = minifoldTrainer.MinifoldTrainer(pathInputFile, config_variables['model_path'], config_variables['maximum_aminoacid_length'], config_variables['window_size']) 
         minifold.train()
 
 else: 

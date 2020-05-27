@@ -30,7 +30,8 @@ angleInitializer = initializer.Initializer(
     config_variables['model_path'], 
     config_variables['window_size'], 
     config_variables['maximum_aminoacid_length'],
-    config_variables['initialization_option']
+    config_variables['initialization_option'],
+    config_variables['basis']
     )
 
 angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, config_variables['ancilla_bits'], config_variables['scaling_factor'], config_variables['number_iterations'])

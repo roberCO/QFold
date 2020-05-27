@@ -5,8 +5,9 @@
     "model_path": "./models/",
     "initialization_option": "minifold",
     
-    "psi4_path": "/home/rco/psi4conda/bin/psi4",
+    "psi4_path": "/Users/Pablo/psi4conda/bin/psi4",
     "energy_method": "mp2",
+    "basis": "cc-pvdz",
     "input_filename_energy_psi4": "inputRotations",
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",

@@ -38,7 +38,10 @@ class Metropolis():
             
             # Calculate the new energy
             E_new = self.energies[anglePhi_new][anglePsi_new]
-            Delta_E = np.log10((E_old - E_new) * self.scaling_factor)
+
+            # This choice of Delta_E seems weird
+            # Delta_E = np.log10((E_old - E_new) * self.scaling_factor)
+            Delta_E = ((E_old - E_new) * self.scaling_factor)
 
             # Lets use a non_optimal simple schedule
             beta = iteration / self.n_iterations

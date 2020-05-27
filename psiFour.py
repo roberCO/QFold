@@ -6,13 +6,14 @@ import json
 
 class PsiFour():
 
-    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method):
+    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, basis = 'cc-pvdz'):
 
         self.psi4_path = psi4_path
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.precalculated_energies_path = precalculated_energies_path
         self.energy_method = energy_method
+        self.basis = basis
 
     def getAtomsFromProtein(self, protein):
 
@@ -34,9 +35,9 @@ class PsiFour():
         inputFile.write(' pubchem: '+ protein+'\n')
         inputFile.write('}\n\n')
 
-        inputFile.write('set basis cc-pvdz\n')
+        inputFile.write('set basis ' +  self.basis + '\n')
         inputFile.write('set reference rhf\n')
-        inputFile.write('energy(\'scf\')\n')
+        inputFile.write("energy('" + self.energy_method + "')\n")
 
         inputFile.close()
 
@@ -56,7 +57,7 @@ class PsiFour():
             rotationHandle.write(" " + at.element + " " + str(at.x) + " " + str(at.y) + " " + str(at.z)+'\n')
         
         rotationHandle.write('}\n\n')
-        rotationHandle.write("set basis cc-pvdz\n")
+        rotationHandle.write('set basis ' +  self.basis + '\n')
         rotationHandle.write("set reference rhf\n")
         rotationHandle.write("energy('" + self.energy_method + "')\n")
 
@@ -65,8 +66,8 @@ class PsiFour():
     def readEnergyFromFile(self):
 
         energy = 0
-        with open(self.output_filename+'.dat', 'r') as fileHandle:
-            for line in fileHandle:
+        with open(self.output_filename+'.dat', 'r') as filehandle:
+            for line in filehandle:
 
                 #If the PSI4 algorithm converges
                 if 'Final Energy' in line:
@@ -81,7 +82,7 @@ class PsiFour():
     def parsePsiOutputFile(self, protein):
 
         atomId = 0
-        with open("outputFile.dat","r") as filehandle:
+        with open(self.output_filename+'.dat', 'r') as filehandle:
 
             isDataLine = False
             atoms = []

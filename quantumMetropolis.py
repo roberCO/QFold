@@ -22,7 +22,7 @@ from qiskit.aqua.utils.controlled_circuit import apply_cu3
 from qiskit.aqua import AquaError
 from itertools import product
 from time import process_time 
-
+import progressbar
 
 
 class QuantumMetropolis():
@@ -322,7 +322,9 @@ class QuantumMetropolis():
         energies_dictionary0 = {}
 
         #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
-        #Create dictionary with binary values for phi and psi as key and energies as values 
+        #Create dictionary with binary values for phi and psi as key and energies as values
+        # Number operations: 2^2n , n = number bits  
+        print('    ⬤  Calculating energies dictionary')
         for index_phi in range(len(self.input_oracle)):
             for index_psi in range(len(self.input_oracle[index_phi])):
 
@@ -340,6 +342,8 @@ class QuantumMetropolis():
             
         #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
         #Calculate Δ of rotations (difference between energies after rotate one of the angles)
+        # Number operations 2^(2n + 2), n = number bits
+        print('    ⬤  Calculating deltas dictionary')
         energies_dictionary = {}
         for phi, psi in product(range(2**self.n_precision_bits),range(2**self.n_precision_bits)):    
             int_phi = format(phi,'b')
@@ -387,7 +391,10 @@ class QuantumMetropolis():
         qc = QuantumCircuit(g_angle_phi,g_angle_psi,g_move_id,g_move_value,g_coin,g_ancilla)
 
         # Metropolis algorithm (create one input oracle for each beta)
+        print('    ⬤  Generating one oracle per each beta')
         list_gates = []
+        bar = progressbar.ProgressBar(maxval=self.n_repetitions, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         for i in range(self.n_repetitions):
             
             beta = (1+i)/self.n_repetitions*self.beta_max
@@ -400,13 +407,19 @@ class QuantumMetropolis():
             list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+            bar.update(i+1)
+
+        bar.finish()
 
         # If instead we want to return the statevector
+        print('    ⬤  Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
 
+        print('    ⬤  Calculating probabilities')
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
 
+        print('    ⬤  Calculating relevant probabilities')
         relevant_probabilities = []
         probs = []
         for i in range(2**(self.n_precision_bits *2)):
@@ -416,4 +429,5 @@ class QuantumMetropolis():
                 relevant_probabilities.append(probs)
                 probs = []
 
+        print('    ⬤  Returning quantum probabilities')
         return relevant_probabilities

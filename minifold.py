@@ -10,15 +10,20 @@ class Minifold:
         self.model_path = model_path+'protein_under_'+str(max_aa_length)+'.h5'
         self.window_size = window_size
 
+        #Hidde info messages from tensorflow
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
         if not os.path.isfile(self.model_path):
 
             raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: initialAngleTrainer/initialAngleTrainer.py')
 
     def predictAngles(self, aminoacids):
 
+        print('    ⬤ Loading knowledge model')
         #Load existing model
         model = load_model(self.model_path, custom_objects={'custom_mse_mae': self.custom_mse_mae})
 
+        print('    ⬤ Generating input values')
         input_values = self.generate_input_values(aminoacids)
 
         #input_aas is a rows x 34 (aas windows size) x 42 (20 aas, Van der Waals distance, Surface, 20 pssms)
@@ -60,6 +65,8 @@ class Minifold:
 
         row_input_aas = []
         protein_sequence_index = 0
+
+        print('<i> Generating input for minifold prediction')
         for index_window in range(0, self.window_size*2):
 
             column_window = []
@@ -101,7 +108,7 @@ class Minifold:
                     column_window.append(0)
 
             row_input_aas.append(column_window)
-            
+
         input_aas.append(row_input_aas)
         aas = np.array(input_aas)
 

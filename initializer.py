@@ -6,6 +6,7 @@ import minifold
 import math
 import random
 import sys
+import progressbar
 
 class Initializer():
 
@@ -34,6 +35,8 @@ class Initializer():
     #Calculate all posible energies for the protein and the number of rotations given
     def calculateEnergies(self, proteinName, numberBitsRotation, aminoacids):
 
+        print('## Generating file of energies ##')
+
         #Get all atoms from the protein with x/y/z positions and connections
         atoms = self.extractAtoms(proteinName)
 
@@ -52,9 +55,11 @@ class Initializer():
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName):
 
+        print('    ⬤ Extracting atoms from proteins')
         #call psi4 to get the atoms of the protein
         atoms = self.psi.getAtomsFromProtein(proteinName)
 
+        print('    ⬤ Calculating connections between atoms')
         #Calculate the connection between atoms
         atoms = self.tools.calculateAtomConnection(atoms)
 
@@ -96,7 +101,6 @@ class Initializer():
         phi_angle_psi4 = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
         psi_angle_psi4 = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
 
-
         #Rotate the inverse (*-1) angles of psi4 to get angles to 0
         self.tools.rotate('phi', -phi_angle_psi4, nitro_atom) 
         self.tools.rotate('psi', -psi_angle_psi4, carboxy_atom)
@@ -107,12 +111,13 @@ class Initializer():
 
         #random between -π and π
         if self.initialization_option == 'random':
+            print('\n## RANDOM initialization for protein structure ##\n')
             phi_initial_rotation = random.uniform(-math.pi, math.pi)
             psi_initial_rotation = random.uniform(-math.pi, math.pi)
 
         #minifold
         elif self.initialization_option == 'minifold':
-
+            print('\n## MINIFOLD initialization for protein structure ##\n')
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
             phi_initial_rotation = angles[0][0]
@@ -147,6 +152,9 @@ class Initializer():
         #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
         #if it is scale to more aminoacids, it should be necessary to implement a recursive function
         #TODO: To study how to generalize to any number of aminoacids
+        print('    ⬤ Calculating energies for all posible rotations')
+        bar = progressbar.ProgressBar(maxval=rotationSteps**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         for x in range(0, rotationSteps):
 
             for y in range(0, rotationSteps):
@@ -185,8 +193,12 @@ class Initializer():
                 #Increment the angle psi counter INSIDE the SECOND loop
                 anglePsi += 1/rotationSteps
 
+                bar.update(x*rotationSteps + y)
+
             #Increment the angle psi counter INSIDE the FIRST loop (OUTSIDE the SECOND)
             anglePhi += 1/rotationSteps
+
+        bar.finish()
 
         return energiesJson
 

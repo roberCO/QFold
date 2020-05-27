@@ -4,6 +4,8 @@
     "window_size": 5,
     "model_path": "./models/",
     "initialization_option": "minifold",
+    "epochs": 50,
+    "batch_size": 16,
     
     "psi4_path": "/home/rco/psi4conda/bin/psi4",
     "energy_method": "mp2",

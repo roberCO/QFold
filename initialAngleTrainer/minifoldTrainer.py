@@ -28,12 +28,14 @@ from resnet_1d_angles import resnet_v2, custom_mse_mae
 
 class MinifoldTrainer():
     
-    def __init__(self, inputPath, model_path, max_aa_length, window_size):
+    def __init__(self, inputPath, model_path, max_aa_length, window_size, epochs, batch_size):
 
         self.inputPath = inputPath
         self.model_path = model_path
         self.max_aa_length = max_aa_length
         self.window_size = window_size
+        self.epochs = epochs
+        self.batch_size = batch_size
 
         if not os.path.isfile(inputPath):
             raise IOError('<!> ERROR: %s does not exist!' %inputPath)
@@ -217,7 +219,7 @@ class MinifoldTrainer():
         model.compile(optimizer=adam, loss=custom_mse_mae, metrics=["mean_absolute_error", "mean_squared_error"])
 
         # Resnet (pre-act structure) with windows_size*22 columns as inputs - leaving a subset for validation
-        model.fit(x_train, y_train, epochs=5, batch_size=16, verbose=1, shuffle=True, validation_data=(x_test, y_test))
+        model.fit(x_train, y_train, epochs=self.epochs, batch_size=self.batch_size, verbose=1, shuffle=True, validation_data=(x_test, y_test))
 
         model.save('../'+self.model_path+'protein_under_'+str(self.max_aa_length)+'.h5')
 

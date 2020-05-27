@@ -1,7 +1,7 @@
 import sys
 import minifoldTrainer
 import sys 
-sys.path.insert(1, '../')
+sys.path.insert(1, '/home/rco/Desktop/qFold/QFold/')
 import utils
 
 if len(sys.argv) == 2 and sys.argv[1] == 'list_trainers':
@@ -23,7 +23,14 @@ elif len(sys.argv) == 3 and sys.argv[1] == 'trainer':
 
         pathInputFile = input("Path input file: ")
 
-        minifold = minifoldTrainer.MinifoldTrainer(pathInputFile, config_variables['model_path'], config_variables['maximum_aminoacid_length'], config_variables['window_size']) 
+        minifold = minifoldTrainer.MinifoldTrainer(
+            pathInputFile,
+            config_variables['model_path'],
+            config_variables['maximum_aminoacid_length'],
+            config_variables['window_size'],
+            config_variables['epochs'],
+            config_variables['batch_size'],
+            )
         minifold.train()
 
 else: 

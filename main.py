@@ -20,7 +20,7 @@ aminoacids = 'GG'
 
 proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])
-rotationSteps = pow(2, int(numberBitsRotation))
+rotationSteps = 2**(int(numberBitsRotation))
 
 #Read config file with the QFold configuration variables
 config_path = './config/config.json'
@@ -50,17 +50,17 @@ try:
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculateEnergies(proteinName, numberBitsRotation, aminoacids)
+    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, aminoacids)
 
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[energyList, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
+[deltas_dict, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
-quantum_p_t = angleCalculator.calculate3DStructure(energyList, config_variables['steps'], config_variables['beta_max'], 0)[0][0]
-classical_matrix = angleCalculator.calculate3DStructure(energyList, config_variables['steps'], config_variables['beta_max'], 1)
+quantum_p_t = angleCalculator.calculate3DStructure(deltas_dict, config_variables['steps'], config_variables['beta_max'], 0)[0][0]
+classical_matrix = angleCalculator.calculate3DStructure(deltas_dict, config_variables['steps'], config_variables['beta_max'], 1)
 classical_p_t = classical_matrix[0][0]
 
 quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], config_variables['steps'], quantum_p_t)
@@ -71,6 +71,6 @@ print('**                       RESULTS                      **')
 print('********************************************************')
 print('**                                                    **')
 print('**    Quantum Metropolis   => TTS:', '{:.10f}'.format(quantum_TTS), '    **')
-print('**    Classical Metropolis => TTS:', '{:.10f}'.format(quantum_TTS), '    **')
+print('**    Classical Metropolis => TTS:', '{:.10f}'.format(classical_TTS), '    **')
 print('**                                                    **')
 print('********************************************************\n\n')

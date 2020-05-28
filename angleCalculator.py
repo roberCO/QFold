@@ -9,13 +9,13 @@ class AngleCalculator():
     def __init__(self, bits_rotation, n_ancilla_bits, scaling_factor, number_iterations):
 
         self.bits_rotation = bits_rotation
-        self.rotationSteps = 2**bits_rotation
+        self.rotation_steps = 2**bits_rotation
         self.n_ancilla_bits = n_ancilla_bits
         self.scaling_factor = scaling_factor
         self.n_iterations = number_iterations
         self.qTools = quantumUtils.QuantumUtils()
 
-    def calculate3DStructure(self, energyList, n_repetitions, beta_max, option=0):
+    def calculate3DStructure(self, deltas_dict, n_repetitions, beta_max, option=0):
 
         #Quantum calculation option for 3D structure
         if option == 0: 
@@ -23,7 +23,7 @@ class AngleCalculator():
             print('\n## Quantum Metropolis ##')
             print('    ⬤  Calculating p_t for', n_repetitions,'steps')
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, beta_max, energyList)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, beta_max, deltas_dict)
             return qMetropolis.execute_quantum_metropolis()
 
         #Classical calculation option for 3D structure
@@ -32,8 +32,8 @@ class AngleCalculator():
             print('\n## Classical Metropolis ##')
             print('    ⬤  Calculating p_t for', n_repetitions,'steps')
 
-            probabilities_matrix = [[0]*self.rotationSteps for x in range(self.rotationSteps)]
-            classical_metropolis = metropolis.Metropolis(self.n_iterations, self.scaling_factor, energyList)
+            probabilities_matrix = [[0]*self.rotation_steps for x in range(self.rotation_steps)]
+            classical_metropolis = metropolis.Metropolis(self.bits_rotation, self.n_iterations, self.scaling_factor, deltas_dict)
             
             print('    ⬤  Iterating the classical metropolis')
             bar = progressbar.ProgressBar(maxval=n_repetitions, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])

@@ -4,10 +4,10 @@
     "window_size": 5,
     "model_path": "./models/",
     "initialization_option": "minifold",
-    "epochs": 50,
+    "epochs": 3,
     "batch_size": 16,
     
-    "psi4_path": "/Users/Pablo/psi4conda/bin/psi4",
+    "psi4_path": "/home/rco/psi4conda/bin/psi4",
     "energy_method": "mp2",
     "basis": "cc-pvdz",
     "input_filename_energy_psi4": "inputRotations",

@@ -66,7 +66,7 @@ class Minifold:
         row_input_aas = []
         protein_sequence_index = 0
 
-        print('<i> Generating input for minifold prediction')
+        print('    ⬤ Generating input for minifold prediction')
         for index_window in range(0, self.window_size*2):
 
             column_window = []

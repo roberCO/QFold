@@ -21,7 +21,7 @@ from math import pi
 from qiskit.aqua.utils.controlled_circuit import apply_cu3
 from qiskit.aqua import AquaError
 from itertools import product
-from time import process_time 
+import time
 import progressbar
 
 
@@ -318,61 +318,6 @@ class QuantumMetropolis():
 
     def execute_quantum_metropolis(self):
 
-        # Let us create the energy dictionary        
-        energies_dictionary0 = {}
-
-        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
-        #Create dictionary with binary values for phi and psi as key and energies as values
-        # Number operations: 2^2n , n = number bits  
-        print('    ⬤  Calculating energies dictionary')
-        for index_phi in range(len(self.input_oracle)):
-            for index_psi in range(len(self.input_oracle[index_phi])):
-
-                #Phi to binary
-                phi = format(index_phi,'b')
-                phi = '0'*(self.n_precision_bits - len(phi)) + phi
-
-                #Psi to binary
-                psi = format(index_psi,'b')
-                psi = '0'*(self.n_precision_bits - len(psi)) + psi
-
-                #Insert energy for these phi and psi
-                energy = self.input_oracle[index_phi][index_psi]
-                energies_dictionary0[phi + psi] = energy
-            
-        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
-        #Calculate Δ of rotations (difference between energies after rotate one of the angles)
-        # Number operations 2^(2n + 2), n = number bits
-        print('    ⬤  Calculating deltas dictionary')
-        energies_dictionary = {}
-        for phi, psi in product(range(2**self.n_precision_bits),range(2**self.n_precision_bits)):    
-            int_phi = format(phi,'b')
-            int_phi = '0'*(self.n_precision_bits - len(int_phi)) + int_phi
-            int_psi = format(psi,'b')
-            int_psi = '0'*(self.n_precision_bits - len(int_psi)) + int_psi
-            old_E = energies_dictionary0[int_phi + int_psi]
-            
-            for plusminus in [0,1]:
-                pm = 2*plusminus - 1
-                
-                for phipsi in [0,1]:
-                    if phipsi == 0:
-                        new_phi = (phi + pm) % (2**self.n_precision_bits)
-                        new_psi = psi
-                        
-                    if phipsi == 1:
-                        new_phi = phi
-                        new_psi = (psi + pm) % (2**self.n_precision_bits)
-                        
-                    int_new_phi = format(new_phi,'b')
-                    int_new_phi = '0'*(self.n_precision_bits - len(int_new_phi)) + int_new_phi
-                    int_new_psi = format(new_psi,'b')
-                    int_new_psi = '0'*(self.n_precision_bits - len(int_new_psi)) + int_new_psi
-                    new_E = energies_dictionary0[int_new_phi + int_new_psi]
-                    
-                    energies_dictionary[int_phi + int_psi + str(phipsi) + str(plusminus)] = new_E - old_E
-                    
-
         # State definition. All angles range from 0 to 2pi
         g_angle_phi = QuantumRegister(self.n_precision_bits, name = 'angle_phi')
         g_angle_psi = QuantumRegister(self.n_precision_bits, name = 'angle_psi') 
@@ -400,7 +345,7 @@ class QuantumMetropolis():
             beta = (1+i)/self.n_repetitions*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
             
             W_gate = self.W_func(oracle)
             
@@ -413,7 +358,9 @@ class QuantumMetropolis():
 
         # If instead we want to return the statevector
         print('    ⬤  Calculating statevector')
+        start_time = time.time()
         state = qi.Statevector.from_instruction(qc)
+        print("--- %s seconds ---" % (time.time() - start_time))
 
         print('    ⬤  Calculating probabilities')
         # Extract probabilities in the measurement of the angles phi and psi

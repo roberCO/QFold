@@ -29,11 +29,8 @@ class Initializer():
         self.nitroConnections = [['C', 2]]
         self.carboxyConnections = [['C', 1], ['O', 2]]
 
-        #It contains the energy of each angle combination
-        self.anglesEnergy = []
-
     #Calculate all posible energies for the protein and the number of rotations given
-    def calculateEnergies(self, proteinName, numberBitsRotation, aminoacids):
+    def calculate_delta_energies(self, proteinName, numberBitsRotation, aminoacids):
 
         print('## Generating file of energies ##')
 
@@ -48,7 +45,7 @@ class Initializer():
         atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
 
         #Calculate all posible energies for the phi and psi angles
-        energiesJson = self.calculateAllEnergiesOfRotations(atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation)
+        energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation)
 
         self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation)
 
@@ -133,13 +130,11 @@ class Initializer():
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllEnergiesOfRotations(self, atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation):
+    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation):
 
         rotationSteps = pow(2, int(numberBitsRotation))
 
-        #Get the size of each step to rotate
-        anglePhi = 1/rotationSteps
-        anglePsi = 1/rotationSteps
+        energies = self.calculate_all_energies(rotationSteps, atoms)
 
         #Write the headers of the energies json that is going to be returned
         energiesJson = {}
@@ -147,13 +142,52 @@ class Initializer():
         energiesJson['numberBitsRotation'] = numberBitsRotation
         energiesJson['initialPhiAngle'] = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
         energiesJson['initialPsiAngle'] = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
-        energiesJson['energies'] = []
+        energiesJson['deltas'] = {}
+
+        print('    ⬤ Calculating deltas for all posible combinations of rotations')
+        for index_phi in range(len(energies)):
+            for index_psi in range(len(energies[index_phi])):
+            
+                old_energy = energies[index_phi][index_psi]
+            
+                for plusminus in [0,1]:
+                    pm = 2*plusminus - 1
+                    
+                    for phipsi in [0,1]:
+                        if phipsi == 0:
+                            new_phi = (index_phi + pm) % (2**numberBitsRotation)
+                            new_psi = index_psi
+                            
+                        if phipsi == 1:
+                            new_phi = index_phi
+                            new_psi = (index_psi + pm) % (2**numberBitsRotation)
+                            
+                        new_energy = energies[new_phi][new_psi]
+                        
+                        binary_phi = self.tools.angle_to_binary(new_phi, numberBitsRotation)
+                        binary_psi = self.tools.angle_to_binary(new_psi, numberBitsRotation)
+
+                        angle_key = binary_phi + binary_psi + str(phipsi) + str(plusminus) 
+                        
+                        delta = new_energy - old_energy
+
+                        #Add the values to the file with the precalculated energies
+                        energiesJson['deltas'][angle_key] = delta
+
+        return energiesJson
+
+    def calculate_all_energies(self, rotationSteps, atoms):
 
         #These two nested loops are hardcoded (it could be n nested loops, 1 per AA) because QFold is going to be used just with two and three aminoacids
         #if it is scale to more aminoacids, it should be necessary to implement a recursive function
         #TODO: To study how to generalize to any number of aminoacids
+
+        energies = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)]
+        anglePhi = 1/rotationSteps
+        anglePsi = 1/rotationSteps
+
         print('    ⬤ Calculating energies for all posible rotations')
-        bar = progressbar.ProgressBar(maxval=rotationSteps**2, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar = progressbar.ProgressBar(maxval=2**rotationSteps, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
         for x in range(0, rotationSteps):
 
@@ -171,19 +205,7 @@ class Initializer():
                 #Calculate the energy of the protein structure after the previous rotations
                 energy = self.calculateEnergyOfRotation(copied_atoms)
 
-                #Normalize the energy
-                normalizedEnergy = energy*-1
-                normalizedEnergy = "%.6f" % normalizedEnergy
-
-                #Add the angles to list with angles and energies
-                self.anglesEnergy.append([anglePhi, anglePsi, normalizedEnergy])
-
-                #Add the values to the file with the precalculated energies
-                energiesJson['energies'].append({
-                    'phi': x,
-                    'psi': y,
-                    'energy': energy,
-                })
+                energies[x][y] = energy 
 
                 # We eliminate previous copies
                 del copied_atoms
@@ -200,7 +222,7 @@ class Initializer():
 
         bar.finish()
 
-        return energiesJson
+        return energies
 
     def calculateEnergyOfRotation(self, copied_atoms):
 

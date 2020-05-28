@@ -106,8 +106,6 @@ class PsiFour():
 
     def readEnergyJson(self, proteinName, numberBitsRotation):
 
-        rotationSteps = pow(2, int(numberBitsRotation))
-
         with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
             data = json.load(json_file)
 
@@ -115,13 +113,6 @@ class PsiFour():
             psi_angle_psi4 = data['initialPsiAngle']
 
             #Create an empty memory structure with the rotation steps dimension
-            energyList = [[0 for x in range(rotationSteps)] for y in range(rotationSteps)]
-
-            #Get each entry with energies of the json
-            for angle in data['energies']:
-
-                x = angle['phi']
-                y = angle['psi']
-                energyList[x][y] = angle['energy']
-
-            return [energyList, phi_angle_psi4, psi_angle_psi4]
+            deltas_dict = data['deltas']
+                        
+            return [deltas_dict, phi_angle_psi4, psi_angle_psi4]

@@ -331,8 +331,12 @@ class Utils():
         minimum_option = min(option_1, option_2)
         psi_precision = (1-(minimum_option / (2*math.pi)))*100
 
-        print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
-        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)
+        print('\nPHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
+        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation, '\n')
+
+    def angle_to_binary(self, angle, number_bits_rotation):
+
+        return ('0'*(number_bits_rotation - len(format(angle,'b'))) + format(angle,'b'))
 
     def calculateTTS(self, precision_solution, t, p_t):
 

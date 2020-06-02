@@ -341,3 +341,11 @@ class Utils():
     def calculateTTS(self, precision_solution, t, p_t):
 
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
+
+    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation):
+
+        print(x_axis)
+        print(q_accumulated_tts)
+        print(c_accumulated_tts)
+        plt.plot(x_axis, q_accumulated_tts, x_axis, c_accumulated_tts)
+        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png')

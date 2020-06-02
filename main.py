@@ -40,7 +40,6 @@ angleInitializer = initializer.Initializer(
     config_variables['basis']
     )
 
-angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, config_variables['ancilla_bits'], config_variables['scaling_factor'], config_variables['number_iterations'])
 psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_filename_energy_psi4'], config_variables['output_filename_energy_psi4'], config_variables['precalculated_energies_path'], config_variables['energy_method'])
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
@@ -59,18 +58,61 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
-quantum_p_t = angleCalculator.calculate3DStructure(deltas_dict, config_variables['steps'], config_variables['beta_max'], 0)[0][0]
-classical_matrix = angleCalculator.calculate3DStructure(deltas_dict, config_variables['steps'], config_variables['beta_max'], 1)
-classical_p_t = classical_matrix[0][0]
+angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, config_variables['ancilla_bits'], config_variables['scaling_factor'], config_variables['number_iterations'])
 
-quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], config_variables['steps'], quantum_p_t)
-classical_TTS = tools.calculateTTS(config_variables['precision_solution'], config_variables['steps'], classical_p_t)
+q_accumulated_tts = []
+c_accumulated_tts = []
+x_axis = []
+
+min_q_tts = {'step': 0, 'value': -1}
+min_c_tts = {'step': 0, 'value': -1}
+
+for step in range(config_variables['initial_step'], config_variables['final_step']):
+
+    quantum_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 0)
+    classical_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 1)
+
+    quantum_p_t = quantum_matrix[0][0]
+    classical_p_t = classical_matrix[0][0]
+    print('Quantum p t:', quantum_p_t)
+
+    if quantum_p_t == 0:
+        quantum_TTS = 9999
+    else:
+        quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], step, quantum_p_t)
+    
+    if classical_p_t == 0:
+        classical_TTS = 9999
+    else:
+        classical_TTS = tools.calculateTTS(config_variables['precision_solution'], step, classical_p_t)
+
+    if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
+        
+        min_q_tts['value'] = quantum_TTS
+        min_q_tts['step'] = step
+
+    if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
+        
+        min_c_tts['value'] = classical_TTS
+        min_c_tts['step'] = step
+
+    q_accumulated_tts.append(quantum_TTS)
+    c_accumulated_tts.append(classical_TTS)
+    x_axis.append(step)
+
+    tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation)
+
+    print('At step', step, '=> quantum tts:', quantum_TTS, 'and classical tts:', classical_TTS)
+    print('-> min quantum tts:', min_q_tts['value'])
+    print('-> min classical tts:', min_c_tts['value'])
+    print('\n\n')
+
 
 print('\n\n********************************************************')
 print('**                       RESULTS                      **')
 print('********************************************************')
 print('**                                                    **')
-print('**    Quantum Metropolis   => TTS:', '{:.10f}'.format(quantum_TTS), '    **')
-print('**    Classical Metropolis => TTS:', '{:.10f}'.format(classical_TTS), '    **')
+print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
+print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
 print('**                                                    **')
 print('********************************************************\n\n')

@@ -41,11 +41,13 @@ class Initializer():
         nitroAtom = self.findAtom(atoms, 'N', '', self.nitroConnections)
         carboxyAtom = self.findAtom(atoms, '', 'Carboxy', self.carboxyConnections)
 
+        min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
+
         #Get initial structure of the protein to rotate from it
         atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
 
         #Calculate all posible energies for the phi and psi angles
-        energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation)
+        energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, min_energy_psi4, proteinName, numberBitsRotation)
 
         self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation)
 
@@ -120,9 +122,9 @@ class Initializer():
             phi_initial_rotation = angles[0][0]
             psi_initial_rotation = angles[0][1]
 
-        #Rotate the inverse angles of psi4 to get angles to 0
-        self.tools.rotate('phi', -phi_initial_rotation, nitro_atom) 
-        self.tools.rotate('psi', -psi_initial_rotation, carboxy_atom)
+        #Rotate the angles to get the initializer values
+        self.tools.rotate('phi', phi_initial_rotation, nitro_atom) 
+        self.tools.rotate('psi', psi_initial_rotation, carboxy_atom)
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
@@ -130,18 +132,20 @@ class Initializer():
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, proteinName, numberBitsRotation):
+    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, min_energy_psi4, proteinName, numberBitsRotation):
 
         rotationSteps = pow(2, int(numberBitsRotation))
 
-        energies = self.calculate_all_energies(rotationSteps, atoms)
+        [energies, min_energy, phi_position_min_energy, psi_position_min_energy] = self.calculate_all_energies(rotationSteps, atoms)
 
         #Write the headers of the energies json that is going to be returned
         energiesJson = {}
         energiesJson['protein'] = proteinName
         energiesJson['numberBitsRotation'] = numberBitsRotation
-        energiesJson['initialPhiAngle'] = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
-        energiesJson['initialPsiAngle'] = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
+        energiesJson['psi4_min_energy'] = min_energy_psi4
+        energiesJson['initial_min_energy'] = min_energy
+        energiesJson['phi_position_min_energy'] = phi_position_min_energy
+        energiesJson['psi_position_min_energy'] = psi_position_min_energy
         energiesJson['deltas'] = {}
 
         print('    ⬤ Calculating deltas for all posible combinations of rotations')
@@ -186,6 +190,10 @@ class Initializer():
         anglePhi = 1/rotationSteps
         anglePsi = 1/rotationSteps
 
+        phi_position_min_energy = -1
+        psi_position_min_energy = -1
+        min_energy = -1
+
         print('    ⬤ Calculating energies for all posible rotations')
         bar = progressbar.ProgressBar(maxval=2**rotationSteps, widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
@@ -204,8 +212,12 @@ class Initializer():
                 
                 #Calculate the energy of the protein structure after the previous rotations
                 energy = self.calculateEnergyOfRotation(copied_atoms)
-
                 energies[x][y] = energy 
+
+                if energy < min_energy:
+                    phi_position_min_energy = x
+                    psi_position_min_energy = y
+                    min_energy = energy
 
                 # We eliminate previous copies
                 del copied_atoms
@@ -222,7 +234,7 @@ class Initializer():
 
         bar.finish()
 
-        return energies
+        return [energies, min_energy, phi_position_min_energy, psi_position_min_energy]
 
     def calculateEnergyOfRotation(self, copied_atoms):
 

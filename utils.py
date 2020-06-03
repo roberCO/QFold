@@ -358,5 +358,18 @@ class Utils():
 
     def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation):
 
-        plt.plot(x_axis, q_accumulated_tts, x_axis, c_accumulated_tts)
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png')
+        fig = plt.figure()
+        
+        ax = fig.add_subplot(111)
+        ax.set_title('TTS comparision for Quantum vs Classical Metropolis')
+        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, 1.0))
+
+        ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
+        ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
+            
+        ax.set_ylabel('TTS')
+        ax.set_xlabel('Steps')
+        plt.tight_layout()
+
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png', bbox_inches='tight')

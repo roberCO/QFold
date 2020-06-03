@@ -109,10 +109,4 @@ class PsiFour():
         with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
             data = json.load(json_file)
 
-            phi_angle_psi4 = data['initialPhiAngle']
-            psi_angle_psi4 = data['initialPsiAngle']
-
-            #Create an empty memory structure with the rotation steps dimension
-            deltas_dict = data['deltas']
-                        
-            return [deltas_dict, phi_angle_psi4, psi_angle_psi4]
+            return [data['deltas'], data['psi4_min_energy'], data['initial_min_energy'], data['phi_position_min_energy'], data['psi_position_min_energy']]

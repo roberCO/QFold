@@ -54,7 +54,7 @@ except IOError:
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, phi_angle_psi4, psi_angle_psi4] = psi.readEnergyJson(proteinName, numberBitsRotation)
+[deltas_dict, psi4_min_energy, initial_min_energy, phi_position_min_energy, psi_position_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
@@ -72,19 +72,11 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     quantum_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 0)
     classical_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 1)
 
-    quantum_p_t = quantum_matrix[0][0]
-    classical_p_t = classical_matrix[0][0]
-    print('Quantum p t:', quantum_p_t)
+    quantum_p_t = quantum_matrix[phi_position_min_energy][psi_position_min_energy]
+    classical_p_t = classical_matrix[phi_position_min_energy][psi_position_min_energy]
 
-    if quantum_p_t == 0:
-        quantum_TTS = 9999
-    else:
-        quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], step, quantum_p_t)
-    
-    if classical_p_t == 0:
-        classical_TTS = 9999
-    else:
-        classical_TTS = tools.calculateTTS(config_variables['precision_solution'], step, classical_p_t)
+    quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], step, quantum_p_t)
+    classical_TTS = tools.calculateTTS(config_variables['precision_solution'], step, classical_p_t)
 
     if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
         
@@ -102,10 +94,13 @@ for step in range(config_variables['initial_step'], config_variables['final_step
 
     tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation)
 
-    print('At step', step, '=> quantum tts:', quantum_TTS, 'and classical tts:', classical_TTS)
-    print('-> min quantum tts:', min_q_tts['value'])
-    print('-> min classical tts:', min_c_tts['value'])
-    print('\n\n')
+# Difference between the minimum energy of initializer minus the minimum energy of psi4
+min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
+delta_mean = tools.calculate_delta_mean(deltas_dict)
+std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
+
+# Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
+precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)
 
 
 print('\n\n********************************************************')
@@ -114,5 +109,12 @@ print('********************************************************')
 print('**                                                    **')
 print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
 print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+print('**                                                    **')
+print('** -------------------------------------------------- **')
+print('**                                                    **')
+print('** Precision QFold     =>', min_energy_difference,'%        **')
+print('** Precision vs Δ mean =>', precision_vs_delta_mean ,'     **')
+print('** Mean Δ              =>', delta_mean, '                  **')
+print('** Standard deviation  =>', std_dev_deltas, '        **')
 print('**                                                    **')
 print('********************************************************\n\n')

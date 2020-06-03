@@ -342,7 +342,7 @@ class QuantumMetropolis():
         bar.start()
         for i in range(self.n_repetitions):
             
-            beta = (1+i)/self.n_repetitions*self.beta_max
+            beta = ((1+i)/self.n_repetitions)*self.beta_max
             
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)

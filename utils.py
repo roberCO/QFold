@@ -342,10 +342,21 @@ class Utils():
 
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
 
+    def calculate_diff_vs_mean_diffs(self, min_energy_difference, deltas_mean):
+
+        return (1 - (min_energy_difference/deltas_mean)) * 100
+
+    def calculate_delta_mean(self, deltas_dict):
+
+        array = np.array(list(deltas_dict.items()), dtype='float32')
+        return array[:,1].mean()
+
+    def calculate_std_dev_deltas(self, deltas_dict):
+
+        array = np.array(list(deltas_dict.items()), dtype='float32')
+        return array[:,1].std()
+
     def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation):
 
-        print(x_axis)
-        print(q_accumulated_tts)
-        print(c_accumulated_tts)
         plt.plot(x_axis, q_accumulated_tts, x_axis, c_accumulated_tts)
         plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png')

@@ -1,4 +1,5 @@
 import sys
+from threading import Thread
 import initializer
 import angleCalculator
 import psiFour
@@ -42,6 +43,17 @@ angleInitializer = initializer.Initializer(
 
 psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_filename_energy_psi4'], config_variables['output_filename_energy_psi4'], config_variables['precalculated_energies_path'], config_variables['energy_method'])
 
+# Number of results is the number of steps multiplied by 2 (one for quantum and other for classical)
+total_number_resutls = (config_variables['final_step'] - config_variables['initial_step'])*2
+results = results = [{} for x in range(total_number_resutls)]
+def angle_calculator_thread(thread_index, option, deltas, step, beta_max, phi_position_min_energy, psi_position_min_energy):
+
+        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
+        p_t = probabilities_matrix[phi_position_min_energy][psi_position_min_energy]
+
+        # Result is the calculated TTS
+        results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
+
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
@@ -67,32 +79,57 @@ x_axis = []
 min_q_tts = {'step': 0, 'value': -1}
 min_c_tts = {'step': 0, 'value': -1}
 
+threads = []
+thread_index = 0
+index_to_get_results = []
 for step in range(config_variables['initial_step'], config_variables['final_step']):
 
-    quantum_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 0)
-    classical_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], 1)
+    print('\nExecuting quantum metropolis with', step, 'steps')
 
-    quantum_p_t = quantum_matrix[phi_position_min_energy][psi_position_min_energy]
-    classical_p_t = classical_matrix[phi_position_min_energy][psi_position_min_energy]
+    #Thread for quantum metropolis
+    process = Thread(target=angle_calculator_thread, args=[thread_index, 0, deltas_dict, step, config_variables['beta_max'], phi_position_min_energy, psi_position_min_energy])
+    process.start()
+    threads.append(process) 
+    index_to_get_results.append(thread_index)
+    thread_index += 1
 
-    quantum_TTS = tools.calculateTTS(config_variables['precision_solution'], step, quantum_p_t)
-    classical_TTS = tools.calculateTTS(config_variables['precision_solution'], step, classical_p_t)
+    print('Executing classical metropolis with', step, 'steps\n')
 
-    if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
-        
-        min_q_tts['value'] = quantum_TTS
-        min_q_tts['step'] = step
+    #Thread for classical metropolis
+    process = Thread(target=angle_calculator_thread, args=[thread_index, 1, deltas_dict, step, config_variables['beta_max'], phi_position_min_energy, psi_position_min_energy])
+    process.start()
+    threads.append(process)
+    index_to_get_results.append(thread_index)
+    thread_index += 1
 
-    if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
-        
-        min_c_tts['value'] = classical_TTS
-        min_c_tts['step'] = step
+    if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= config_variables['final_step']:
 
-    q_accumulated_tts.append(quantum_TTS)
-    c_accumulated_tts.append(classical_TTS)
-    x_axis.append(step)
+        # It pauses execution until all threads ends
+        for process in threads:
+            process.join()
 
-    tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation)
+        for index in range(index_to_get_results[0], index_to_get_results[-1]+1, 2):
+
+            quantum_TTS = results[index]
+            classical_TTS = results[index+1]
+
+            if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
+                
+                min_q_tts['value'] = quantum_TTS
+                min_q_tts['step'] = step
+
+            if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
+                
+                min_c_tts['value'] = classical_TTS
+                min_c_tts['step'] = step
+
+            q_accumulated_tts.append(quantum_TTS)
+            c_accumulated_tts.append(classical_TTS)
+            x_axis.append(step)
+
+            tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation)
+
+        index_to_get_results = []
 
 # Difference between the minimum energy of initializer minus the minimum energy of psi4
 min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100

@@ -7,6 +7,7 @@ import math
 import random
 import sys
 import progressbar
+import numpy as np
 
 class Initializer():
 
@@ -27,7 +28,7 @@ class Initializer():
         #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that
         #TODO: To study if it is necessary to generalize this assumption
         self.nitroConnections = [['C', 2]]
-        self.carboxyConnections = [['C', 1], ['O', 2]]
+        self.carboxyConnections = [['C', 1], ['O', 1], ['N', 1]]
 
     #Calculate all posible energies for the protein and the number of rotations given
     def calculate_delta_energies(self, proteinName, numberBitsRotation, aminoacids):
@@ -67,31 +68,43 @@ class Initializer():
     #Find the atom that satisfies the parameters
     def findAtom(self, atoms, element, cType, connections):
 
-        #Search in the whole atom list
+        found_atoms = []
+
+        # Search in the whole atom list
         for at in atoms:
 
-            #The element for the angle phi is nitrogen (N)
+            # Check if the element or the cType is the same that searched element 
             if ((element != '' and at.element == element) or (cType != '' and at.c_type == cType)):
 
-                #Check all the atom connections
-                for conn in connections:
+                # at (atom) has the same element/c_type than the searched atom, now it is necessary to check its connections
+                found = True
 
-                    linkedElement = conn[0]
-                    numberLinkedElements = conn[1]
-                    counterLinkedElements = 0
+                #Check all the searched atom connections
+                for conn in connections:
+                    
+                    linked_element = conn[0]
+                    number_linked_element = conn[1]
+                    counter_at_linked_elements = 0
 
                     #The valid nitrogen is the connected with two carbons
                     for elementConn in at.linked_to:
 
-                        if(elementConn.element == linkedElement):
-                            counterLinkedElements += 1
+                        if(elementConn.element == linked_element):
+                            counter_at_linked_elements += 1
+                            
+                    # It means that the at has different connections that expected
+                    if(number_linked_element != counter_at_linked_elements):
+                        found = False
+                        break
 
-                    #Atom found and saved in variable
-                    if (counterLinkedElements == numberLinkedElements):
-                        return at
+                # If all connections of the atom were found, the atom is added to the found atoms list
+                if (found):
+                    found_atoms.append(at)
 
-                    else:
-                        raise Exception('Element '+at.element+' not found with the proper connections of '+linkedElement+'! '+str(counterLinkedElements)+' found but there should be ' + str(numberLinkedElements))
+        if len(found_atoms) == 0:
+            raise Exception('Element '+element+' not found with the proper connections of '+connections+'!')
+
+        return found_atoms
 
     def calculateInitialStructure(self, atoms, aminoacids, nitro_atom, carboxy_atom):       
     

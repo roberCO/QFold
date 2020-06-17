@@ -43,25 +43,25 @@ class Utils():
             rad = rad * porm
         return rad
 
-    def calculateAngle(self, atom1, atom2, atom3, atom4, angle_type):
+    def calculateAngle(self, angle_atoms, angle_type):
         'Uses get dihedral to calculate angles between atoms'
         if angle_type == 'phi':
-            assert(atom1.c_type == 'Carboxy' and atom2.c_type =='C_alpha' and atom3.element == 'N' and atom4.c_type == 'Carboxy')
-            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
-            coords1 = np.array([atom1.x, atom1.y, atom1.z])
-            coords2 = np.array([atom2.x, atom2.y, atom2.z])
-            coords3 = np.array([atom3.x, atom3.y, atom3.z])
-            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+            assert(angle_atoms[0].c_type == 'Carboxy' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].element == 'N' and angle_atoms[3].c_type == 'Carboxy')
+            assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
+            coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
+            coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
+            coords3 = np.array([angle_atoms[2].x, angle_atoms[2].y, angle_atoms[2].z])
+            coords4 = np.array([angle_atoms[3].x, angle_atoms[3].y, angle_atoms[3].z])
 
             return self.get_dihedral(coords1, coords2, coords3, coords4)
 
         elif angle_type == 'psi':
-            assert(atom1.element == 'N' and atom2.c_type =='C_alpha' and atom3.c_type == 'Carboxy' and atom4.element == 'N')
-            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
-            coords1 = np.array([atom1.x, atom1.y, atom1.z])
-            coords2 = np.array([atom2.x, atom2.y, atom2.z])
-            coords3 = np.array([atom3.x, atom3.y, atom3.z])
-            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+            assert(angle_atoms[0].element == 'N' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].c_type == 'Carboxy' and angle_atoms[3].element == 'N')
+            assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
+            coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
+            coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
+            coords3 = np.array([angle_atoms[2].x, angle_atoms[2].y, angle_atoms[2].z])
+            coords4 = np.array([angle_atoms[3].x, angle_atoms[3].y, angle_atoms[3].z])
 
             return self.get_dihedral(coords1, coords2, coords3, coords4)
 

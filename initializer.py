@@ -110,12 +110,7 @@ class Initializer():
     
         #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
         #Get the value of angles returned by psi4
-        phi_angle_psi4 = self.tools.calculateAngle(atoms[8], atoms[5], atoms[3], atoms[6], 'phi')
-        psi_angle_psi4 = self.tools.calculateAngle(atoms[4], atoms[7], atoms[6], atoms[3], 'psi')
-
-        #Rotate the inverse (*-1) angles of psi4 to get angles to 0
-        self.tools.rotate('phi', -phi_angle_psi4, nitro_atom) 
-        self.tools.rotate('psi', -psi_angle_psi4, carboxy_atom)
+        [atoms, phi_angles_psi4, psi_angles_psi4] = self.flat_protein(atoms, nitro_atom, carboxy_atom)
 
         #Apply the calculated rotations for the angles
         phi_initial_rotation = 0
@@ -141,7 +136,7 @@ class Initializer():
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
-        self.tools.calculatePrecisionOfAngles(phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation)
+        self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phi_initial_rotation, psi_initial_rotation)
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
@@ -261,6 +256,135 @@ class Initializer():
         energy = self.psi.readEnergyFromFile()
 
         return energy
+
+    def flat_protein(self, atoms, nitro_atoms, carboxy_atoms):
+
+        phi_angles_psi4 = []
+        psi_angles_psi4 = []
+
+        next_atom = self.get_initial_atom(atoms)
+
+        all_psi = self.get_all_angle_planes(atoms, carboxy_atoms, 'psi')
+        all_phi = self.get_all_angle_planes(atoms, nitro_atoms, 'phi')
+
+        end = False
+        while(not end):
+
+            end = True
+            found = False
+            for psi in all_psi:
+
+                for atom in psi:
+                    if next_atom.atomId == atom.atomId:
+                        found = True
+                        break
+
+                if found:
+
+                    end = False
+
+                    angle = self.tools.calculateAngle(psi, 'psi')
+                    psi_angles_psi4.append(angle)
+
+                    #Rotate the inverse (*-1) angles of psi4 to get angles to 0
+                    c_atom = psi[2] # psi in 2 contains the main atom of the plane (carboxy atom)
+                    self.tools.rotate('psi', -angle, c_atom)
+
+                    next_atom = psi[len(psi)-1] 
+
+                    break
+
+            # the end of the chain has been reached
+            if end:
+                break
+            
+            found = False
+            for phi in all_phi:
+
+                for atom in phi:
+                    if next_atom.atomId == atom.atomId:
+                        found = True
+                        break
+
+                if found: 
+
+                    angle = self.tools.calculateAngle(phi, 'phi')
+                    phi_angles_psi4.append(angle)
+
+                    #Rotate the inverse (*-1) angles of psi4 to get angles to 0
+                    n_atom = phi[2] # phi in 2 contains the main atom of the plane (nitro atom)
+                    self.tools.rotate('phi', -angle, n_atom)
+
+                    next_atom = phi[0] 
+
+                    break
+            
+
+        return [atoms, phi_angles_psi4, psi_angles_psi4]
+
+    def get_initial_atom(self, atoms):
+
+        # get initial point to start to flat the protein (initial point is H-N-H)
+        initial_atom = atoms[0]
+        for at in atoms:
+            if at.element == 'N':
+
+                hidrogen_counter = 0
+                for conn in at.linked_to:
+                    if conn.element == 'H':
+                        hidrogen_counter += 1
+
+                if hidrogen_counter >= 2:
+                    initial_atom = at
+                    break
+
+        return initial_atom
+
+    def get_all_angle_planes(self, atoms, angle_atoms, type_angle):
+
+        all_angle_planes = []
+
+        if type_angle == 'psi':
+
+            atom_1 = 'N'
+            atom_2 = 'C_alpha'
+            # atom_3 is the at atom
+            atom_4 = 'N'
+
+        elif type_angle == 'phi':
+
+            atom_1 = 'Carboxy'
+            atom_2 = 'C_alpha'
+            # atom_3 is the at atom
+            atom_4 = 'Carboxy'
+
+        for atom in angle_atoms:
+
+            all_angle_atoms = []
+
+            #The order in which atoms are added is necessary to calcule correctly the angle
+            for at in atom.linked_to:
+                if at.element == atom_2 or at.c_type == atom_2:
+
+                    for at2 in at.linked_to:
+                        if at2.element == atom_1 or at2.c_type == atom_1:
+                            # add nitro
+                            all_angle_atoms.append(at2)
+
+                    # add c_alpha
+                    all_angle_atoms.append(at)
+
+            # add carboxy
+            all_angle_atoms.append(atom)
+
+            # add nitro
+            for at in atom.linked_to:
+                if at.element == atom_4 or at.c_type == atom_4:
+                    all_angle_atoms.append(at)
+
+            all_angle_planes.append(all_angle_atoms)
+
+        return all_angle_planes
 
     def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation):
 

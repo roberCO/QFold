@@ -17,7 +17,7 @@ print('## Tool that combines AI and QC to solve protein folding problem ##')
 print('###################################################################\n')
 
 #HARDCODED
-aminoacids = 'GG'
+aminoacids = 'GGG'
 
 proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])

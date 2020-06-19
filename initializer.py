@@ -112,31 +112,39 @@ class Initializer():
         #Get the value of angles returned by psi4
         [atoms, phi_angles_psi4, psi_angles_psi4] = self.flat_protein(atoms, nitro_atom, carboxy_atom)
 
-        #Apply the calculated rotations for the angles
-        phi_initial_rotation = 0
-        psi_initial_rotation = 0
+        phis_initial_rotation = []
+        psis_initial_rotation = []
 
         #random between -π and π
         if self.initialization_option == 'random':
             print('\n## RANDOM initialization for protein structure ##\n')
-            phi_initial_rotation = random.uniform(-math.pi, math.pi)
-            psi_initial_rotation = random.uniform(-math.pi, math.pi)
+
+            # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
+            for _ in range(len(nitro_atom)):
+
+                phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
+                psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
 
         #minifold
         elif self.initialization_option == 'minifold':
             print('\n## MINIFOLD initialization for protein structure ##\n')
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
-            phi_initial_rotation = angles[0][0]
-            psi_initial_rotation = angles[0][1]
 
-        #Rotate the angles to get the initializer values
-        self.tools.rotate('phi', phi_initial_rotation, nitro_atom) 
-        self.tools.rotate('psi', psi_initial_rotation, carboxy_atom)
+            for angle in angles:
+
+                phis_initial_rotation.append(angle[0])
+                psis_initial_rotation.append(angle[1])
+
+        #Rotate all angles to get the initial protein structure
+        for index in range(len(phis_initial_rotation)):
+
+                self.tools.rotate('psi', psis_initial_rotation[index], carboxy_atom[index])
+                self.tools.rotate('phi', phis_initial_rotation[index], nitro_atom[index]) 
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
-        self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phi_initial_rotation, psi_initial_rotation)
+        self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations

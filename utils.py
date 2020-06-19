@@ -293,46 +293,53 @@ class Utils():
 
         return calculated_angle_value
 
-    def calculatePrecisionOfAngles(self, phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation):
+    def calculatePrecisionOfAngles(self, phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation):
 
-        phi_precision = 0
-        psi_precision = 0
+        if len(phi_angles_psi4) != len(phis_initial_rotation) or len(psi_angles_psi4) != len(phis_initial_rotation):
+            print('<*> ERROR: The number of generated angles (initialization) is different than the number of protein angles')
 
-        option_1 = 0
-        option_2 = 0
+        phi_precisions = []
+        psi_precisions = []
 
-        if phi_initial_rotation > phi_angle_psi4:
+        for index in range(len(phi_angles_psi4)):
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_initial_rotation) + abs(-math.pi - phi_angle_psi4)
+            option_1 = 0
+            option_2 = 0
 
-        else:
+            if phis_initial_rotation[index] > phi_angles_psi4[index]:
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_angle_psi4) + abs(-math.pi - phi_initial_rotation)
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - phis_initial_rotation[index]) + abs(-math.pi - phi_angles_psi4[index])
 
-        #option_2 is common for both previous cases
-        option_2 = abs(phi_initial_rotation - phi_angle_psi4)
-        
-        minimum_option = min(option_1, option_2)
-        phi_precision = (1-(minimum_option / (2*math.pi)))*100
+            else:
 
-        if psi_initial_rotation > psi_angle_psi4:
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - phi_angles_psi4[index]) + abs(-math.pi - phis_initial_rotation[index])
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_initial_rotation) + abs(-math.pi - psi_angle_psi4)
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_angle_psi4) + abs(-math.pi - psi_initial_rotation)
+            #option_2 is common for both previous cases
+            option_2 = abs(phis_initial_rotation[index] -  phi_angles_psi4[index])
             
-        option_2 = abs(psi_initial_rotation - psi_angle_psi4)
-        minimum_option = min(option_1, option_2)
-        psi_precision = (1-(minimum_option / (2*math.pi)))*100
+            minimum_option = min(option_1, option_2)
+            phi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
 
-        print('\nPHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
-        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation, '\n')
+        for index in range(len(psi_angles_psi4)):
+
+            if psis_initial_rotation[index] > psi_angles_psi4[index]:
+
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - psis_initial_rotation[index]) + abs(-math.pi - psi_angles_psi4[index])
+
+            else:
+
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - psi_angles_psi4[index]) + abs(-math.pi - psis_initial_rotation[index])
+                
+            option_2 = abs(psis_initial_rotation[index] - psi_angles_psi4[index])
+            minimum_option = min(option_1, option_2)
+            psi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
+        
+        print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
+        print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
 
     def angle_to_binary(self, angle, number_bits_rotation):
 

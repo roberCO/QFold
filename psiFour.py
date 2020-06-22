@@ -109,4 +109,4 @@ class PsiFour():
         with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json') as json_file:
             data = json.load(json_file)
 
-            return [data['deltas'], data['psi4_min_energy'], data['initial_min_energy'], data['phi_position_min_energy'], data['psi_position_min_energy']]
+            return [data['deltas'], data['psi4_min_energy'], data['initial_min_energy'], data['index_min_energy']]

@@ -26,7 +26,7 @@ class Minifold:
         print('    ⬤ Generating input values')
         input_values = self.generate_input_values(aminoacids)
 
-        #input_aas is a rows x 34 (aas windows size) x 42 (20 aas, Van der Waals distance, Surface, 20 pssms)
+        #input_aas is a rows x aas windows size x 22 (20 aas, Van der Waals distance, Surface)
         predicted_angles = model.predict(input_values)
 
         #get angles from sin and cos. Angles are expresed between π and -π
@@ -59,86 +59,67 @@ class Minifold:
 
         print('    ⬤ Generating input for minifold prediction')
 
-        #If the protein sequence is longer than twice the windows size, it is necessary to process it step by step
-        all_protein_processed = False
-        init = 0
-        inputs = []
-        while not all_protein_processed:
+        aas_input = []
+        # iterate over each aminoacid
+        for right in range(1, len(protein_sequence)):
 
-            sequence_input = []
+            aa_input = []
+            [left_index, right_index] = self.calculate_left_right(self.window_size, right, len(protein_sequence))
+            protein_sequence_index = left_index
 
-            end = init + (self.window_size*2)
-
-            if end > len(protein_sequence):
-                end = len(protein_sequence)
-                all_protein_processed = True
-
-            protein_sequence_to_process = protein_sequence[init:end]
-            protein_sequence_index = 0
-
-            [initial_position_aa_input, final_position_aa_input] = self.calculate_min_max(self.window_size, len(protein_sequence))
-
-            # generate the input of this sequence
-            for index in range(0, self.window_size*2):
+            #create input for each aminoacid pair
+            for window_index in range(0, self.window_size*2):
 
                 column = []
 
-                # in the central columns (columns with aminoacids), it inserts one-hotter codification(0-20) and auxiliary information (Wan der Waals and radius)
-                if index >= initial_position_aa_input and index <= final_position_aa_input:
-
+                if window_index >= left_index and window_index <= right_index:
+                    
                     #in each window is necessary to create an array with 22 positions
-                    for index_onehotter_vector in range(0, 22):
-            
+                    for column_index in range(0, 22):
+
                         #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
-                        if index_onehotter_vector < len(key) and protein_sequence_to_process[protein_sequence_index] == key[index_onehotter_vector]:
+                        if column_index < len(key) and protein_sequence[protein_sequence_index] == key[column_index]:
                             column.append(1)
                             #The aminoacid is found in this index value so it is stored in a variable for the VdW and surface
-                            key_index = index_onehotter_vector
+                            key_index = column_index
 
                         #If the aa is not the same than in the key, it inserts a 0 (one-hot encoding)
-                        elif index_onehotter_vector < len(key) and protein_sequence_to_process[protein_sequence_index] != key[index_onehotter_vector]:
+                        elif column_index < len(key) and protein_sequence[protein_sequence_index] != key[column_index]:
                             column.append(0)
 
                         #Van der Waals radius
-                        elif index_onehotter_vector == 20:
+                        elif column_index == 20:
                             column.append(vdw_radius[key[key_index]]/max(radius_rel)-basis)
                             
                         #Surface
-                        elif index_onehotter_vector == 21:
+                        elif column_index == 21:
                             column.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
 
                     protein_sequence_index += 1
 
-                
-                # out of the central columns, it is necessary to insert 0 padding
-                else: 
+                else:
+                    column = np.zeros(22)
 
-                    for _ in range(0, 22):
-                        column.append(0)
+                aa_input.append(column)
 
-                sequence_input.append(column)
+            aas_input.append(aa_input)
 
-            inputs.append(sequence_input)
-            init = end
-
+        inputs = np.array(aas_input)
         return inputs
 
-    def calculate_min_max(self, window_size, aa_size):
+    def calculate_left_right(self, window_size, right, protein_sequence_length):
 
-        min = window_size
-        max = window_size
-        counter = 1
-        while counter < aa_size:
+        left = right - 1 
+        
+        for _ in range(1, window_size):
 
-            if counter < aa_size and min > 0:
-                min -= 1
-                counter += 1
+            if left > 1:
+                left -= 1
 
-            if counter < aa_size and max < window_size*2:
-                max += 1
-                counter += 1
+            if right < protein_sequence_length-1:
+                right += 1
 
-        return [min, max]
+        return [left, right]
 
     
     def extract_angles(self, predicted_angles):

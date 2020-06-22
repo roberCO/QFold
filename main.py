@@ -17,7 +17,7 @@ print('## Tool that combines AI and QC to solve protein folding problem ##')
 print('###################################################################\n')
 
 #HARDCODED
-aminoacids = 'GGG'
+aminoacids = 'GG'
 
 proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])
@@ -66,7 +66,7 @@ except IOError:
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, psi4_min_energy, initial_min_energy, phi_position_min_energy, psi_position_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 

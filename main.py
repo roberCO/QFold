@@ -46,10 +46,10 @@ psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_fil
 # Number of results is the number of steps multiplied by 2 (one for quantum and other for classical)
 total_number_resutls = (config_variables['final_step'] - config_variables['initial_step'])*2
 results = results = [{} for x in range(total_number_resutls)]
-def angle_calculator_thread(thread_index, option, deltas, step, beta_max, phi_position_min_energy, psi_position_min_energy):
+def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_min_energy):
 
         probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
-        p_t = probabilities_matrix[phi_position_min_energy][psi_position_min_energy]
+        p_t = probabilities_matrix[int(index_min_energy[0])][int(index_min_energy[1])]
 
         # Result is the calculated TTS
         results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
@@ -70,7 +70,13 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(numberBitsRotation, config_variables['ancilla_bits'], config_variables['scaling_factor'], config_variables['number_iterations'])
+angleCalculator = angleCalculator.AngleCalculator(
+    numberBitsRotation, 
+    config_variables['ancilla_bits'], 
+    config_variables['scaling_factor'], 
+    config_variables['number_iterations'],
+    len(aminoacids)
+    )
 
 q_accumulated_tts = []
 c_accumulated_tts = []
@@ -87,7 +93,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     print('\nExecuting quantum metropolis with', step, 'steps')
 
     #Thread for quantum metropolis
-    process = Thread(target=angle_calculator_thread, args=[thread_index, 0, deltas_dict, step, config_variables['beta_max'], phi_position_min_energy, psi_position_min_energy])
+    process = Thread(target=angle_calculator_thread, args=[thread_index, 0, deltas_dict, step, config_variables['beta_max'], index_min_energy])
     process.start()
     threads.append(process) 
     index_to_get_results.append(thread_index)
@@ -96,7 +102,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     print('Executing classical metropolis with', step, 'steps\n')
 
     #Thread for classical metropolis
-    process = Thread(target=angle_calculator_thread, args=[thread_index, 1, deltas_dict, step, config_variables['beta_max'], phi_position_min_energy, psi_position_min_energy])
+    process = Thread(target=angle_calculator_thread, args=[thread_index, 1, deltas_dict, step, config_variables['beta_max'], index_min_energy])
     process.start()
     threads.append(process)
     index_to_get_results.append(thread_index)

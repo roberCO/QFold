@@ -271,6 +271,7 @@ class Initializer():
                 
                 #Calculate the energy of the protein structure after the previous rotations
                 energies[index_sequence] = self.calculateEnergyOfRotation(copied_atoms)
+                print(index_sequence)
 
                 # We eliminate previous copies
                 del copied_atoms

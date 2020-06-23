@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import utils
+import copy
+import math
 
 class Metropolis():
 
-    def __init__(self, bits_rotation, n_iterations, scaling_factor, deltas_dict):
+    def __init__(self, bits_rotation, n_iterations, number_aminoacids, scaling_factor, deltas_dict):
 
         self.bits_rotation = bits_rotation
         self.n_iterations = n_iterations
@@ -12,6 +14,8 @@ class Metropolis():
         self.deltas_dict = deltas_dict
 
         self.rotatition_steps = 2**self.bits_rotation
+        self.bits_number_angles = math.ceil(np.log2(number_aminoacids))
+        self.number_angles = number_aminoacids-1
 
         self.tools = utils.Utils()
 
@@ -19,15 +23,29 @@ class Metropolis():
 
         #Final structure calculated with metropolis. This variable will be returned to angle calculator
 
-        # Random starting combination of angles
-        anglePsi_old = np.random.choice(self.rotatition_steps)
-        anglePhi_old = np.random.choice(self.rotatition_steps)
+        anglePhi_old = []
+        anglePsi_old = []
+
+        for _ in range(self.number_angles):
+
+            # Random starting combination of angles
+            anglePsi_old.append(np.random.choice(self.rotatition_steps))
+            anglePhi_old.append(np.random.choice(self.rotatition_steps))
+
+        # initially the new angles are equal to the old (then one angle will be randomly modified)
+        # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
+        anglePhi_new = copy.deepcopy(anglePhi_old)
+        anglePsi_new = copy.deepcopy(anglePsi_old)
 
         for iteration in range(self.n_iterations):
 
             # Propose a change
             # 0 = phi | 1 = psi
             change_angle = np.random.choice((0,1))
+
+            # number of angle (it is possible to have more than one phi/psi)
+            position_angle = np.random.choice(self.number_angles)
+            position_angle_binary = self.tools.angle_to_binary(position_angle, self.bits_number_angles)
 
             # 0 = -1 | 1 = 1
             change_plus_minus = np.random.choice((0,1))
@@ -36,19 +54,21 @@ class Metropolis():
             # Calculate the new angles
             if change_angle == 0:
                 #Change just +1 or -1 step in the energies dictionary
-                anglePhi_new = (anglePhi_old + pm) % self.rotatition_steps
-                anglePsi_new = anglePsi_old
+                anglePhi_new[position_angle] = (anglePhi_old[position_angle] + pm) % self.rotatition_steps
             elif change_angle == 1:
                 #Change just +1 or -1 step in the energies dictionary
-                anglePhi_new = anglePhi_old
-                anglePsi_new = (anglePsi_old + pm) % self.rotatition_steps
+                anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
             
 
-            phi_binary = self.tools.angle_to_binary(anglePhi_new, self.bits_rotation) 
-            psi_binary = self.tools.angle_to_binary(anglePsi_new, self.bits_rotation) 
+            binary_key = ''
+            for index in range(len(anglePhi_new)):
+
+                # binary key should contain: phi_1 | psi_1 | phi_2 | psi_2 | ...
+                binary_key += self.tools.angle_to_binary(anglePhi_new[index], self.bits_rotation)
+                binary_key += self.tools.angle_to_binary(anglePsi_new[index], self.bits_rotation)
 
             # This choice of Delta_E seems weird
-            Delta_E = self.deltas_dict[phi_binary + psi_binary + str(change_angle) + str(change_plus_minus)]
+            Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
 
             # Lets use a non_optimal simple schedule
             beta = iteration / self.n_iterations
@@ -58,7 +78,7 @@ class Metropolis():
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
             if random_number < min(1,probability_threshold): # Accept the change
-                anglePhi_old = anglePhi_new
-                anglePsi_old = anglePsi_new
+                anglePhi_new = copy.deepcopy(anglePhi_old)
+                anglePsi_new = copy.deepcopy(anglePsi_old)
 
         return [anglePhi_old, anglePsi_old]

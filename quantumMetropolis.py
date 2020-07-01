@@ -21,8 +21,7 @@ from math import pi
 from qiskit.aqua.utils.controlled_circuit import apply_cu3
 from qiskit.aqua import AquaError
 from itertools import product
-from time import process_time 
-
+import time
 
 
 class QuantumMetropolis():
@@ -582,10 +581,10 @@ class QuantumMetropolis():
         list_gates = []
         for i in range(self.n_repetitions):
             
-            beta = (1+i)/self.n_repetitions*self.beta_max
+            beta = ((1+i)/self.n_repetitions)*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
             
             W_gate = self.W_func(oracle)
             
@@ -593,6 +592,7 @@ class QuantumMetropolis():
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
+        start_time = time.time()
         # Use the transpiler to speedup the algorithm:
         print('Before optimization-------')
         print('gates = ', qc.count_ops())
@@ -602,8 +602,7 @@ class QuantumMetropolis():
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
 
-        # If we want to return the statevector
-        state = qi.Statevector.from_instruction(qc)
+        print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])

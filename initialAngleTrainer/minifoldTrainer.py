@@ -9,6 +9,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import progressbar
 
 # Import libraries
 import keras
@@ -29,6 +30,9 @@ from resnet_1d_angles import resnet_v2, custom_mse_mae
 class MinifoldTrainer():
     
     def __init__(self, inputPath, model_path, max_aa_length, window_size, epochs, batch_size):
+
+        #Hidde info messages from tensorflow
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
         self.inputPath = inputPath
         self.model_path = model_path
@@ -51,6 +55,8 @@ class MinifoldTrainer():
     
     def train(self):
 
+        print('\n## DATA PREPROCESSING ##\n')
+
         #Get protein under defined maximum aminoacid length
         self.getProteinsFromRaw(self.max_aa_length)
         print('<i>', len(self.names),'proteins with less than', self.max_aa_length, 'aminoacids from raw data extracted')
@@ -61,11 +67,13 @@ class MinifoldTrainer():
 
         #Angle data preparation
         self.angleDataPreparation()
-        print('<i> Angle data input for trained prepared from angles')
+        print('<i> Angle data input for training prepared from angles')
+
+        print('\n## MODEL TRAINING ##\n')
 
         #Generate model (using resnet_1d_angles)
         self.generateModel()
-        print('<i> Knowledge model generated')
+        print('\n<i> Knowledge model:', 'protein_under_'+str(self.max_aa_length)+'.h5','generated! Path:', '../'+self.model_path+'protein_under_'+str(self.max_aa_length)+'.h5')
 
     def getProteinsFromRaw(self, max_aminoacid_length):        
 
@@ -75,7 +83,6 @@ class MinifoldTrainer():
             name = ''
             seq = []
             coord = []
-
             for index in range(0, len(lines)):
                 
                 if len(self.coords) == 995:
@@ -106,7 +113,9 @@ class MinifoldTrainer():
         coords_calpha = [self.separate_coords(full_coords, 1) for full_coords in self.coords]
         coords_cterm = [self.separate_coords(full_coords, 2) for full_coords in self.coords]
 
-
+        print('<i> Computing angles from coordinates')
+        bar = progressbar.ProgressBar(maxval=len(self.coords), widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         # Compute angles for a protein
         for k in range(len(self.coords)):
             phi, psi = [0.0], []
@@ -169,10 +178,17 @@ class MinifoldTrainer():
             self.phis.append(phi)
             self.psis.append(psi)
 
+            bar.update(k+1)
+
+        bar.finish()
+
     def angleDataPreparation(self):
 
         long = 0 # Counter to ensure everythings fine
 
+        print('<i> Preparing input/output for model trainer')
+        bar = progressbar.ProgressBar(maxval=len(self.coords), widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         for i in range(len(self.seqs)): 
             if len(self.seqs[i])>self.window_size*2:
                 long += len(self.seqs[i])-self.window_size*2
@@ -183,6 +199,9 @@ class MinifoldTrainer():
                     self.outputs.append([self.phis[i][j], self.psis[i][j]])
                     # break
 
+            bar.update(i+1)
+
+        bar.finish()
         self.input_aa = np.array(self.input_aa).reshape(len(self.input_aa), self.window_size*2, 22)
 
     def generateModel(self):

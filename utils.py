@@ -43,25 +43,25 @@ class Utils():
             rad = rad * porm
         return rad
 
-    def calculateAngle(self, atom1, atom2, atom3, atom4, angle_type):
+    def calculateAngle(self, angle_atoms, angle_type):
         'Uses get dihedral to calculate angles between atoms'
         if angle_type == 'phi':
-            assert(atom1.c_type == 'Carboxy' and atom2.c_type =='C_alpha' and atom3.element == 'N' and atom4.c_type == 'Carboxy')
-            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
-            coords1 = np.array([atom1.x, atom1.y, atom1.z])
-            coords2 = np.array([atom2.x, atom2.y, atom2.z])
-            coords3 = np.array([atom3.x, atom3.y, atom3.z])
-            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+            assert(angle_atoms[0].c_type == 'Carboxy' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].element == 'N' and angle_atoms[3].c_type == 'Carboxy')
+            assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
+            coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
+            coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
+            coords3 = np.array([angle_atoms[2].x, angle_atoms[2].y, angle_atoms[2].z])
+            coords4 = np.array([angle_atoms[3].x, angle_atoms[3].y, angle_atoms[3].z])
 
             return self.get_dihedral(coords1, coords2, coords3, coords4)
 
         elif angle_type == 'psi':
-            assert(atom1.element == 'N' and atom2.c_type =='C_alpha' and atom3.c_type == 'Carboxy' and atom4.element == 'N')
-            assert(atom1 in atom2.linked_to and atom2 in atom3.linked_to and atom3 in atom4.linked_to)
-            coords1 = np.array([atom1.x, atom1.y, atom1.z])
-            coords2 = np.array([atom2.x, atom2.y, atom2.z])
-            coords3 = np.array([atom3.x, atom3.y, atom3.z])
-            coords4 = np.array([atom4.x, atom4.y, atom4.z])
+            assert(angle_atoms[0].element == 'N' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].c_type == 'Carboxy' and angle_atoms[3].element == 'N')
+            assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
+            coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
+            coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
+            coords3 = np.array([angle_atoms[2].x, angle_atoms[2].y, angle_atoms[2].z])
+            coords4 = np.array([angle_atoms[3].x, angle_atoms[3].y, angle_atoms[3].z])
 
             return self.get_dihedral(coords1, coords2, coords3, coords4)
 
@@ -293,47 +293,90 @@ class Utils():
 
         return calculated_angle_value
 
-    def calculatePrecisionOfAngles(self, phi_angle_psi4, psi_angle_psi4, phi_initial_rotation, psi_initial_rotation):
+    def calculatePrecisionOfAngles(self, phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation):
 
-        phi_precision = 0
-        psi_precision = 0
+        if len(phi_angles_psi4) != len(phis_initial_rotation) or len(psi_angles_psi4) != len(phis_initial_rotation):
+            print('<*> ERROR: The number of generated angles (initialization) is different than the number of protein angles')
 
-        option_1 = 0
-        option_2 = 0
+        phi_precisions = []
+        psi_precisions = []
 
-        if phi_initial_rotation > phi_angle_psi4:
+        for index in range(len(phi_angles_psi4)):
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_initial_rotation) + abs(-math.pi - phi_angle_psi4)
+            option_1 = 0
+            option_2 = 0
 
-        else:
+            if phis_initial_rotation[index] > phi_angles_psi4[index]:
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - phi_angle_psi4) + abs(-math.pi - phi_initial_rotation)
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - phis_initial_rotation[index]) + abs(-math.pi - phi_angles_psi4[index])
 
-        #option_2 is common for both previous cases
-        option_2 = abs(phi_initial_rotation - phi_angle_psi4)
-        
-        minimum_option = min(option_1, option_2)
-        phi_precision = (1-(minimum_option / (2*math.pi)))*100
+            else:
 
-        if psi_initial_rotation > psi_angle_psi4:
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - phi_angles_psi4[index]) + abs(-math.pi - phis_initial_rotation[index])
 
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_initial_rotation) + abs(-math.pi - psi_angle_psi4)
-
-        else:
-
-            #Calculate the distance if the angles go to zero and starts again
-            option_1 = abs(math.pi - psi_angle_psi4) + abs(-math.pi - psi_initial_rotation)
+            #option_2 is common for both previous cases
+            option_2 = abs(phis_initial_rotation[index] -  phi_angles_psi4[index])
             
-        option_2 = abs(psi_initial_rotation - psi_angle_psi4)
-        minimum_option = min(option_1, option_2)
-        psi_precision = (1-(minimum_option / (2*math.pi)))*100
+            minimum_option = min(option_1, option_2)
+            phi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
 
-        print('PHI precision: ', phi_precision, '% phi real value: ', phi_angle_psi4, 'phi calculated value:',phi_initial_rotation)
-        print('PSI precision: ', psi_precision, '% psi real value: ', psi_angle_psi4, 'psi calculated value:',psi_initial_rotation)
+        for index in range(len(psi_angles_psi4)):
+
+            if psis_initial_rotation[index] > psi_angles_psi4[index]:
+
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - psis_initial_rotation[index]) + abs(-math.pi - psi_angles_psi4[index])
+
+            else:
+
+                #Calculate the distance if the angles go to zero and starts again
+                option_1 = abs(math.pi - psi_angles_psi4[index]) + abs(-math.pi - psis_initial_rotation[index])
+                
+            option_2 = abs(psis_initial_rotation[index] - psi_angles_psi4[index])
+            minimum_option = min(option_1, option_2)
+            psi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
+        
+        print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
+        print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
+
+    def angle_to_binary(self, angle, number_bits_rotation):
+
+        return ('0'*(number_bits_rotation - len(format(angle,'b'))) + format(angle,'b'))
 
     def calculateTTS(self, precision_solution, t, p_t):
 
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
+
+    def calculate_diff_vs_mean_diffs(self, min_energy_difference, deltas_mean):
+
+        return (1 - (min_energy_difference/deltas_mean)) * 100
+
+    def calculate_delta_mean(self, deltas_dict):
+
+        array = np.array(list(deltas_dict.items()), dtype='float32')
+        return array[:,1].mean()
+
+    def calculate_std_dev_deltas(self, deltas_dict):
+
+        array = np.array(list(deltas_dict.items()), dtype='float32')
+        return array[:,1].std()
+
+    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation):
+
+        fig = plt.figure()
+        
+        ax = fig.add_subplot(111)
+        ax.set_title('TTS comparision for Quantum vs Classical Metropolis')
+        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, 1.0))
+
+        ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
+        ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
+            
+        ax.set_ylabel('TTS')
+        ax.set_xlabel('Steps')
+        plt.tight_layout()
+
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png', bbox_inches='tight')

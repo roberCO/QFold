@@ -21,6 +21,12 @@ elif len(sys.argv) == 3 and sys.argv[1] == 'trainer':
 
     if option == 0:
 
+        print('############################################################')
+        print('##                    MINIFOLD TRAINER                    ##')
+        print('##                                                        ##')
+        print('## It generates a knowledge model from a CASP input file  ##')
+        print('############################################################\n')
+
         pathInputFile = input("Path input file: ")
 
         minifold = minifoldTrainer.MinifoldTrainer(

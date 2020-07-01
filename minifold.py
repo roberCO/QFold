@@ -10,18 +10,23 @@ class Minifold:
         self.model_path = model_path+'protein_under_'+str(max_aa_length)+'.h5'
         self.window_size = window_size
 
+        #Hidde info messages from tensorflow
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+
         if not os.path.isfile(self.model_path):
 
             raise IOError('<!> ERROR: Knowledge model not existing!\nTo generate a model execute: initialAngleTrainer/initialAngleTrainer.py')
 
     def predictAngles(self, aminoacids):
 
+        print('    ⬤ Loading knowledge model')
         #Load existing model
         model = load_model(self.model_path, custom_objects={'custom_mse_mae': self.custom_mse_mae})
 
+        print('    ⬤ Generating input values')
         input_values = self.generate_input_values(aminoacids)
 
-        #input_aas is a rows x 34 (aas windows size) x 42 (20 aas, Van der Waals distance, Surface, 20 pssms)
+        #input_aas is a rows x aas windows size x 22 (20 aas, Van der Waals distance, Surface)
         predicted_angles = model.predict(input_values)
 
         #get angles from sin and cos. Angles are expresed between π and -π
@@ -34,11 +39,7 @@ class Minifold:
         """ Custom loss function - MSE + MAE """
         return mean_squared_error(y_true, y_pred)+ mean_absolute_error(y_true, y_pred)
 
-    def generate_input_values(self, aminoacids):
-
-        protein_sequence = 'GG'
-
-        input_aas = []
+    def generate_input_values(self, protein_sequence):
 
         key = "HRKDENQSYTCPAVLIGFWM"
 
@@ -56,162 +57,71 @@ class Minifold:
         surface_basis = min(surface_rel)/max(surface_rel)
 
 
-        #Method 1
+        print('    ⬤ Generating input for minifold prediction')
 
-        row_input_aas = []
-        protein_sequence_index = 0
-        for index_window in range(0, self.window_size*2):
+        aas_input = []
+        # iterate over each aminoacid
+        for right in range(1, len(protein_sequence)):
 
-            column_window = []
+            aa_input = []
+            [left_index, right_index] = self.calculate_left_right(self.window_size, right, len(protein_sequence))
+            protein_sequence_index = left_index
 
-            #Add the first aa
-            if index_window == self.window_size/2 or index_window == (self.window_size/2)+1:
+            #create input for each aminoacid pair
+            for window_index in range(0, self.window_size*2):
 
-                #This index stores the position in the key that the aminoacid was found
-                key_index = 0
+                column = []
 
-                #in each window is necessary to create an array with 22 positions
-                for index_onehotter_vector in range(0, 22):
-            
-                    #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
-                    if index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] == key[index_onehotter_vector]:
-                        column_window.append(1)
-                        #The aminoacid is found in this index value so it is stored in a variable for the VdW and surface
-                        key_index = index_onehotter_vector
-
-                    #If the aa is not the same than in the key, it inserts a 0 (one-hot encoding)
-                    elif index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] != key[index_onehotter_vector]:
-                        column_window.append(0)
-
-                    #Van der Waals radius
-                    elif index_onehotter_vector == 20:
-                        column_window.append(vdw_radius[key[key_index]]/max(radius_rel)-basis)
-                        
-                    #Surface
-                    elif index_onehotter_vector == 21:
-                        column_window.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
-
-                #The protein was found, so the point is to next protein in the sequence
-                protein_sequence_index += 1 
-
-            #Out of the columns 17 and 18, it is necessary to insert 0 padding
-            else: 
-
-                for _ in range(0, 22):
-                    column_window.append(0)
-
-            row_input_aas.append(column_window)
-            
-        input_aas.append(row_input_aas)
-        aas = np.array(input_aas)
-
-        return aas
-
-    '''
-        #Method 2
-
-        row_input_aas = []
-        protein_sequence_index = 0
-        for index_window in range(0, 34):
-
-            column_window = []
-
-            #Add the first aa
-            if index_window == 17 or index_window == 18:
-
-                #This index stores the position in the key that the aminoacid was found
-                key_index = 0
-
-                #in each window is necessary to create an array with 42 positions
-                for index_onehotter_vector in range(0, 42):
-            
-                    #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
-                    if index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] == key[index_onehotter_vector]:
-                        column_window.append(1)
-                        #The aminoacid is found in this index value so it is stored in a variable for the VdW and surface
-                        key_index = index_onehotter_vector
-
-                    #If the aa is not the same than in the key, it inserts a 0 (one-hot encoding)
-                    elif index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] != key[index_onehotter_vector]:
-                        column_window.append(0)
-
-                    #Van der Waals radius
-                    elif index_onehotter_vector == 20:
-                        column_window.append(vdw_radius[key[key_index]]/max(radius_rel)-basis)
-                        
-                    #Surface
-                    elif index_onehotter_vector == 21:
-                        column_window.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
+                if window_index >= left_index and window_index <= right_index:
                     
-                    #PSSMs that are always with 0 values
-                    elif index_onehotter_vector > 21:
-                        column_window.append(0)
+                    #in each window is necessary to create an array with 22 positions
+                    for column_index in range(0, 22):
 
-                #The protein was found, so the point is to next protein in the sequence
-                protein_sequence_index += 1 
+                        #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
+                        if column_index < len(key) and protein_sequence[protein_sequence_index] == key[column_index]:
+                            column.append(1)
+                            #The aminoacid is found in this index value so it is stored in a variable for the VdW and surface
+                            key_index = column_index
 
-            #Out of the columns 17 and 18, it is necessary to insert 0 padding
-            else: 
+                        #If the aa is not the same than in the key, it inserts a 0 (one-hot encoding)
+                        elif column_index < len(key) and protein_sequence[protein_sequence_index] != key[column_index]:
+                            column.append(0)
 
-                for _ in range(0, 42):
-                    column_window.append(0)
+                        #Van der Waals radius
+                        elif column_index == 20:
+                            column.append(vdw_radius[key[key_index]]/max(radius_rel)-basis)
+                            
+                        #Surface
+                        elif column_index == 21:
+                            column.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
 
-            row_input_aas.append(column_window)
-            
-        input_aas.append(row_input_aas)
+                    protein_sequence_index += 1
 
-        row_input_aas = []
-        protein_sequence_index = 0
-        for index_window in range(0, 34):
+                else:
+                    column = np.zeros(22)
 
-            column_window = []
+                aa_input.append(column)
 
-            #Add the first aa
-            if index_window == 18 or index_window == 19:
+            aas_input.append(aa_input)
 
-                #This index stores the position in the key that the aminoacid was found
-                key_index = 0
+        inputs = np.array(aas_input)
+        return inputs
 
-                #in each window is necessary to create an array with 42 positions
-                for index_onehotter_vector in range(0, 42):
-            
-                    #If the aa is the same than in the key, it inserts a 1 (one-hot encoding)
-                    if index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] == key[index_onehotter_vector]:
-                        column_window.append(1)
-                        #The aminoacid is found in this index value so it is stored in a variable for the VdW and surface
-                        key_index = index_onehotter_vector
+    def calculate_left_right(self, window_size, right, protein_sequence_length):
 
-                    #If the aa is not the same than in the key, it inserts a 0 (one-hot encoding)
-                    elif index_onehotter_vector < len(key) and protein_sequence[protein_sequence_index] != key[index_onehotter_vector]:
-                        column_window.append(0)
+        left = right - 1 
+        
+        for _ in range(1, window_size):
 
-                    #Van der Waals radius
-                    elif index_onehotter_vector == 20:
-                        column_window.append(vdw_radius[key[key_index]]/max(radius_rel)-basis)
-                        
-                    #Surface
-                    elif index_onehotter_vector == 21:
-                        column_window.append(surface[key[key_index]]/max(surface_rel)-surface_basis)
-                    
-                    #PSSMs that are always with 0 values
-                    elif index_onehotter_vector > 21:
-                        column_window.append(0)
+            if left > 1:
+                left -= 1
 
-                #The protein was found, so the point is to next protein in the sequence
-                protein_sequence_index += 1 
+            if right < protein_sequence_length-1:
+                right += 1
 
-            #Out of the columns 17 and 18, it is necessary to insert 0 padding
-            else: 
+        return [left, right]
 
-                for _ in range(0, 42):
-                    column_window.append(0)
-
-            row_input_aas.append(column_window)
-            
-        input_aas.append(row_input_aas)
-
-        return np.array(input_aas)
-    '''
+    
     def extract_angles(self, predicted_angles):
 
         angles = []

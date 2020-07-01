@@ -45,6 +45,10 @@ class QuantumMetropolis():
 
         [self.move_preparation_gate, self.conditional_move_gate, self.reflection_gate] = self.prepare_initial_circuits()
 
+        # For n angles
+        # [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits()
+
+
     # This is the move preparation gate
     def move_preparation(self, circuit,move_id,move_value):
         '''
@@ -161,7 +165,7 @@ class QuantumMetropolis():
 
         return [move_preparation_gate, conditional_move_gate, reflection_gate]
 
-    def prepare_initial_circuits_naminoacids(self):
+    def prepare_initial_circuits_n(self):
 
         # Code the move preparation as a gate
         s_move_id = QuantumRegister(self.move_id_len) 
@@ -180,7 +184,7 @@ class QuantumMetropolis():
         for i in range(self.n_angles):
             s_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
 
-        # Creaets the circuit
+        # Creates the circuit
         sub_circ = QuantumCircuit(s_angles[0])
         for i in range(1, self.n_angles):
             q = QuantumCircuit(s_angles[i])
@@ -190,7 +194,7 @@ class QuantumMetropolis():
         #sub_circ = QuantumCircuit([s_angles[i] for i in range(self.n_angles)], s_move_id, s_move_value ,s_coin , s_ancilla)
 
         self.conditional_move_npeptide(sub_circ,s_coin,s_move_id,s_move_value,s_angles,s_ancilla)
-        conditional_move_gate = sub_circ.to_instruction()
+        conditional_move_gate_n = sub_circ.to_instruction()
 
         # Codes the reflection as a gate
         s_move_id = QuantumRegister(self.move_id_len) 
@@ -201,7 +205,7 @@ class QuantumMetropolis():
         self.reflection(sub_circ,s_move_id,s_move_value,s_coin)
         reflection_gate = sub_circ.to_instruction()
 
-        return [move_preparation_gate, conditional_move_gate, reflection_gate]
+        return [move_preparation_gate, conditional_move_gate_n, reflection_gate]
 
     # Add one to the circuit passed as parameter
     def sum1(self, circuit,qubit_string,control,start,end):
@@ -337,7 +341,7 @@ class QuantumMetropolis():
         #coin_flip_gate.params[0]= a_given_beta
         qc.append(coin_flip_gate.inverse(), [angle_phi[j] for j in range(angle_phi.size)]+[angle_psi[j] for j in range(angle_psi.size)] + [move_id[0], move_value[0],coin[0]] + [ancilla[j] for j in range(ancilla.size)])
     '''
-    def coin_flip_func_n(self, oracle, n_aminoacids):
+    def coin_flip_func_n(self, oracle):
         
         '''
         Defines de coin_flip_gate using the oracle that is provided on the moment.
@@ -412,7 +416,7 @@ class QuantumMetropolis():
         #D coin_flip_gate.params[0]= beta ---- Deprecated
         
         # Define the coin_flip_gate
-        coin_flip_gate = self.coin_flip_func(oracle)
+        coin_flip_gate = self.coin_flip_func_n(oracle)
 
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
@@ -485,6 +489,110 @@ class QuantumMetropolis():
         
         return W_gate
 
+    def U_func_n(self):
+        
+        '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
+
+        # State definition. All angles range from 0 to 2pi
+        w_angles = []
+        for i in len(self.n_angles):
+            w_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
+
+        # Move proposal
+        w_move_id = QuantumRegister(self.move_id_len, name = 'move_id') #Which angle are we modifying
+        w_move_value = QuantumRegister(1, name = 'move_value') #0 -> decrease the angle. 1-> increase it
+
+        # Coin
+        w_coin = QuantumRegister(1, name = 'coin')
+
+        # Ancillas
+        w_ancilla = QuantumRegister(self.n_ancilla_bits, name = 'ancilla')
+
+        # Circuit
+        qc = QuantumCircuit(w_angles[0])
+        for i in range(1, self.n_angles):
+            q = QuantumCircuit(w_angles[i])
+            qc = qc + q
+        q = QuantumCircuit(w_move_id, w_move_value ,w_coin , w_ancilla)
+        qc = qc + q
+        #qc = QuantumCircuit(w_angle_phi,w_angle_psi,w_move_id,w_move_value,w_coin,w_ancilla)
+
+        #D beta = Parameter('β') ---- Deprecated
+        #D coin_flip_gate.params[0]= beta ---- Deprecated
+        
+        # Define the coin_flip_gate
+        #coin_flip_gate = self.coin_flip_func(oracle)
+
+        # Move preparation
+        qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
+        
+        # Coin flip    
+        qc.u3( theta =  np.pi/6, 0, lam = np.pi, w_coin)
+
+        # Conditional move
+        qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+
+        # Inverse coin flip
+        qc.u3( theta = -np.pi/6, 0, lam = np.pi, w_coin)
+        # Inverse move preparation
+        qc.append(self.move_preparation_gate.inverse(), [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
+
+        # Reflection
+        qc.append(self.reflection_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0],w_coin[0]])
+
+        U_gate = qc.to_instruction()
+        
+        return U_gate
+
+    def U_func(self):
+        
+        '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
+
+        # State definition. All angles range from 0 to 2pi
+        w_angle_phi = QuantumRegister(self.n_precision_bits, name = 'angle_phi')
+        w_angle_psi = QuantumRegister(self.n_precision_bits, name = 'angle_psi') 
+
+        # Move proposal
+        w_move_id = QuantumRegister(1, name = 'move_id') #Which angle are we modifying
+        w_move_value = QuantumRegister(1, name = 'move_value') #0 -> decrease the angle. 1-> increase it
+
+        # Coin
+        w_coin = QuantumRegister(1, name = 'coin')
+
+        # Ancillas
+        w_ancilla = QuantumRegister(self.n_ancilla_bits, name = 'ancilla')
+
+        # Circuit
+        qc = QuantumCircuit(w_angle_phi,w_angle_psi,w_move_id,w_move_value,w_coin,w_ancilla)
+
+        #D beta = Parameter('β') ---- Deprecated
+        #D coin_flip_gate.params[0]= beta ---- Deprecated
+        
+        # Define the coin_flip_gate
+        #coin_flip_gate = self.coin_flip_func(oracle)
+
+        # Move preparation
+        qc.append(self.move_preparation_gate, [w_move_id[0], w_move_value[0]])
+        
+        # Coin flip    
+        qc.u3( theta = np.pi/6, 0, lam = np.pi, w_coin)
+
+        # Conditional move
+        qc.append(self.conditional_move_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0], w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+
+        # Inverse coin flip
+        qc.u3( theta = -np.pi/6, 0, lam = np.pi, w_coin)
+
+        # Inverse move preparation
+        qc.append(self.move_preparation_gate.inverse(), [w_move_id[0], w_move_value[0]])
+
+        # Reflections
+        qc.append(self.reflection_gate, [w_move_id[0], w_move_value[0],w_coin[0]])
+
+        U_gate = qc.to_instruction()
+        
+        return U_gate
+
     '''
     Use as:
         #W_gate.params[0]= a_given_beta
@@ -512,6 +620,21 @@ class QuantumMetropolis():
 
         # Metropolis algorithm (create one input oracle for each beta)
         list_gates = []
+
+        # If initialization is totally mixed use
+        # qc.h(g_angle_phi)
+        # qc.h(g_angle_psi)
+
+        # If initialization is from minifold
+
+        # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
+
+        U_gate = self.U_func(oracle)
+
+        for i in range(3):
+            qc.append(U_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+
+
         for i in range(self.n_repetitions):
             
             beta = (1+i)/self.n_repetitions*self.beta_max
@@ -580,6 +703,21 @@ class QuantumMetropolis():
 
         # Metropolis algorithm (create one input oracle for each beta)
         list_gates = []
+
+        # If initialization is totally mixed use
+        # for angle in angles:
+        #   qc.h(angle)
+
+        # If initialization is from minifold
+
+        # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
+
+        U_gate = self.U_func_n(oracle)
+
+        for i in range(3):
+            qc.append(W_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+
+
         for i in range(self.n_repetitions):
             
             beta = ((1+i)/self.n_repetitions)*self.beta_max
@@ -587,7 +725,7 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
             
-            W_gate = self.W_func(oracle)
+            W_gate = self.W_func_n(oracle)
             
             list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
             #list_gates[i].params[0]= beta

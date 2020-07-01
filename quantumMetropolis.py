@@ -46,7 +46,7 @@ class QuantumMetropolis():
         [self.move_preparation_gate, self.conditional_move_gate, self.reflection_gate] = self.prepare_initial_circuits()
 
         # For n angles
-        # [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits()
+        # [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
 
 
     # This is the move preparation gate

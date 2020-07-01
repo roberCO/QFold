@@ -27,7 +27,7 @@ from time import process_time
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, n_precision_bits, n_ancilla_bits, beta_max, input_oracle):
+    def __init__(self, n_repetitions, n_precision_bits, n_ancilla_bits, n_angles, beta_max, input_oracle):
 
         #Global variables
 
@@ -37,7 +37,10 @@ class QuantumMetropolis():
         self.n_precision_bits = n_precision_bits
         #Oracle ancilla bits
         self.n_ancilla_bits = n_ancilla_bits
+        self.n_angles = n_angles
         self.beta_max = beta_max
+
+        self.move_id_len = np.ceil(np.log2(n_angles))
 
         self.input_oracle = input_oracle
 
@@ -48,11 +51,15 @@ class QuantumMetropolis():
         '''
         Proposes new moves
         '''
-        circuit.h(move_id)
-        circuit.h(move_value)
+        circuit.h(move_value) #Es un único bit que puede ser 0 para + y 1 para -
+        if bin(self.n_angles).count('1') == 1: # if the number of angles is a power of two
+            circuit.h(move_id)
+        else:
+            vector = ([1]*self.n_angles + [0]*(2**(self.move_id_len) - self.n_angles))/np.sqrt(self.n_angles)
+            circuit.initialize(vector, [move_id[j] for j in range(self.move_id_len)])
 
     # Use as qc.append(move_preparation, [move_id[0], move_value[0]])
-    def conditional_move_dipeptide(self, circuit,coin,move_id,move_value,angle_phi,angle_psi,ancilla):
+    def conditional_move_dipeptide(self,circuit,coin,move_id,move_value,angle_phi,angle_psi,ancilla):
         '''
         Conditioned on coin, perform a move. For a dipeptide!
         We use a repetitive structure where we perform the conditional sum and substraction for each angle.
@@ -61,37 +68,45 @@ class QuantumMetropolis():
         # For angle_phi = angle_id = 0 ----------------------------------------------
         circuit.x(move_id) # Put move_id in 1
         
-        # Conditional on move_id = 0, move_value = 1 and coin = 1, increase angle_phi by on
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])
-        #circuit.append(Gate("mcx", 5, []), [move_id[0], move_id[1], move_value, coin, ancilla[0]]) #create a single control
-        self.sum1(circuit,angle_phi,ancilla[0],ancilla[1],ancilla[2]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])
-        
-        # Conditional on move_id = 0, move_value = 0 and coin = 1, decrease angle_ psi by on
-        # Put move_id in 11
-        circuit.x(move_value)
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        self.substract1(circuit,angle_phi,ancilla[0],ancilla[1],ancilla[2]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        circuit.x(move_value)
-        
-        circuit.x(move_id)
+        # Conditional on move_id = 0, and coin = 1, increase/decrease angle_psi by one (move_value = 0/1)
+        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])
+        self.sumsubstract1(circuit,angle_phi,ancilla[0],ancilla[1],ancilla[2], move_value[0]) #calc_anc_size(len_angle_value) =6 in this cased
+        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])
+
+        circuit.x(move_id) # Return move_id to 0
         
         # For angle_psi = angle_id = 1 ----------------------------------------------
-        # Put move_id in 11
+        # Move_id is in 1
         
-        # Conditional on move_id = 1, move_value = 1 and coin = 1, increase angle_psi by one
-        circuit.mcrx(theta = pi, q_controls = [move_id[0],move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        self.sum1(circuit,angle_psi,ancilla[0],ancilla[1],ancilla[2]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0],move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        
-        # Conditional on move_id = 1, move_value = 0 and coin = 1, decrease angle_psi by one
-        # Put move_id in 11
-        circuit.x(move_value)
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        self.substract1(circuit,angle_psi,ancilla[0],ancilla[1],ancilla[2]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], move_value[0], coin[0]], q_target = ancilla[0])#create a single control
-        circuit.x(move_value)
+        # Conditional on move_id = 1, and coin = 1, increase/decrease angle_psi by one (move_value = 0/1) 
+        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])#create a single control
+        self.sumsubstract1(circuit,angle_psi,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #calc_anc_size(len_angle_value) =6 in this cased
+        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])#create a single control
+
+    def conditional_move_npeptide(self,circuit,coin,move_id,move_value,angles,ancilla):
+        '''
+        Conditioned on coin, perform a move. For a dipeptide!
+        We use a repetitive structure where we perform the conditional sum and substraction for each angle.
+        '''
+        # For each angle
+        for i in range(self.n_angles):
+            angle = angles[i] #Select the angle from the list of registers
+            angle_index = str(bin(i))[2:] #convert i to binary
+            angle_index = '0'*(move_id.size - len(angle_index)) + angle_index 
+
+            # Put the given move_id in all 1 to control on it: for instance if we are controling on i=2, move 010 ->111
+            for j in range(len(angle_index)):
+                if angle_index[j] == '0':
+                    circuit.x(move_id[j])
+
+            circuit.mcrx(theta = pi, q_controls = [(move_id[j] for j in range(move_id.size)), coin[0]], q_target = ancilla[0])#create a single control
+            self.sumsubstract1(circuit,angle,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #sum or substract 1 to the angle
+            circuit.mcrx(theta = pi, q_controls = [(move_id[j] for j in range(move_id.size)), coin[0]], q_target = ancilla[0])#create a single control        
+            
+            # Undo the move_id preparation: for instance, if we are controlling on i= 2 move 111->010
+            for j in range(len(angle_index)):
+                if angle_index[j] == '0':
+                    circuit.x(move_id[j])
 
     # To use it or its inverse
     # qc.append(conditional_move.inverse(), [(angle_phi[j] for j in range(angle_phi.size)),(angle_psi[j] for j in range(angle_psi.size)),move_id[0], move_value[0], coin[0], ancilla[0], ancilla[1], ancilla[2]])
@@ -147,6 +162,47 @@ class QuantumMetropolis():
 
         return [move_preparation_gate, conditional_move_gate, reflection_gate]
 
+    def prepare_initial_circuits_naminoacids(self):
+
+        # Code the move preparation as a gate
+        s_move_id = QuantumRegister(self.move_id_len) 
+        s_move_value = QuantumRegister(1)
+
+        sub_circ = QuantumCircuit(s_move_id, s_move_value)
+        self.move_preparation(sub_circ,s_move_id,s_move_value)
+        move_preparation_gate = sub_circ.to_instruction()
+
+        # Codes the conditional_move as a gate
+        s_move_id = QuantumRegister(self.move_id_len)
+        s_move_value = QuantumRegister(1)
+        s_coin = QuantumRegister(1)
+        s_ancilla = QuantumRegister(self.n_ancilla_bits)
+        s_angles = []
+        for i in range(self.n_angles):
+            s_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
+
+        # Creaets the circuit
+        sub_circ = QuantumCircuit(s_angles[0])
+        for i in range(1, self.n_angles):
+            q = QuantumCircuit(s_angles[i])
+            sub_circ = sub_circ + q
+        q = QuantumCircuit(s_move_id, s_move_value ,s_coin , s_ancilla)
+        sub_circ = sub_circ + q
+        #sub_circ = QuantumCircuit([s_angles[i] for i in range(self.n_angles)], s_move_id, s_move_value ,s_coin , s_ancilla)
+
+        self.conditional_move_npeptide(sub_circ,s_coin,s_move_id,s_move_value,s_angles,s_ancilla)
+        conditional_move_gate = sub_circ.to_instruction()
+
+        # Codes the reflection as a gate
+        s_move_id = QuantumRegister(self.move_id_len) 
+        s_move_value = QuantumRegister(1)
+        s_coin = QuantumRegister(1)
+
+        sub_circ = QuantumCircuit(s_move_id,s_move_value,s_coin)
+        self.reflection(sub_circ,s_move_id,s_move_value,s_coin)
+        reflection_gate = sub_circ.to_instruction()
+
+        return [move_preparation_gate, conditional_move_gate, reflection_gate]
 
     # Add one to the circuit passed as parameter
     def sum1(self, circuit,qubit_string,control,start,end):
@@ -206,6 +262,27 @@ class QuantumMetropolis():
         
         circuit.x(qubit_string)
 
+    def sumsubstract1(self,circuit,qubit_string,control,start,end,move_value):
+        '''
+        Outputs:
+        Sum/Substracts register 2 (control, 1 qubit) from register 1 (qubit_string) in register 1. Tested ok.
+
+        Input:
+        circuit: QuantumCircuit with registers qubit_string, control, ancilla and move_value
+        qubit_string: QuantumRegister where the sum/substraction is performed
+        control: Qubit. Use ancilla[0] or similar. It encodes the probability of change.
+        start: Qubit. Use ancilla[1] or similar
+        end: Qubit. Use ancilla[2] or similar
+        move_value: 1 to substract, 0 to sum
+
+        Comments: In binary, substracting is the same procedure as summing when we exchange 0s and 1s
+        '''
+        circuit.cx(move_value,qubit_string)
+
+        self.sum1(circuit,qubit_string,control,start,end)
+
+        circuit.cx(move_value,qubit_string)
+
     def coin_flip(self, circuit,coin,ancilla):
         '''
         Prepares the coin with the probability encoded in the ancilla.
@@ -261,6 +338,105 @@ class QuantumMetropolis():
         #coin_flip_gate.params[0]= a_given_beta
         qc.append(coin_flip_gate.inverse(), [angle_phi[j] for j in range(angle_phi.size)]+[angle_psi[j] for j in range(angle_psi.size)] + [move_id[0], move_value[0],coin[0]] + [ancilla[j] for j in range(ancilla.size)])
     '''
+    def coin_flip_func_n(self, oracle, n_aminoacids):
+        
+        '''
+        Defines de coin_flip_gate using the oracle that is provided on the moment.
+        Notice that oracle gate has registers oracle.variable_register and oracle.output_register in that order
+        oracle.variable_register should have size angle_phi.size + angle_psi.size + move_id.size + move_value.size
+        oracle.output_register should have size ancilla.size
+        '''
+
+        # Construct an instruction for the oracle
+        oracle.construct_circuit()
+        oracle_circuit = oracle.circuit
+        #print(oracle_circuit)
+        oracle_gate = oracle_circuit.to_instruction()
+
+
+        # Let us create a circuit for coin_flip
+        cf_move_id = QuantumRegister(self.move_id_len) 
+        cf_move_value = QuantumRegister(1)
+        cf_coin = QuantumRegister(1)
+        cf_ancilla = QuantumRegister(self.n_ancilla_bits)
+
+        cf_angles = []
+        for i in len(self.n_angles):
+            cf_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
+
+        cf_circ = QuantumCircuit(cf_angles[0])
+        for i in range(1, self.n_angles):
+            q = QuantumCircuit(cf_angles[i])
+            cf_circ = cf_circ + q
+        q = QuantumCircuit(cf_move_id, cf_move_value ,cf_coin , cf_ancilla)
+        cf_circ = cf_circ + q
+        #cf_circ = QuantumCircuit([cf_angles[i] for i in range(self.n_angles)], cf_move_id, cf_move_value ,cf_coin , cf_ancilla)
+
+        # Main operations
+        cf_circ.append(oracle_gate, [cf_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))]+ [cf_move_id[j] for j in range(cf_move_id.size)] + [cf_move_value[0]] +[cf_ancilla[j] for j in range(cf_ancilla.size)])
+        self.coin_flip(cf_circ,cf_coin,cf_ancilla)
+        cf_circ.append(oracle_gate.inverse(), [cf_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))]+ [cf_move_id[j] for j in range(cf_move_id.size)] + [cf_move_value[0]] +[cf_ancilla[j] for j in range(cf_ancilla.size)])
+        
+        coin_flip_gate = cf_circ.to_instruction()
+        
+        return coin_flip_gate
+
+    def W_func_n(self, oracle):
+        
+        '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
+
+        # State definition. All angles range from 0 to 2pi
+        w_angles = []
+        for i in len(self.n_angles):
+            w_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
+
+        # Move proposal
+        w_move_id = QuantumRegister(self.move_id_len, name = 'move_id') #Which angle are we modifying
+        w_move_value = QuantumRegister(1, name = 'move_value') #0 -> decrease the angle. 1-> increase it
+
+        # Coin
+        w_coin = QuantumRegister(1, name = 'coin')
+
+        # Ancillas
+        w_ancilla = QuantumRegister(self.n_ancilla_bits, name = 'ancilla')
+
+        # Circuit
+        qc = QuantumCircuit(w_angles[0])
+        for i in range(1, self.n_angles):
+            q = QuantumCircuit(w_angles[i])
+            qc = qc + q
+        q = QuantumCircuit(w_move_id, w_move_value ,w_coin , w_ancilla)
+        qc = qc + q
+        #qc = QuantumCircuit(w_angle_phi,w_angle_psi,w_move_id,w_move_value,w_coin,w_ancilla)
+
+        #D beta = Parameter('β') ---- Deprecated
+        #D coin_flip_gate.params[0]= beta ---- Deprecated
+        
+        # Define the coin_flip_gate
+        coin_flip_gate = self.coin_flip_func(oracle)
+
+        # Move preparation
+        qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
+        
+        # Coin flip    
+        qc.append(coin_flip_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+
+        # Conditional move
+        qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+
+        # Inverse coin flip
+        qc.append(coin_flip_gate.inverse(), [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+
+        # Inverse move preparation
+        qc.append(self.move_preparation_gate.inverse(), [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
+
+        # Reflection
+        qc.append(self.reflection_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0],w_coin[0]])
+
+        W_gate = qc.to_instruction()
+        
+        return W_gate
+
     def W_func(self, oracle):
         
         '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
@@ -301,9 +477,9 @@ class QuantumMetropolis():
         qc.append(coin_flip_gate.inverse(), [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse move preparation
-        qc.append(self.move_preparation_gate, [w_move_id[0], w_move_value[0]])
+        qc.append(self.move_preparation_gate.inverse(), [w_move_id[0], w_move_value[0]])
 
-        # Reflection
+        # Reflections
         qc.append(self.reflection_gate, [w_move_id[0], w_move_value[0],w_coin[0]])
 
         W_gate = qc.to_instruction()
@@ -349,7 +525,7 @@ class QuantumMetropolis():
             old_E = energies_dictionary0[int_phi + int_psi]
             
             for plusminus in [0,1]:
-                pm = 2*plusminus - 1
+                pm = -2*plusminus + 1 ### Notice that with this convention 0 -> +1; 1 -> -1. Important for sumsubstract1
                 
                 for phipsi in [0,1]:
                     if phipsi == 0:
@@ -401,6 +577,15 @@ class QuantumMetropolis():
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
+        # Use the transpiler to speedup the algorithm:
+        print('Before optimization-------')
+        print('gates = ', qc.count_ops())
+        print('depth = ', qc.depth())
+        qc = transpile(qc, backend='qasm_simulator', seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', qc.count_ops())
+        print('depth = ', qc.depth())
+
         # If instead we want to return the statevector
         state = qi.Statevector.from_instruction(qc)
 
@@ -417,3 +602,124 @@ class QuantumMetropolis():
                 probs = []
 
         return relevant_probabilities
+
+    def execute_quantum_metropolis_n(self):
+        # TO BE MODIFIED
+
+        # Let us create the energy dictionary        
+        energies_dictionary0 = {}
+
+        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
+        #Create dictionary with binary values for phi and psi as key and energies as values 
+        for index_phi in range(len(self.input_oracle)):
+            for index_psi in range(len(self.input_oracle[index_phi])):
+
+                #Phi to binary
+                phi = format(index_phi,'b')
+                phi = '0'*(self.n_precision_bits - len(phi)) + phi
+
+                #Psi to binary
+                psi = format(index_psi,'b')
+                psi = '0'*(self.n_precision_bits - len(psi)) + psi
+
+                #Insert energy for these phi and psi
+                energy = self.input_oracle[index_phi][index_psi]
+                energies_dictionary0[phi + psi] = energy
+            
+        #MOVE TO QUANTUM UTILS AND PASSED THE DICTIONARY TO THIS CLASS
+        #Calculate Δ of rotations (difference between energies after rotate one of the angles)
+        energies_dictionary = {}
+        for phi, psi in product(range(2**self.n_precision_bits),range(2**self.n_precision_bits)):    
+            int_phi = format(phi,'b')
+            int_phi = '0'*(self.n_precision_bits - len(int_phi)) + int_phi
+            int_psi = format(psi,'b')
+            int_psi = '0'*(self.n_precision_bits - len(int_psi)) + int_psi
+            old_E = energies_dictionary0[int_phi + int_psi]
+            
+            for plusminus in [0,1]:
+                pm = -2*plusminus + 1 ### Notice that with this convention 0 -> +1; 1 -> -1. Important for sumsubstract1
+                
+                for phipsi in [0,1]:
+                    if phipsi == 0:
+                        new_phi = (phi + pm) % (2**self.n_precision_bits)
+                        new_psi = psi
+                        
+                    if phipsi == 1:
+                        new_phi = phi
+                        new_psi = (psi + pm) % (2**self.n_precision_bits)
+                        
+                    int_new_phi = format(new_phi,'b')
+                    int_new_phi = '0'*(self.n_precision_bits - len(int_new_phi)) + int_new_phi
+                    int_new_psi = format(new_psi,'b')
+                    int_new_psi = '0'*(self.n_precision_bits - len(int_new_psi)) + int_new_psi
+                    new_E = energies_dictionary0[int_new_phi + int_new_psi]
+                    
+                    energies_dictionary[int_phi + int_psi + str(phipsi) + str(plusminus)] = new_E - old_E
+                    
+
+        # State definition. All angles range from 0 to 2pi
+        # State definition. All angles range from 0 to 2pi
+        g_angles = []
+        for i in len(self.n_angles):
+            g_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
+
+        # Move proposal
+        g_move_id = QuantumRegister(self.move_id_len, name = 'move_id') #Which angle are we modifying
+        g_move_value = QuantumRegister(1, name = 'move_value') #0 -> decrease the angle. 1-> increase it
+
+        # Coin
+        g_coin = QuantumRegister(1, name = 'coin')
+
+        # Ancillas
+        g_ancilla = QuantumRegister(self.n_ancilla_bits, name = 'ancilla')
+
+        # Circuit
+        qc = QuantumCircuit(g_angles[0])
+        for i in range(1, self.n_angles):
+            q = QuantumCircuit(g_angles[i])
+            qc = qc + q
+        q = QuantumCircuit(g_move_id, g_move_value ,g_coin , g_ancilla)
+        qc = qc + q
+
+        # Metropolis algorithm (create one input oracle for each beta)
+        list_gates = []
+        for i in range(self.n_repetitions):
+            
+            beta = (1+i)/self.n_repetitions*self.beta_max
+            
+            #It creates one different oracle for each beta
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
+            
+            W_gate = self.W_func(oracle)
+            
+            list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
+            #list_gates[i].params[0]= beta
+            qc.append(W_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+
+        # Use the transpiler to speedup the algorithm:
+        print('Before optimization-------')
+        print('gates = ', qc.count_ops())
+        print('depth = ', qc.depth())
+        qc = transpile(qc, backend='qasm_simulator', seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', qc.count_ops())
+        print('depth = ', qc.depth())
+
+        # If we want to return the statevector
+        state = qi.Statevector.from_instruction(qc)
+
+        # Extract probabilities in the measurement of the angles phi and psi
+        probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
+
+        relevant_probabilities = []
+        probs = []
+        for i in range(2**(self.n_precision_bits *2)):
+
+            probs.append(probabilities[i])
+            if (i+1) % 2**self.n_precision_bits == 0:
+                relevant_probabilities.append(probs)
+                probs = []
+
+        return relevant_probabilities
+
+# TO DO: initizialisation. 

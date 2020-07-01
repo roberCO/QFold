@@ -525,6 +525,7 @@ class QuantumMetropolis():
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
+        start_time = time.time()
         # Use the transpiler to speedup the algorithm:
         print('Before optimization-------')
         print('gates = ', qc.count_ops())
@@ -534,8 +535,8 @@ class QuantumMetropolis():
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
 
-        # If instead we want to return the statevector
         state = qi.Statevector.from_instruction(qc)
+        print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
@@ -602,6 +603,7 @@ class QuantumMetropolis():
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
 
+        state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 
         # Extract probabilities in the measurement of the angles phi and psi

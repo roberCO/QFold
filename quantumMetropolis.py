@@ -88,7 +88,7 @@ class QuantumMetropolis():
 
     def conditional_move_npeptide(self,circuit,coin,move_id,move_value,angles,ancilla):
         '''
-        Conditioned on coin, perform a move. For a dipeptide!
+        Conditioned on coin, perform a move. Tested ok.
         We use a repetitive structure where we perform the conditional sum and substraction for each angle.
         '''
         # For each angle
@@ -102,9 +102,9 @@ class QuantumMetropolis():
                 if angle_index[j] == '0':
                     circuit.x(move_id[j])
 
-            circuit.mcrx(theta = pi, q_controls = [(move_id[j] for j in range(move_id.size)), coin[0]], q_target = ancilla[0])#create a single control
+            circuit.mcrx(theta = pi, q_controls = [move_id[j] for j in range(move_id.size)] +[coin[0]], q_target = ancilla[0])#create a single control
             self.sumsubstract1(circuit,angle,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #sum or substract 1 to the angle
-            circuit.mcrx(theta = pi, q_controls = [(move_id[j] for j in range(move_id.size)), coin[0]], q_target = ancilla[0])#create a single control        
+            circuit.mcrx(theta = pi, q_controls = [move_id[j] for j in range(move_id.size)] +[coin[0]], q_target = ancilla[0])#create a single control        
             
             # Undo the move_id preparation: for instance, if we are controlling on i= 2 move 111->010
             for j in range(len(angle_index)):
@@ -298,8 +298,8 @@ class QuantumMetropolis():
         #Notice also that cu3(theta) rotates theta/2. As the first angle to rotate is pi/4 we need to start in theta = pi/2
 
         circuit.x(coin) # Start in 1 and decrease it, since we encoded the angle corresponding 1-probability
-        for i in range(ancilla.size):
-            circuit.cu3(theta = -math.pi/(2**(i+1)), phi  = 0, lam = 0, control_qubit = ancilla[i], target_qubit = coin)
+        for i in range(ancilla.size): # See how to perform an rx rotation in https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
+            circuit.cu3(theta = -math.pi/(2**(i+1)), phi  = -math.pi/2, lam = math.pi/2, control_qubit = ancilla[i], target_qubit = coin)
         
     def coin_flip_func(self, oracle):
         
@@ -416,19 +416,19 @@ class QuantumMetropolis():
         #D coin_flip_gate.params[0]= beta ---- Deprecated
         
         # Define the coin_flip_gate
-        coin_flip_gate = self.coin_flip_func_n(oracle)
+        self.coin_flip_gate = self.coin_flip_func_n(oracle)
 
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
         
         # Coin flip    
-        qc.append(coin_flip_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.coin_flip_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.append(coin_flip_gate.inverse(), [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.coin_flip_gate.inverse(), [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
@@ -465,19 +465,19 @@ class QuantumMetropolis():
         #D coin_flip_gate.params[0]= beta ---- Deprecated
         
         # Define the coin_flip_gate
-        coin_flip_gate = self.coin_flip_func(oracle)
+        self.coin_flip_gate = self.coin_flip_func(oracle)
 
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_id[0], w_move_value[0]])
         
         # Coin flip    
-        qc.append(coin_flip_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.coin_flip_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0], w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.append(coin_flip_gate.inverse(), [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.coin_flip_gate.inverse(), [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[0], w_move_value[0]])
@@ -491,7 +491,10 @@ class QuantumMetropolis():
 
     def U_func_n(self):
         
-        '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
+        '''
+        This defines the gate U that initially spreads the output of minifold, and we can reuse its inverse too.
+        It is basically the gate W but with the coin flip being sin^2 (theta = pi/6) = 1/4 probability of acceptance
+        '''
 
         # State definition. All angles range from 0 to 2pi
         w_angles = []
@@ -526,14 +529,14 @@ class QuantumMetropolis():
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
         
-        # Coin flip    
-        qc.u3( theta =  np.pi/6, 0, lam = np.pi, w_coin)
+        # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.u3( theta = -np.pi/6, 0, lam = np.pi, w_coin)
+        qc.u3( theta = -math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
 
@@ -546,7 +549,10 @@ class QuantumMetropolis():
 
     def U_func(self):
         
-        '''This defines the parametrised gate W using the oracle that is provided to it, and we can reuse its inverse too.'''
+        '''
+        This defines the gate U that initially spreads the output of minifold, and we can reuse its inverse too.
+        It is basically the gate W but with the coin flip being sin^2 (theta = pi/6) = 1/4 probability of acceptance
+        '''
 
         # State definition. All angles range from 0 to 2pi
         w_angle_phi = QuantumRegister(self.n_precision_bits, name = 'angle_phi')
@@ -574,14 +580,14 @@ class QuantumMetropolis():
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_id[0], w_move_value[0]])
         
-        # Coin flip    
-        qc.u3( theta = np.pi/6, 0, lam = np.pi, w_coin)
+        # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0], w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.u3( theta = -np.pi/6, 0, lam = np.pi, w_coin)
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[0], w_move_value[0]])

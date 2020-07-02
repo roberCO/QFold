@@ -640,6 +640,7 @@ class QuantumMetropolis():
         for i in range(3):
             qc.append(U_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
+        # End of initialization
 
         for i in range(self.n_repetitions):
             
@@ -721,8 +722,9 @@ class QuantumMetropolis():
         U_gate = self.U_func_n(oracle)
 
         for i in range(3):
-            qc.append(W_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+            qc.append(U_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
+        # End of initialization
 
         for i in range(self.n_repetitions):
             

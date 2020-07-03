@@ -6,16 +6,16 @@ import math
 
 class Metropolis():
 
-    def __init__(self, bits_rotation, n_iterations, number_aminoacids, scaling_factor, deltas_dict):
+    def __init__(self, bits_rotation, n_iterations, number_angles, scaling_factor, deltas_dict):
 
         self.bits_rotation = bits_rotation
         self.n_iterations = n_iterations
         self.scaling_factor = scaling_factor 
         self.deltas_dict = deltas_dict
+        self.number_angles = int(number_angles)
 
         self.rotatition_steps = 2**self.bits_rotation
-        self.bits_number_angles = math.ceil(np.log2(number_aminoacids))
-        self.number_angles = number_aminoacids-1
+        self.bits_number_angles = math.ceil(np.log2(number_angles))
 
         self.tools = utils.Utils()
 
@@ -23,6 +23,9 @@ class Metropolis():
 
         #Final structure calculated with metropolis. This variable will be returned to angle calculator
 
+        # Data structure with the rotatation (0-rotation steps) of each phi/psi angle
+        # for example, if there are 3 aminoacids, there are two phis and two psi
+        # the data structure for phis contains two positions the rotation for first phi and for the second phi, etc.
         anglePhi_old = []
         anglePsi_old = []
 

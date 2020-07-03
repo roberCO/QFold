@@ -516,7 +516,7 @@ class QuantumMetropolis():
         for i in range(1, self.n_angles):
             q = QuantumCircuit(w_angles[i])
             qc = qc + q
-        q = QuantumCircuit(w_move_id, w_move_value ,w_coin , w_ancilla)
+        q = QuantumCircuit(w_move_id, w_move_value , w_coin , w_ancilla)
         qc = qc + q
         #qc = QuantumCircuit(w_angle_phi,w_angle_psi,w_move_id,w_move_value,w_coin,w_ancilla)
 
@@ -530,13 +530,13 @@ class QuantumMetropolis():
         qc.append(self.move_preparation_gate, [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
         
         # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.u3( theta = -math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
+        qc.u3( theta = -math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[j] for j in range(self.move_id_len)]+[w_move_value[0]])
 
@@ -581,13 +581,13 @@ class QuantumMetropolis():
         qc.append(self.move_preparation_gate, [w_move_id[0], w_move_value[0]])
         
         # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate, [w_angle_phi[j] for j in range(w_angle_phi.size)]+[w_angle_psi[j] for j in range(w_angle_psi.size)] + [w_move_id[0], w_move_value[0], w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
-        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, w_coin)
+        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_id[0], w_move_value[0]])
@@ -635,7 +635,7 @@ class QuantumMetropolis():
 
         # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
 
-        U_gate = self.U_func(oracle)
+        U_gate = self.U_func()
 
         for i in range(3):
             qc.append(U_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
@@ -647,7 +647,7 @@ class QuantumMetropolis():
             beta = (1+i)/self.n_repetitions*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(energies_dictionary,beta,out_bits = self.n_ancilla_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
             
             W_gate = self.W_func(oracle)
             
@@ -719,7 +719,7 @@ class QuantumMetropolis():
 
         # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
 
-        U_gate = self.U_func_n(oracle)
+        U_gate = self.U_func_n()
 
         for i in range(3):
             qc.append(U_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])

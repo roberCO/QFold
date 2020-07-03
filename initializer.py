@@ -154,7 +154,7 @@ class Initializer():
         
         # it calculates the number of necessary bits to represent the number of angles
         # example, 4 aminoacids: 3 phis/psis => 2 bits
-        bits_number_angles = math.ceil(np.log2(len(aminoacids)))
+        bits_number_angles = math.ceil(np.log2(len(aminoacids)-1))
 
         print('    ⬤ Calculating energies for all posible rotations')
         energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1))

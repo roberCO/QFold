@@ -17,7 +17,7 @@ print('## Tool that combines AI and QC to solve protein folding problem ##')
 print('###################################################################\n')
 
 #HARDCODED
-aminoacids = 'GG'
+aminoacids = 'GGG'
 
 proteinName = sys.argv[1].lower()
 numberBitsRotation = int(sys.argv[2])
@@ -49,7 +49,16 @@ results = results = [{} for x in range(total_number_resutls)]
 def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_min_energy):
 
         probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
-        p_t = probabilities_matrix[int(index_min_energy[0])][int(index_min_energy[1])]
+
+        p_t = 0
+
+        # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted
+        # else, the p_t is set to a very small value close to 0 (not 0 to avoid inf values)
+        if index_min_energy in probabilities_matrix.keys():
+            p_t = probabilities_matrix[index_min_energy]
+        else:
+            p_t = 0.0000001
+
 
         # Result is the calculated TTS
         results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
@@ -108,7 +117,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
-    if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= config_variables['final_step']:
+    if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= (config_variables['final_step'] - config_variables['initial_step']):
 
         # It pauses execution until all threads ends
         for process in threads:

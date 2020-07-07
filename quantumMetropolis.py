@@ -754,15 +754,17 @@ class QuantumMetropolis():
             print('\n')
 
         start_time = time.time()
+        '''
         # Use the transpiler to speedup the algorithm:
         print('Before optimization-------')
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
-        qc = transpile(qc, backend='qasm_simulator', seed_transpiler=1, optimization_level=3)
+        qc = transpile(qc, seed_transpiler=1, optimization_level=3)
         print('After optimization--------')
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
-
+        '''
+        
         print('<i> Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
@@ -770,14 +772,11 @@ class QuantumMetropolis():
         # Extract probabilities in the measurement of the angles phi and psi
         probabilities = state.probabilities([j for j in range(self.n_precision_bits * 2)])
 
-        relevant_probabilities = []
-        probs = []
+        relevant_probabilities = {}
         for i in range(2**(self.n_precision_bits *2)):
 
-            probs.append(probabilities[i])
-            if (i+1) % 2**self.n_precision_bits == 0:
-                relevant_probabilities.append(probs)
-                probs = []
+            key = str(int(i/(self.n_precision_bits*2))) + str(i%(self.n_precision_bits*2))
+            relevant_probabilities[key] = probabilities[i]
 
         return relevant_probabilities
 

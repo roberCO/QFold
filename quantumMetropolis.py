@@ -39,14 +39,14 @@ class QuantumMetropolis():
         self.n_angles = n_angles
         self.beta_max = beta_max
 
-        self.move_id_len = np.ceil(np.log2(n_angles))
+        self.move_id_len = int(np.ceil(np.log2(n_angles)))
 
         self.input_oracle = input_oracle
 
         [self.move_preparation_gate, self.conditional_move_gate, self.reflection_gate] = self.prepare_initial_circuits()
 
         # For n angles
-        # [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
+        [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
 
 
     # This is the move preparation gate
@@ -364,7 +364,7 @@ class QuantumMetropolis():
         cf_ancilla = QuantumRegister(self.n_ancilla_bits)
 
         cf_angles = []
-        for i in len(self.n_angles):
+        for i in range(self.n_angles):
             cf_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
 
         cf_circ = QuantumCircuit(cf_angles[0])
@@ -390,7 +390,7 @@ class QuantumMetropolis():
 
         # State definition. All angles range from 0 to 2pi
         w_angles = []
-        for i in len(self.n_angles):
+        for i in range(self.n_angles):
             w_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
 
         # Move proposal
@@ -425,7 +425,7 @@ class QuantumMetropolis():
         qc.append(self.coin_flip_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Conditional move
-        qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.conditional_move_gate_n, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
         qc.append(self.coin_flip_gate.inverse(), [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
@@ -498,7 +498,7 @@ class QuantumMetropolis():
 
         # State definition. All angles range from 0 to 2pi
         w_angles = []
-        for i in len(self.n_angles):
+        for i in range(self.n_angles):
             w_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
 
         # Move proposal
@@ -533,7 +533,7 @@ class QuantumMetropolis():
         qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
 
         # Conditional move
-        qc.append(self.conditional_move_gate, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
+        qc.append(self.conditional_move_gate_n, [w_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [w_move_id[j] for j in range(self.move_id_len)] +[ w_move_value[0],w_coin[0]] + [w_ancilla[j] for j in range(w_ancilla.size)])
 
         # Inverse coin flip
         qc.u3( theta = -math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=w_coin)
@@ -665,6 +665,7 @@ class QuantumMetropolis():
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
 
+        print('<i> Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 
@@ -686,8 +687,10 @@ class QuantumMetropolis():
 
         # State definition. All angles range from 0 to 2pi
         # State definition. All angles range from 0 to 2pi
+
+        print('<i> Execute n quantum metropolis')
         g_angles = []
-        for i in len(self.n_angles):
+        for i in range(self.n_angles):
             g_angles.append(QuantumRegister(self.n_precision_bits, name = 'angle' + str(i)))
 
         # Move proposal
@@ -719,6 +722,8 @@ class QuantumMetropolis():
 
         # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
 
+        print('<i> Calculating gates')
+
         U_gate = self.U_func_n()
 
         for i in range(3):
@@ -727,17 +732,26 @@ class QuantumMetropolis():
         # End of initialization
 
         for i in range(self.n_repetitions):
+
+            print('<i> Quantum metropolis ->', i,'repetition')
             
             beta = ((1+i)/self.n_repetitions)*self.beta_max
             
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
+            print('<i> Oracle created')
             
             W_gate = self.W_func_n(oracle)
+            print('<i> w gate created')
             
             list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
+            print('<i> w_gate added')
+
             #list_gates[i].params[0]= beta
             qc.append(W_gate, [g_angles[i][j] for (i,j) in product(range(self.n_angles), range(self.n_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+            print('<i> q circuit created')
+
+            print('\n')
 
         start_time = time.time()
         # Use the transpiler to speedup the algorithm:
@@ -749,6 +763,7 @@ class QuantumMetropolis():
         print('gates = ', qc.count_ops())
         print('depth = ', qc.depth())
 
+        print('<i> Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 

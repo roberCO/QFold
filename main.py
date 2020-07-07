@@ -108,6 +108,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
+    '''
     print('Executing classical metropolis with', step, 'steps\n')
 
     #Thread for classical metropolis
@@ -117,6 +118,8 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
+    '''
+    
     if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= (config_variables['final_step'] - config_variables['initial_step']):
 
         # It pauses execution until all threads ends

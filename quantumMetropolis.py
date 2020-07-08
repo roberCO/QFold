@@ -154,7 +154,7 @@ class QuantumMetropolis():
 
         # Optimize the circuit
 
-        print('Before optimization-------')
+        print('Before optimization------- conditional_move_dipeptide')
         print('gates = ', sub_circ.count_ops())
         print('depth = ', sub_circ.depth())
         sub_circ = transpile(sub_circ, seed_transpiler=1, optimization_level=3)
@@ -208,7 +208,7 @@ class QuantumMetropolis():
 
         # Optimize the circuit
 
-        print('Before optimization-------')
+        print('Before optimization------- conditional_move_npeptide')
         print('gates = ', sub_circ.count_ops())
         print('depth = ', sub_circ.depth())
         sub_circ = transpile(sub_circ, seed_transpiler=1, optimization_level=3)
@@ -341,13 +341,13 @@ class QuantumMetropolis():
         oracle_circuit = oracle.circuit
 
         # Optimize the circuit of the oracle. Try first with printout, then delete it
-        print('Before optimization-------')
+        print('Before optimization------- Oracle')
         print('gates = ', oracle_circuit.count_ops())
         print('depth = ', oracle_circuit.depth())
-        oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
-        print('After optimization--------')
-        print('gates = ', oracle_circuit.count_ops())
-        print('depth = ', oracle_circuit.depth())
+        #oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
+        #print('After optimization--------')
+        #print('gates = ', oracle_circuit.count_ops())
+        #print('depth = ', oracle_circuit.depth())
 
         #print(oracle_circuit)
         oracle_gate = oracle_circuit.to_instruction()
@@ -391,13 +391,13 @@ class QuantumMetropolis():
         oracle_circuit = oracle.circuit
 
         # Optimize the circuit of the oracle. First try it with printout
-        print('Before optimization-------')
+        print('Before optimization------- Oracle')
         print('gates = ', oracle_circuit.count_ops())
         print('depth = ', oracle_circuit.depth())
-        oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
-        print('After optimization--------')
-        print('gates = ', oracle_circuit.count_ops())
-        print('depth = ', oracle_circuit.depth())
+        #oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
+        #print('After optimization--------')
+        #print('gates = ', oracle_circuit.count_ops())
+        #print('depth = ', oracle_circuit.depth())
 
 
         #print(oracle_circuit)

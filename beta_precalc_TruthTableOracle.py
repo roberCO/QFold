@@ -1,4 +1,5 @@
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
+import utils
 
 import math
 
@@ -6,11 +7,15 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
     def __init__(self, deltas_dictionary, beta, out_bits, optimization=True, mct_mode='noancilla'):
 
+        self.tools = utils.Utils()
+
         self.beta = beta
         self.out_bits = out_bits
         self.deltas_dictionary = deltas_dictionary
         
         self.calculate_bitmap()
+        for i in range(out_bits):
+            print('In column',i,'there are', self.bitmap[i].count('1'), '1s and ', self.bitmap[i].count('0'), '0s.')
 
         super().__init__(self.bitmap, optimization, mct_mode)
         
@@ -38,6 +43,11 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # Convert it into an integer and a string
             str_angle2 = self.int_angle_func(angle,self.out_bits)
             angles[key] = str_angle2
+
+        # Printout
+        for i in range(2**self.out_bits):
+            st = self.tools.angle_to_binary(i, self.out_bits)
+            print(st, 'appears', list(angles.values()).count(st), 'times in the angles dictionary')
         
         # Encoding the new bitmap
         new_bitmap = []

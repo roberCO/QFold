@@ -181,35 +181,33 @@ class Initializer():
                 min_energy = old_energy
                 index_min_energy = e_key
             
+            angle_keys = e_key.split(' ')
             # iterate over all angles keys
-            for index_e_key in range(len(e_key)):
+            for index_a_key in range(len(angle_keys)):
 
                 # calculate the plus/minus 1 rotation delta
                 for plusminus in [0,1]:
                     pm = 2*plusminus - 1
 
-                    new_value = (int(e_key[index_e_key]) + pm) % (2**numberBitsRotation)
+                    new_value = (int(angle_keys[index_a_key]) + pm) % (2**numberBitsRotation)
 
                     # create a key with the values of the angles (if the index is equal to the index of the modified angle, insert the modified one)
                     angle_key = ''
-                    for index_key in range(len(e_key)):
+                    binary_key = ''
+                    for index_key in range(len(angle_keys)):
 
-                        if index_key == index_e_key:
-                            angle_key += str(new_value)
+                        if index_key == index_a_key:
+                            angle_key += str(new_value)+ ' '
+                            binary_key += self.tools.angle_to_binary(new_value, numberBitsRotation)
                         
                         else:
-                            angle_key += e_key[index_key]
+                            angle_key += angle_keys[index_key] + ' '
+                            binary_key += self.tools.angle_to_binary(int(angle_keys[index_key]), numberBitsRotation)
 
-                    new_energy = energies[angle_key]
-
-
-                    binary_key = ''
-
-                    for angle_key_value in angle_key:
-                        binary_key += self.tools.angle_to_binary(int(angle_key_value), numberBitsRotation)
+                    new_energy = energies[angle_key.strip()]
 
                     # add 0/1 for phi/psi
-                    if index_e_key % 2 == 0:
+                    if index_a_key % 2 == 0:
                         # if it is even number is phi (add 0)
                         binary_key += str(0)
                     else:
@@ -217,7 +215,7 @@ class Initializer():
                         binary_key += str(1)
                     
                     # add the index of the phi/psi angle (with more than 2 aminoacids, there are more than one phi/psi)
-                    binary_key += self.tools.angle_to_binary(int(index_e_key/2), bits_number_angles)
+                    binary_key += self.tools.angle_to_binary(int(index_a_key/2), bits_number_angles)
 
                     # add 0/1 for plus/minus
                     binary_key += str(plusminus)
@@ -232,7 +230,7 @@ class Initializer():
 
         return energiesJson
 
-    # recursive function to calculate all energies of each possible rotation 
+    # RECURSIVE function to calculate all energies of each possible rotation 
     def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, index_sequence='', energies = {}):
 
         # iterate to calculate all possible rotations
@@ -242,7 +240,7 @@ class Initializer():
             if protein_sequence_length > 0:
                 # returned energy is added to a data structure (this structure is multi-dimensional)
                 # index_sequence contains the accumulated index (it helps to know the general index_sequence)
-                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, index_sequence+str(index), energies)
+                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, index_sequence+str(index)+' ', energies)
             
             else:
                 
@@ -253,15 +251,19 @@ class Initializer():
 
                 x_values = []
                 y_values = []
-                for index in range(len(index_sequence)):
+
+                # remove last whitespace
+                index_sequence = index_sequence.strip()
+                index_values = index_sequence.split(' ')
+                for index in range(len(index_values)):
 
                     if index%2 == 0:
                         # rotation sequence even (0, 2, 4, ...)
-                        x_values.append(int(index_sequence[index])) 
+                        x_values.append(int(index_values[index])) 
 
                     if index%2 != 0:
                         # rotation sequence odd (1, 3, 5, ...)
-                        y_values.append(int(index_sequence[index]))
+                        y_values.append(int(index_values[index]))
 
                 for index in range(len(x_values)):
 

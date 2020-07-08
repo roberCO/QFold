@@ -151,6 +151,17 @@ class QuantumMetropolis():
         sub_circ = QuantumCircuit(s_angle_phi,s_angle_psi,s_move_id,s_move_value,s_coin,s_ancilla)
 
         self.conditional_move_dipeptide(sub_circ,s_coin,s_move_id,s_move_value,s_angle_phi,s_angle_psi,s_ancilla)
+
+        # Optimize the circuit
+
+        print('Before optimization-------')
+        print('gates = ', sub_circ.count_ops())
+        print('depth = ', sub_circ.depth())
+        sub_circ = transpile(sub_circ, seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', sub_circ.count_ops())
+        print('depth = ', sub_circ.depth())
+
         conditional_move_gate = sub_circ.to_instruction()
 
 
@@ -194,6 +205,18 @@ class QuantumMetropolis():
         #sub_circ = QuantumCircuit([s_angles[i] for i in range(self.n_angles)], s_move_id, s_move_value ,s_coin , s_ancilla)
 
         self.conditional_move_npeptide(sub_circ,s_coin,s_move_id,s_move_value,s_angles,s_ancilla)
+
+        # Optimize the circuit
+
+        print('Before optimization-------')
+        print('gates = ', sub_circ.count_ops())
+        print('depth = ', sub_circ.depth())
+        sub_circ = transpile(sub_circ, seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', sub_circ.count_ops())
+        print('depth = ', sub_circ.depth())
+
+
         conditional_move_gate_n = sub_circ.to_instruction()
 
         # Codes the reflection as a gate
@@ -203,6 +226,9 @@ class QuantumMetropolis():
 
         sub_circ = QuantumCircuit(s_move_id,s_move_value,s_coin)
         self.reflection(sub_circ,s_move_id,s_move_value,s_coin)
+
+        # We could optimize the circuit, but it will probably not be worth it (fairly small)
+
         reflection_gate = sub_circ.to_instruction()
 
         return [move_preparation_gate, conditional_move_gate_n, reflection_gate]
@@ -313,6 +339,16 @@ class QuantumMetropolis():
         # Construct an instruction for the oracle
         oracle.construct_circuit()
         oracle_circuit = oracle.circuit
+
+        # Optimize the circuit of the oracle. Try first with printout, then delete it
+        print('Before optimization-------')
+        print('gates = ', oracle_circuit.count_ops())
+        print('depth = ', oracle_circuit.depth())
+        oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', oracle_circuit.count_ops())
+        print('depth = ', oracle_circuit.depth())
+
         #print(oracle_circuit)
         oracle_gate = oracle_circuit.to_instruction()
 
@@ -353,6 +389,17 @@ class QuantumMetropolis():
         # Construct an instruction for the oracle
         oracle.construct_circuit()
         oracle_circuit = oracle.circuit
+
+        # Optimize the circuit of the oracle. First try it with printout
+        print('Before optimization-------')
+        print('gates = ', oracle_circuit.count_ops())
+        print('depth = ', oracle_circuit.depth())
+        oracle_circuit = transpile(oracle_circuit, seed_transpiler=1, optimization_level=3)
+        print('After optimization--------')
+        print('gates = ', oracle_circuit.count_ops())
+        print('depth = ', oracle_circuit.depth())
+
+
         #print(oracle_circuit)
         oracle_gate = oracle_circuit.to_instruction()
 
@@ -656,15 +703,6 @@ class QuantumMetropolis():
             qc.append(W_gate, [g_angle_phi[j] for j in range(g_angle_phi.size)] + [g_angle_psi[j] for j in range(g_angle_psi.size)] + [g_move_id[0], g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
         start_time = time.time()
-        # Use the transpiler to speedup the algorithm:
-        print('Before optimization-------')
-        print('gates = ', qc.count_ops())
-        print('depth = ', qc.depth())
-        qc = transpile(qc, backend='qasm_simulator', seed_transpiler=1, optimization_level=3)
-        print('After optimization--------')
-        print('gates = ', qc.count_ops())
-        print('depth = ', qc.depth())
-
         print('<i> Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))

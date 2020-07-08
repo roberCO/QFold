@@ -10,7 +10,11 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         self.out_bits = out_bits
         self.deltas_dictionary = deltas_dictionary
         
-        self.calculate_bitmap()
+        self.bitmap = self.calculate_bitmap()
+        print('\n')
+        for bm in self.bitmap:
+            print(len(bm))
+        print('\n')
 
         super().__init__(self.bitmap, optimization, mct_mode)
         
@@ -47,7 +51,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
                 string += str(angles[key])[o]
             new_bitmap += [string]
 
-        self.bitmap = new_bitmap
+        return new_bitmap
 
     #Method to convert angles int to binary
     def int_angle_func(self, angle,out_bits):

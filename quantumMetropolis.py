@@ -72,9 +72,9 @@ class QuantumMetropolis():
         circuit.x(move_id) # Put move_id in 1
         
         # Conditional on move_id = 0, and coin = 1, increase/decrease angle_psi by one (move_value = 0/1)
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])
+        circuit.ccx(move_id[0], coin[0], ancilla[0])
         self.sumsubstract1(circuit,angle_phi,ancilla[0],ancilla[1],ancilla[2], move_value[0]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])
+        circuit.ccx(move_id[0], coin[0], ancilla[0])
 
         circuit.x(move_id) # Return move_id to 0
         
@@ -82,9 +82,9 @@ class QuantumMetropolis():
         # Move_id is in 1
         
         # Conditional on move_id = 1, and coin = 1, increase/decrease angle_psi by one (move_value = 0/1) 
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])#create a single control
+        circuit.ccx(move_id[0], coin[0], ancilla[0])#create a single control
         self.sumsubstract1(circuit,angle_psi,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #calc_anc_size(len_angle_value) =6 in this cased
-        circuit.mcrx(theta = pi, q_controls = [move_id[0], coin[0]], q_target = ancilla[0])#create a single control
+        circuit.ccx(move_id[0], coin[0], ancilla[0])#create a single control
 
     def conditional_move_npeptide(self,circuit,coin,move_id,move_value,angles,ancilla):
         '''
@@ -102,9 +102,9 @@ class QuantumMetropolis():
                 if angle_index[j] == '0':
                     circuit.x(move_id[j])
 
-            circuit.mcrx(theta = pi, q_controls = [move_id[j] for j in range(move_id.size)] +[coin[0]], q_target = ancilla[0])#create a single control
+            circuit.mcx(control_qubits= = [move_id[j] for j in range(move_id.size)] +[coin[0]], target_qubit = ancilla[0])#create a single control
             self.sumsubstract1(circuit,angle,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #sum or substract 1 to the angle
-            circuit.mcrx(theta = pi, q_controls = [move_id[j] for j in range(move_id.size)] +[coin[0]], q_target = ancilla[0])#create a single control        
+            circuit.mcx(control_qubits= = [move_id[j] for j in range(move_id.size)] +[coin[0]], target_qubit = ancilla[0])#create a single control        
             
             # Undo the move_id preparation: for instance, if we are controlling on i= 2 move 111->010
             for j in range(len(angle_index)):
@@ -122,7 +122,11 @@ class QuantumMetropolis():
         circuit.x(move_value)
         circuit.x(coin)
         
-        circuit.mcrz(lam = pi, q_controls = [move_id[0]] + [move_value[0]], q_target = coin[0]) #For dipeptide
+        # Perform a multicontrolled Z
+        circuit.h(coin[0])
+        circuit.ccx(move_id[0], move_value[0], coin[0]) #For dipeptide
+        circuit.h(coin[0])
+        # circuit.mcrz(lam = pi, q_controls = [move_id[0]] + [move_value[0]], q_target = coin[0]) #For dipeptide
         # circuit.mcrz(lam = pi, q_controls = [move_id[0]] + [move_id[1]]+ [move_value[0]], q_target = coin[0]) #For tripeptide
         
         circuit.x(move_id)
@@ -151,16 +155,6 @@ class QuantumMetropolis():
         sub_circ = QuantumCircuit(s_angle_phi,s_angle_psi,s_move_id,s_move_value,s_coin,s_ancilla)
 
         self.conditional_move_dipeptide(sub_circ,s_coin,s_move_id,s_move_value,s_angle_phi,s_angle_psi,s_ancilla)
-
-        # Optimize the circuit
-
-        print('Before optimization------- conditional_move_dipeptide')
-        print('gates = ', sub_circ.count_ops())
-        print('depth = ', sub_circ.depth())
-        sub_circ = transpile(sub_circ, seed_transpiler=1, optimization_level=3)
-        print('After optimization--------')
-        print('gates = ', sub_circ.count_ops())
-        print('depth = ', sub_circ.depth())
 
         conditional_move_gate = sub_circ.to_instruction()
 
@@ -248,8 +242,8 @@ class QuantumMetropolis():
             '''
             if i > 0:
                 # For i = 0, there is only the start to worry about
-                circuit.mcrx(theta = pi, q_controls = [qubit_string[j] for j in range(n_qubits-i)]+[end], q_target = qubit_string[n_qubits-i])
-            circuit.mcrx(theta = pi, q_controls = [qubit_string[j] for j in range(n_qubits-i)]+[end], q_target = start)
+                circuit.mcx(control_qubits= [qubit_string[j] for j in range(n_qubits-i)]+[end], target_qubit = qubit_string[n_qubits-i])
+            circuit.mcx(control_qubits = [qubit_string[j] for j in range(n_qubits-i)]+[end], target_qubit = start)
 
             '''
             Next, controlling on the current qubit and start, we change all the following qubits to 0.
@@ -260,11 +254,11 @@ class QuantumMetropolis():
                     circuit.ccx(control,start,qubit_string[j])
                 circuit.ccx(control,start,end)
             elif i == n_qubits:
-                circuit.mcrx(theta = pi, q_controls = [control,qubit_string[n_qubits-i],start], q_target = end)
+                circuit.mcx(control_qubits = [control,qubit_string[n_qubits-i],start], target_qubit = end)
             else:
                 for j in range(n_qubits-i):            
-                    circuit.mcrx(theta = pi, q_controls = [control,qubit_string[n_qubits-i],start], q_target = qubit_string[j])
-                circuit.mcrx(theta = pi, q_controls = [control,qubit_string[n_qubits-i],start], q_target = end)
+                    circuit.mcx(control_qubits = [control,qubit_string[n_qubits-i],start], target_qubit = qubit_string[j])
+                circuit.mcx(control_qubits = [control,qubit_string[n_qubits-i],start], target_qubit = end)
         circuit.x(start)
 
     #Substract one to the circuit passed as parameter
@@ -694,7 +688,7 @@ class QuantumMetropolis():
             beta = (1+i)/self.n_repetitions*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = 2*self.n_precision_bits + 2 ,out_bits = self.n_ancilla_bits)
             
             W_gate = self.W_func(oracle)
             
@@ -776,7 +770,7 @@ class QuantumMetropolis():
             beta = ((1+i)/self.n_repetitions)*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, out_bits = self.n_ancilla_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.n_precision_bits + self.move_id_len + 1,out_bits = self.n_ancilla_bits)
             print('<i> Oracle created')
             
             W_gate = self.W_func_n(oracle)

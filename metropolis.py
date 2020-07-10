@@ -6,6 +6,8 @@ import math
 
 class Metropolis():
 
+    ## TODO: generalise to more than 2 angles
+
     def __init__(self, bits_rotation, n_iterations, number_angles, scaling_factor, deltas_dict):
 
         self.bits_rotation = bits_rotation
@@ -31,7 +33,7 @@ class Metropolis():
 
         for _ in range(self.number_angles):
 
-            # Random starting combination of angles
+            # Random initialization of angles
             anglePsi_old.append(np.random.choice(self.rotatition_steps))
             anglePhi_old.append(np.random.choice(self.rotatition_steps))
 
@@ -50,9 +52,9 @@ class Metropolis():
             position_angle = np.random.choice(self.number_angles)
             position_angle_binary = self.tools.angle_to_binary(position_angle, self.bits_number_angles)
 
-            # 0 = -1 | 1 = 1
+            # 0 = 1 | 1 = -1
             change_plus_minus = np.random.choice((0,1))
-            pm = 2*change_plus_minus - 1
+            pm = -2*change_plus_minus + 1
 
             # Calculate the new angles
             if change_angle == 0:
@@ -70,7 +72,8 @@ class Metropolis():
                 binary_key += self.tools.angle_to_binary(anglePhi_new[index], self.bits_rotation)
                 binary_key += self.tools.angle_to_binary(anglePsi_new[index], self.bits_rotation)
 
-            # This choice of Delta_E seems weird
+            # This choice of Delta_E seems weird.
+            # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
             Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
 
             # Lets use a non_optimal simple schedule

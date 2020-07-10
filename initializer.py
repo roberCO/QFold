@@ -187,7 +187,7 @@ class Initializer():
 
                 # calculate the plus/minus 1 rotation delta
                 for plusminus in [0,1]:
-                    pm = 2*plusminus - 1
+                    pm = (-2)*plusminus + 1
 
                     new_value = (int(angle_keys[index_a_key]) + pm) % (2**numberBitsRotation)
 

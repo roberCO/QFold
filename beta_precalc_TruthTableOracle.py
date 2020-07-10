@@ -2,6 +2,7 @@ from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from sympy.combinatorics.graycode import GrayCode, gray_to_bin, bin_to_gray
 from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit
 import utils
+from collections import OrderedDict
 
 import math
 
@@ -53,6 +54,9 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             str_angle2 = self.int_angle_func(angle,self.out_bits)
             angles[key] = str_angle2
 
+        # Order angles by key
+        angles = OrderedDict(sorted(angles.items()))
+
         # Printout
         for i in range(2**self.out_bits):
             st = self.tools.angle_to_binary(i, self.out_bits)
@@ -62,7 +66,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         new_bitmap = []
         for o in range(self.out_bits):
             string = ''
-            for key in self.deltas_dictionary.keys():
+            for key in angles.keys():
                 string += str(angles[key])[o]
             new_bitmap += [string]
 

@@ -5,9 +5,9 @@ import angleCalculator
 import psiFour
 import utils
 
-if(len(sys.argv) != 3):
-    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py ProteinName numberBitsForRotations")
-    print ("<!> Example: python main.py Glycylglycine 6 (6 bits for rotations are 64 steps)")
+if(len(sys.argv) != 4):
+    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations")
+    print ("<!> Example: python main.py Glycylglycine GG 6 (6 bits for rotations are 64 steps)")
     sys.exit(0)
 
 print('\n###################################################################')
@@ -16,11 +16,9 @@ print('##                                                               ##')
 print('## Tool that combines AI and QC to solve protein folding problem ##')
 print('###################################################################\n')
 
-#HARDCODED
-aminoacids = 'GG'
-
 proteinName = sys.argv[1].lower()
-numberBitsRotation = int(sys.argv[2])
+aminoacids = sys.argv[2]
+numberBitsRotation = int(sys.argv[3])
 rotationSteps = 2**(int(numberBitsRotation))
 
 #Read config file with the QFold configuration variables
@@ -108,7 +106,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
-    
+
     print('Executing classical metropolis with', step, 'steps\n')
 
     #Thread for classical metropolis

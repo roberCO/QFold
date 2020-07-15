@@ -37,13 +37,13 @@ class Metropolis():
             anglePsi_old.append(np.random.choice(self.rotatition_steps))
             anglePhi_old.append(np.random.choice(self.rotatition_steps))
 
-        # initially the new angles are equal to the old (then one angle will be randomly modified)
-        # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
-        anglePhi_new = copy.deepcopy(anglePhi_old)
-        anglePsi_new = copy.deepcopy(anglePsi_old)
-
         for iteration in range(self.n_iterations):
 
+            # initially the new angles are equal to the old (then one angle will be randomly modified)
+            # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
+            anglePhi_new = copy.deepcopy(anglePhi_old)
+            anglePsi_new = copy.deepcopy(anglePsi_old)
+            
             # Propose a change
             # 0 = phi | 1 = psi
             change_angle = np.random.choice((0,1))
@@ -84,7 +84,7 @@ class Metropolis():
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
             if random_number < min(1,probability_threshold): # Accept the change
-                anglePhi_new = copy.deepcopy(anglePhi_old)
-                anglePsi_new = copy.deepcopy(anglePsi_old)
+                anglePhi_old = copy.deepcopy(anglePhi_new)
+                anglePsi_old = copy.deepcopy(anglePsi_new)
 
         return [anglePhi_old, anglePsi_old]

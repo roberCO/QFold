@@ -198,11 +198,11 @@ class Initializer():
 
                         if index_key == index_a_key:
                             angle_key += str(new_value)+ ' '
-                            binary_key += self.tools.angle_to_binary(new_value, numberBitsRotation)
+                            binary_key += np.binary_repr(new_value, width = numberBitsRotation)
                         
                         else:
                             angle_key += angle_keys[index_key] + ' '
-                            binary_key += self.tools.angle_to_binary(int(angle_keys[index_key]), numberBitsRotation)
+                            binary_key += np.binary_repr(int(angle_keys[index_key]), width = numberBitsRotation)
 
                     new_energy = energies[angle_key.strip()]
 
@@ -215,7 +215,7 @@ class Initializer():
                         binary_key += str(1)
                     
                     # add the index of the phi/psi angle (with more than 2 aminoacids, there are more than one phi/psi)
-                    binary_key += self.tools.angle_to_binary(int(index_a_key/2), bits_number_angles)
+                    binary_key += np.binary_repr(int(index_a_key/2), width = bits_number_angles)
 
                     # add 0/1 for plus/minus
                     binary_key += str(plusminus)

@@ -5,6 +5,7 @@ import utils
 from collections import OrderedDict
 
 import math
+import numpy as np
 
 class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
@@ -15,9 +16,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         self.beta = beta
         self.in_bits = in_bits
         self.out_bits = out_bits
-        self.deltas_dictionary = deltas_dictionary
-
-        #self.circuit = self.create_circuit()
+        self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
         
         self.bitmap = self.calculate_bitmap()
         for i in range(out_bits):
@@ -40,26 +39,25 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             else: 
                 probability = 1
                 
-            # Instead of encoding the probability, we will encode 1-probability. That way 1 -> 000, 
-            # but if probability is 0 there is some small probability of acceptance
-            probability = 1 - probability
+            # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.
+            # That way 1 -> 000, but if probability is 0 there is some small probability of acceptance
             
-            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(theta)
-            angle = math.asin(math.sqrt(probability))
-            
-            # Make the angle be between [0,1]. Since the maximum is pi/2
-            angle /= (math.pi/2) 
+            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta). Also normalised
+            angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
             
             # Convert it into an integer and a string
-            str_angle2 = self.int_angle_func(angle,self.out_bits)
-            angles[key] = str_angle2
+            if angle == 1.:
+                raise ValueError('Warning: angle seems to be pi/2, and that should not be possible')
+            
+            # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
+            angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
 
         # Order angles by key
         angles = OrderedDict(sorted(angles.items()))
 
         # Printout
         for i in range(2**self.out_bits):
-            st = self.tools.angle_to_binary(i, self.out_bits)
+            st = np.binary_repr(i, width = self.out_bits)
             print(st, 'appears', list(angles.values()).count(st), 'times in the angles dictionary')
         
         # Encoding the new bitmap
@@ -71,69 +69,3 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             new_bitmap += [string]
 
         return new_bitmap
-
-    #Method to convert angles int to binary
-    def int_angle_func(self, angle,out_bits):
-        out_str = ''
-        a = angle
-        for bits in range(1,out_bits+1):
-
-            if a + 1e-10 > 1/(2**(bits)):
-                out_str += '1'
-                a -= 1/(2**bits)
-            else:
-                out_str += '0'
-        
-        return out_str
-
-    '''
-    def create_circuit(self):
-        angles = {}
-
-        for key in self.deltas_dictionary.keys():
-
-            if self.deltas_dictionary[key] >= 0:
-                probability = math.exp(-self.beta * self.deltas_dictionary[key])
-            else: 
-                probability = 1
-                
-            # Instead of encoding the probability, we will encode 1-probability. That way 1 -> 000, 
-            # but if probability is 0 there is some small probability of acceptance
-            probability = 1 - probability
-            
-            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(theta)
-            angle = math.asin(math.sqrt(probability))
-            
-            # Make the angle be between [0,1]. Since the maximum is pi/2
-            angle /= (math.pi/2) 
-            
-            # Convert it into an integer and a string
-            str_angle2 = self.int_angle_func(angle,self.out_bits)
-            angles[key] = str_angle2
-
-        # Printout
-        for i in range(2**self.out_bits):
-            st = self.tools.angle_to_binary(i, self.out_bits)
-            print(st, 'appears', list(angles.values()).count(st), 'times in the angles dictionary')
-
-        # Now prepare the circuit
-        in_reg = QuantumRegister(self.in_bits)
-        out_reg = QuantumRegister(self.out_bits)
-        circuit = QuantumCircuit(in_reg,out_reg)
-
-        circuit.x(in_reg)
-        prev_state = '0'*self.in_bits
-        indices = GrayCode(self.in_bits)
-
-        for index in indices:
-            out = angles[index]
-            if out != '0'*self.out_bits:
-
-                
-                for i in range(self.out_bits):
-                    if out[i] == '1':
-                        circuit.mcx(control_qubits= in_reg[:], target_qubit= out_reg[i])
-
-                # Save which was the previous controlled state        
-                prev_state = index
-    '''

@@ -50,7 +50,7 @@ class Metropolis():
 
             # number of angle (it is possible to have more than one phi/psi)
             position_angle = np.random.choice(self.number_angles)
-            position_angle_binary = self.tools.angle_to_binary(position_angle, self.bits_number_angles)
+            position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)
 
             # 0 = 1 | 1 = -1
             change_plus_minus = np.random.choice((0,1))
@@ -69,8 +69,8 @@ class Metropolis():
             for index in range(len(anglePhi_new)):
 
                 # binary key should contain: phi_1 | psi_1 | phi_2 | psi_2 | ...
-                binary_key += self.tools.angle_to_binary(anglePhi_new[index], self.bits_rotation)
-                binary_key += self.tools.angle_to_binary(anglePsi_new[index], self.bits_rotation)
+                binary_key += np.binary_repr(anglePhi_new[index], width = self.bits_rotation)
+                binary_key += np.binary_repr(anglePsi_new[index], width = self.bits_rotation)
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value

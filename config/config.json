@@ -18,9 +18,9 @@
     "final_step": 51,
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,
-    "scaling_factor": 10.000, 
+    "scaling_factor": 5000, 
     "number_iterations": 10000,
-    "beta_max": 2,
+    "beta_max": 1,
     
     "precision_solution": 0.9,
 

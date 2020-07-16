@@ -8,9 +8,12 @@ import qiskit
 from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit, Clbit, Gate, Parameter, InstructionSet
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit import BasicAer
+from qiskit.visualization import plot_state_city, plot_state_hinton
+
 import numpy as np
 import math
 from copy import deepcopy
+import seaborn as sns; sns.set()
 
 import logging
 import beta_precalc_TruthTableOracle
@@ -387,13 +390,13 @@ class QuantumMetropolis():
         qc.append(self.move_preparation_gate, [u_move_id[j] for j in range(self.move_id_len)]+[u_move_value[0]])
         
         # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-        qc.u3( theta =  math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
+        qc.u3( theta =  math.pi/3, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate_n, [u_angles[k][j] for (k,j) in product(range(self.n_angles), range(self.angle_precision_bits))] + [u_move_id[j] for j in range(self.move_id_len)] +[ u_move_value[0],u_coin[0]] + [u_ancilla[j] for j in range(self.probability_bits)])
 
         # Inverse coin flip
-        qc.u3( theta = -math.pi/6, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
+        qc.u3( theta = -math.pi/3, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [u_move_id[j] for j in range(self.move_id_len)]+[u_move_value[0]])
 
@@ -434,8 +437,8 @@ class QuantumMetropolis():
         list_gates = []
 
         # If initialization is totally mixed use
-        # for g_angle in g_angles:
-        #   qc.h(g_angle)
+        #for g_angle in g_angles:
+        #    qc.h(g_angle)
 
         # If initialization is from minifold
 
@@ -445,7 +448,7 @@ class QuantumMetropolis():
 
         U_gate = self.U_func_n()
 
-        for i in range(3):
+        for _ in range(2):
             qc.append(U_gate, [g_angles[k][j] for (k,j) in product(range(self.n_angles), range(self.angle_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
 
         # End of initialization
@@ -467,7 +470,7 @@ class QuantumMetropolis():
             print('<i> w_gate added')
 
             #list_gates[i].params[0]= beta
-            qc.append(W_gate, [g_angles[k][j] for (k,j) in product(range(self.n_angles), range(self.angle_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
+            #qc.append(W_gate, [g_angles[k][j] for (k,j) in product(range(self.n_angles), range(self.angle_precision_bits))] + [g_move_id[j] for j in range(self.move_id_len)] + [g_move_value[0],g_coin[0]] + [g_ancilla[j] for j in range(g_ancilla.size)])
             print('<i> q circuit created')
 
             print('\n')
@@ -485,9 +488,21 @@ class QuantumMetropolis():
         for i in range(2**(self.angle_precision_bits *self.n_angles)):
 
             b = str(np.binary_repr(i, width = self.angle_precision_bits *self.n_angles))
-            probs[b] = probabilities[i]
+            probs[b] = probabilities[i]#.as_integer
 
-        print('<i> Final probabilities', probs)
+        #ax = sns.heatmap(unifo)    
+        '''
+        backend = BasicAer.get_backend('statevector_simulator') # the device to run on
+        result = execute(qc, backend).result()
+        psi  = result.get_statevector(qc)
+        a = plot_state_hinton(psi)
+        #a.show()
+        a.savefig('./results/heatmap.png')
+        '''
+        #printout
+        print('<i> Final probabilities')
+        for key in probs.keys():
+            print(key,probs[key])
         return probs
 
 # TO DO: initizialisation. 

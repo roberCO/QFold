@@ -42,7 +42,8 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.
             # That way 1 -> 000, but if probability is 0 there is some small probability of acceptance
             
-            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta). Also normalised
+            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta/2).
+            # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
             angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
             
             # Convert it into an integer and a string

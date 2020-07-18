@@ -17,8 +17,19 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         self.in_bits = in_bits
         self.out_bits = out_bits
         self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
+
+        # If there are only two angles, we need to eliminate the penultimate digit of the keys:
+        if len(list(self.deltas_dictionary.keys())[0]) == in_bits + 1:
+            deltas = {}
+            for (key, value) in list(self.deltas_dictionary.items()):
+                deltas[key[:-2]+key[-1]] = value
+            self.deltas_dictionary = deltas
+        assert(2**len(list(self.deltas_dictionary.keys())[0]) == len(self.deltas_dictionary))
         
+        # Calculate the bitmap using the dictionary of deltas
         self.bitmap = self.calculate_bitmap()
+
+        # Sanity printout
         for i in range(out_bits):
             print('In column',i,'there are', self.bitmap[i].count('1'), '1s and ', self.bitmap[i].count('0'), '0s.')
         print('\n')

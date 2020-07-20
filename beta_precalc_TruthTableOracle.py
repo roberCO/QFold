@@ -56,6 +56,8 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta/2).
             # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
             angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
+            if key[0:4] == '0110':
+                print('<i> Angle value of key',key,'is',angle)
             
             # Convert it into an integer and a string
             if angle == 1.:
@@ -63,6 +65,9 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
             angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
+
+            if key[0:4] == '0110':
+                print('<i> Angle value of key',key,'is',angles[key])
 
         # Order angles by key
         angles = OrderedDict(sorted(angles.items()))
@@ -74,7 +79,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         
         # Encoding the new bitmap
         new_bitmap = []
-        for o in range(self.out_bits):
+        for o in range(self.out_bits-1,-1,-1):
             string = ''
             for key in angles.keys():
                 string += str(angles[key])[o]

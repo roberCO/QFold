@@ -22,7 +22,7 @@ class AngleCalculator():
         #Quantum calculation option for 3D structure
         if option == 0: 
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta_max, deltas_dict)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta_max, self.scaling_factor, deltas_dict)
             return qMetropolis.execute_quantum_metropolis_n()
 
         #Classical calculation option for 3D structure

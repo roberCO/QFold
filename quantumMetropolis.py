@@ -28,12 +28,13 @@ import time
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta_max, input_oracle):
+    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta_max, scaling_factor, input_oracle):
 
         #Global variables
 
         # Number steps
         self.n_repetitions = n_repetitions
+        self.scaling_factor = scaling_factor
 
         # Number of bits necessary to specify the position of each angle
         self.angle_precision_bits = angle_precision_bits
@@ -446,7 +447,7 @@ class QuantumMetropolis():
 
         print('<i> Calculating gates')
 
-        U_gate = self.U_func_n()
+        #U_gate = self.U_func_n()
 
         #for _ in range(10):
             #qc.append(U_gate, [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
@@ -461,7 +462,7 @@ class QuantumMetropolis():
             beta = ((1+i)/self.n_repetitions)*self.beta_max
             
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
             print('<i> Oracle created')
             
             W_gate = self.W_func_n(oracle)
@@ -505,6 +506,7 @@ class QuantumMetropolis():
         for key in probs.keys():
             print(key,np.round(probs[key], decimals = 6))
 
+        '''
         print('<i> Quantum state')
         i = 0
         for item in np.round(state.data, decimals=5):
@@ -512,6 +514,7 @@ class QuantumMetropolis():
                 index = np.binary_repr(i, width = self.angle_precision_bits *self.n_angles + 2 + self.move_id_len+self.n_ancilla_bits)
                 print(index[:4]+ ' '+index[4]+' '+index[5]+' '+index[6]+' '+index[7:],item,'\n')
             i+=1
+        '''
         return probs
 
 # TO DO: initizialisation. 

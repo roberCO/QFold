@@ -9,13 +9,14 @@ import numpy as np
 
 class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
-    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, optimization=True, mct_mode='noancilla'):
+    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, scaling_factor, optimization=True, mct_mode='noancilla'):
 
         self.tools = utils.Utils()
 
         self.beta = beta
         self.in_bits = in_bits
         self.out_bits = out_bits
+        self.scaling_factor = scaling_factor
         self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
 
         # If there are only two angles, we need to eliminate the penultimate digit of the keys:
@@ -47,7 +48,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         for key in self.deltas_dictionary.keys():
 
             if self.deltas_dictionary[key] >= 0:
-                probability = math.exp(-self.beta * self.deltas_dictionary[key])
+                probability = math.exp(-self.scaling_factor*self.beta * self.deltas_dictionary[key])
             else: 
                 probability = 1
                 
@@ -57,13 +58,16 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta/2).
             # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
             angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
+
             '''
             if key[0:4] == '0110':
                 print('<i> Angle value of key',key,'is',angle)
             '''
-            
+            angle = np.minimum(angle, 1-1e-6)
             # Convert it into an integer and a string
             if angle == 1.:
+                print('probability = ',probability)
+                print('angle',angle)
                 raise ValueError('Warning: angle seems to be pi/2, and that should not be possible')
             
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation

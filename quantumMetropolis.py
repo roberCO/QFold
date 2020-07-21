@@ -261,7 +261,7 @@ class QuantumMetropolis():
 
         circuit.x(coin) # Start in 1 and decrease it, since we encoded the angle corresponding 1-probability
         for i in range(ancilla.size-1,-1,-1): # See how to perform an rx rotation in https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-            circuit.cu3(theta = -math.pi*2**(i-ancilla.size), phi  = -math.pi/2, lam = math.pi/2, control_qubit = ancilla[i], target_qubit = coin)
+            circuit.cu3(theta = -math.pi*2**(i-ancilla.size), phi  = 0, lam = 0, control_qubit = ancilla[i], target_qubit = coin)
     
     def coin_flip_func_n(self, oracle):
         
@@ -333,19 +333,19 @@ class QuantumMetropolis():
 
         
         # Define the coin_flip_gate
-        self.coin_flip_gate = self.coin_flip_func_n(oracle)
+        coin_flip_gate = self.coin_flip_func_n(oracle)
 
         # Move preparation
         qc.append(self.move_preparation_gate, [w_move_value[0]]+[w_move_id[j] for j in range(self.move_id_len)])
         
         # Coin flip    
-        qc.append(self.coin_flip_gate,  [w_ancilla[j] for j in range(self.n_ancilla_bits)]+[w_coin[0],w_move_value[0]]+ [w_move_id[j] for j in range(self.move_id_len)]+[w_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+        qc.append(coin_flip_gate,  [w_ancilla[j] for j in range(self.n_ancilla_bits)]+[w_coin[0],w_move_value[0]]+ [w_move_id[j] for j in range(self.move_id_len)]+[w_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
         # Conditional move
         qc.append(self.conditional_move_gate_n, [w_ancilla[j] for j in range(self.n_ancilla_bits)]+[w_coin[0],w_move_value[0]]+ [w_move_id[j] for j in range(self.move_id_len)]+[w_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
         # Inverse coin flip
-        qc.append(self.coin_flip_gate.inverse(),[w_ancilla[j] for j in range(self.n_ancilla_bits)]+[w_coin[0],w_move_value[0],]+ [w_move_id[j] for j in range(self.move_id_len)]+[w_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+        qc.append(coin_flip_gate.inverse(),[w_ancilla[j] for j in range(self.n_ancilla_bits)]+[w_coin[0],w_move_value[0],]+ [w_move_id[j] for j in range(self.move_id_len)]+[w_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [w_move_value[0]]+[w_move_id[j] for j in range(self.move_id_len)])
@@ -389,13 +389,13 @@ class QuantumMetropolis():
         qc.append(self.move_preparation_gate, [u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)])
         
         # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-        qc.u3( theta =  math.pi/3, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
+        qc.u3( theta =  math.pi/3, phi = 0, lam = 0, qubit=u_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate_n, [u_ancilla[j] for j in range(self.n_ancilla_bits)]+[u_coin[0],u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)]+[u_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
         # Inverse coin flip
-        qc.u3( theta = -math.pi/3, phi = -math.pi/2, lam = math.pi/2, qubit=u_coin)
+        qc.u3( theta = math.pi/3, phi = 0, lam = 0, qubit=u_coin).inverse()
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)])
@@ -436,19 +436,20 @@ class QuantumMetropolis():
         list_gates = []
 
         # If initialization is totally mixed use
-        #for g_angle in g_angles:
-        #    qc.h(g_angle)
+        for g_angle in g_angles:
+            qc.h(g_angle)
 
         # If initialization is from minifold
 
-        # qc.x (SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
+        #qc.x(g_angles[1][0]) #(SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
+        #qc.x(g_angles[0][0])
 
         print('<i> Calculating gates')
 
         U_gate = self.U_func_n()
 
-        for _ in range(1):
-            qc.append(U_gate, [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+        #for _ in range(10):
+            #qc.append(U_gate, [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
             #print('<i> q circuit created')
 
         # End of initialization
@@ -470,7 +471,7 @@ class QuantumMetropolis():
             print('<i> w_gate added')
 
             #list_gates[i].params[0]= beta
-            #qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+            qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
             print('<i> q circuit created')
 
             print('\n')
@@ -502,7 +503,15 @@ class QuantumMetropolis():
         #printout
         print('<i> Final probabilities')
         for key in probs.keys():
-            print(key,probs[key])
+            print(key,np.round(probs[key], decimals = 6))
+
+        print('<i> Quantum state')
+        i = 0
+        for item in np.round(state.data, decimals=5):
+            if np.absolute(item) > 1e-7:
+                index = np.binary_repr(i, width = self.angle_precision_bits *self.n_angles + 2 + self.move_id_len+self.n_ancilla_bits)
+                print(index[:4]+ ' '+index[4]+' '+index[5]+' '+index[6]+' '+index[7:],item,'\n')
+            i+=1
         return probs
 
 # TO DO: initizialisation. 

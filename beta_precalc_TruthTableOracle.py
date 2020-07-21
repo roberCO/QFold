@@ -30,13 +30,14 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         self.bitmap = self.calculate_bitmap()
 
         # Sanity printout
+        '''
         for i in range(out_bits):
             print('In column',i,'there are', self.bitmap[i].count('1'), '1s and ', self.bitmap[i].count('0'), '0s.')
         print('\n')
         for bm in self.bitmap:
             print(len(bm))
         print('\n')
-
+        '''
         super().__init__(self.bitmap, optimization, mct_mode)
 
     def calculate_bitmap(self):
@@ -56,8 +57,10 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta/2).
             # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
             angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
+            '''
             if key[0:4] == '0110':
                 print('<i> Angle value of key',key,'is',angle)
+            '''
             
             # Convert it into an integer and a string
             if angle == 1.:
@@ -66,17 +69,21 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
             angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
 
+            '''
             if key[0:4] == '0110':
                 print('<i> Angle value of key',key,'is',angles[key])
+            '''
 
         # Order angles by key
         angles = OrderedDict(sorted(angles.items()))
 
         # Printout
+        '''
         for i in range(2**self.out_bits):
             st = np.binary_repr(i, width = self.out_bits)
             print(st, 'appears', list(angles.values()).count(st), 'times in the angles dictionary')
-        
+        '''
+
         # Encoding the new bitmap
         new_bitmap = []
         for o in range(self.out_bits-1,-1,-1):

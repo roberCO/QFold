@@ -490,7 +490,7 @@ class QuantumMetropolis():
         for index_probabilites in range(2**(self.angle_precision_bits *self.n_angles)):
 
             key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
-            probs[key] = probabilities[i]#.as_integer
+            probs[key] = probabilities[index_probabilites]#.as_integer
 
         #ax = sns.heatmap(unifo)    
         '''

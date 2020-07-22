@@ -533,11 +533,12 @@ class QuantumMetropolis():
             # this denominator is equivalent to the 'weight' of this angle position
             # for example, if there are 4 angles, it goes to the first angle (from left) and calculate the denominator
             # then it goes to the next angle and calculate the new denominator
-            denominator = 2**(precision_bits*(n_angles - index_angle))
+            denominator = 2**(precision_bits*((n_angles-1) - index_angle))
 
-            key_str += int(key_int/denominator)
+            result = int(key_int/denominator)
+            key_str += str(result)
 
             # the key_int value is necessary to be updated
-            key_int -= key_int % denominator
+            key_int -= result * denominator
 
         return key_str

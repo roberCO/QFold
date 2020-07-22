@@ -487,10 +487,10 @@ class QuantumMetropolis():
         probabilities = state.probabilities([j+self.n_ancilla_bits+2+self.move_id_len for j in range(self.angle_precision_bits * self.n_angles)])
 
         probs = {}
-        for i in range(2**(self.angle_precision_bits *self.n_angles)):
+        for index_probabilites in range(2**(self.angle_precision_bits *self.n_angles)):
 
-            b = str(np.binary_repr(i, width = self.angle_precision_bits *self.n_angles))
-            probs[b] = probabilities[i]#.as_integer
+            key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
+            probs[key] = probabilities[i]#.as_integer
 
         #ax = sns.heatmap(unifo)    
         '''
@@ -518,3 +518,26 @@ class QuantumMetropolis():
         return probs
 
 # TO DO: initizialisation. 
+
+    # this method converts the index returned by statevector into a string key. 
+    # for example: key 10 is converted to 22 if there are two angles and two precision bits
+    # for example: key 8 is converted to 0010 if there are four angles and three precision bits
+    def convert_index_to_key(self, key_int, precision_bits, n_angles):
+
+        key_str = ''
+
+        # iterate over the number of angles
+        for index_angle in range(n_angles):
+
+            # generate a denominator to divide the key_int (integer key)
+            # this denominator is equivalent to the 'weight' of this angle position
+            # for example, if there are 4 angles, it goes to the first angle (from left) and calculate the denominator
+            # then it goes to the next angle and calculate the new denominator
+            denominator = 2**(precision_bits*(n_angles - index_angle))
+
+            key_str += int(key_int/denominator)
+
+            # the key_int value is necessary to be updated
+            key_int -= key_int % denominator
+
+        return key_str

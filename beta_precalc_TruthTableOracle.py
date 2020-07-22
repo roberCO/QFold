@@ -51,7 +51,6 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
                 probability = math.exp(-self.scaling_factor*self.beta * self.deltas_dictionary[key])
             else: 
                 probability = 1
-                
             # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.
             # That way 1 -> 000, but if probability is 0 there is some small probability of acceptance
             
@@ -59,11 +58,8 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
             angle = 1 - 2/math.pi * math.asin(math.sqrt(probability))
 
-            '''
-            if key[0:4] == '0110':
-                print('<i> Angle value of key',key,'is',angle)
-            '''
-            angle = np.minimum(angle, 1-1e-6)
+            # Ensure that the angle stays minimally away from 1
+            angle = np.minimum(angle, 1-2**(-self.out_bits-1))
             # Convert it into an integer and a string
             if angle == 1.:
                 print('probability = ',probability)
@@ -72,11 +68,6 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
             
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
             angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
-
-            '''
-            if key[0:4] == '0110':
-                print('<i> Angle value of key',key,'is',angles[key])
-            '''
 
         # Order angles by key
         angles = OrderedDict(sorted(angles.items()))

@@ -434,7 +434,7 @@ class QuantumMetropolis():
             qc = qc + QuantumCircuit(g_angles[i])
 
         # Metropolis algorithm (create one input oracle for each beta)
-        list_gates = []
+        #list_gates = []
 
         # If initialization is totally mixed use
         for g_angle in g_angles:
@@ -449,28 +449,29 @@ class QuantumMetropolis():
 
         #U_gate = self.U_func_n()
 
-        #for _ in range(10):
+        #for _ in range(2):
             #qc.append(U_gate, [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
             #print('<i> q circuit created')
-
+                
+        
         # End of initialization
 
+
+        print('<i> Quantum metropolis ->', i,'repetition')
+        
+        #beta = ((1+i)/self.n_repetitions)*self.beta_max
+        beta = 2
+        #It creates one different oracle for each beta
+        oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
+        print('<i> Oracle created')
+        
+        W_gate = self.W_func_n(oracle)
+        print('<i> w gate created')
+        
+        #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
+        print('<i> w_gate added')
+
         for i in range(self.n_repetitions):
-
-            print('<i> Quantum metropolis ->', i,'repetition')
-            
-            beta = ((1+i)/self.n_repetitions)*self.beta_max
-            
-            #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
-            print('<i> Oracle created')
-            
-            W_gate = self.W_func_n(oracle)
-            print('<i> w gate created')
-            
-            list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
-            print('<i> w_gate added')
-
             #list_gates[i].params[0]= beta
             qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
             print('<i> q circuit created')
@@ -507,9 +508,9 @@ class QuantumMetropolis():
             print(key,np.round(probs[key], decimals = 6))
 
         '''
-        print('<i> Quantum state')
+        print('<i> Quantum state amplitudes')
         i = 0
-        for item in np.round(state.data, decimals=5):
+        for item in np.round(state.data, decimals=8):
             if np.absolute(item) > 1e-7:
                 index = np.binary_repr(i, width = self.angle_precision_bits *self.n_angles + 2 + self.move_id_len+self.n_ancilla_bits)
                 print(index[:4]+ ' '+index[4]+' '+index[5]+' '+index[6]+' '+index[7:],item,'\n')

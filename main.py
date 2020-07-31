@@ -55,11 +55,19 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
         if index_min_energy in probabilities_matrix.keys():
             p_t = probabilities_matrix[index_min_energy]
         else:
-            p_t = 0.0000001
+            p_t = 0
 
 
         # Result is the calculated TTS
-        results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
+
+        if p_t >= 1:
+            results[thread_index] = 1
+
+        elif p_t == 0:
+            results [thread_index] = 999999999
+
+        else:
+            results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json

@@ -196,13 +196,13 @@ class Initializer():
                     binary_key = ''
                     for index_key in range(len(angle_keys)):
 
+                        binary_key += np.binary_repr(int(angle_keys[index_key]), width = numberBitsRotation)
+
                         if index_key == index_a_key:
                             angle_key += str(new_value)+ ' '
-                            binary_key += np.binary_repr(new_value, width = numberBitsRotation)
                         
                         else:
                             angle_key += angle_keys[index_key] + ' '
-                            binary_key += np.binary_repr(int(angle_keys[index_key]), width = numberBitsRotation)
 
                     new_energy = energies[angle_key.strip()]
 

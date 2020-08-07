@@ -31,7 +31,7 @@ class Initializer():
         self.carboxyConnections = [['C', 1], ['O', 1], ['N', 1]]
 
     #Calculate all posible energies for the protein and the number of rotations given
-    def calculate_delta_energies(self, proteinName, numberBitsRotation, aminoacids):
+    def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids):
 
         print('## Generating file of energies ##')
 
@@ -45,12 +45,12 @@ class Initializer():
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
-        atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom)
+        atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
 
         #Calculate all posible energies for the phi and psi angles
         energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation)
 
-        self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation)
+        self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName):
@@ -106,7 +106,7 @@ class Initializer():
 
         return found_atoms
 
-    def calculateInitialStructure(self, atoms, aminoacids, nitro_atom, carboxy_atom):       
+    def calculateInitialStructure(self, atoms, aminoacids, nitro_atom, carboxy_atom, method_rotations_generation):       
     
         #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
         #Get the value of angles returned by psi4
@@ -116,7 +116,7 @@ class Initializer():
         psis_initial_rotation = []
 
         #random between -π and π
-        if self.initialization_option == 'random':
+        if method_rotations_generation == 'random':
             print('\n## RANDOM initialization for protein structure ##\n')
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
@@ -126,7 +126,7 @@ class Initializer():
                 psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
 
         #minifold
-        elif self.initialization_option == 'minifold':
+        elif method_rotations_generation == 'minifold':
             print('\n## MINIFOLD initialization for protein structure ##\n')
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
@@ -426,9 +426,9 @@ class Initializer():
 
         return all_angle_planes
 
-    def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation):
+    def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation, method_rotations_generation):
 
         #Create json with calculated energies
         #TODO: extract the path to a config file
-        with open(self.precalculated_energies_path+'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json', 'w') as outfile:
+        with open(self.precalculated_energies_path+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
             json.dump(energiesJson, outfile)

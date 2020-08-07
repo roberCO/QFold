@@ -13,6 +13,7 @@ fi
 
 for index in $(seq $3 $4)
 do
-    python main.py $1 $2 $index
-    printf "Precalculated energies file for protein $1 with $index bits created!\n\n"
+    python main.py $1 $2 $index minifold
+    python main.py $1 $2 $index random
+    printf "Precalculated energies files (minifold and random) for protein $1 with $index bits created!\n\n"
 done

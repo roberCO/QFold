@@ -5,9 +5,9 @@ import angleCalculator
 import psiFour
 import utils
 
-if(len(sys.argv) != 4):
-    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations")
-    print ("<!> Example: python main.py Glycylglycine GG 6 (6 bits for rotations are 64 steps)")
+if(len(sys.argv) != 5):
+    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations method_rotations_generation")
+    print ("<!> Example: python main.py Glycylglycine GG 6 random (6 bits for rotations are 64 steps)")
     sys.exit(0)
 
 print('\n###################################################################')
@@ -19,6 +19,7 @@ print('###################################################################\n')
 proteinName = sys.argv[1].lower()
 aminoacids = sys.argv[2]
 numberBitsRotation = int(sys.argv[3])
+method_rotations_generation = sys.argv[4]
 rotationSteps = 2**(int(numberBitsRotation))
 
 #Read config file with the QFold configuration variables
@@ -35,7 +36,6 @@ angleInitializer = initializer.Initializer(
     config_variables['model_path'], 
     config_variables['window_size'], 
     config_variables['maximum_aminoacid_length'],
-    config_variables['initialization_option'],
     config_variables['basis']
     )
 
@@ -72,16 +72,16 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
-    f = open(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'.json')
+    f = open(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, aminoacids)
+    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids)
 
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 

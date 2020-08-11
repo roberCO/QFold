@@ -86,7 +86,5 @@ class Metropolis():
             if random_number < min(1,probability_threshold): # Accept the change
                 anglePhi_old = copy.deepcopy(anglePhi_new)
                 anglePsi_old = copy.deepcopy(anglePsi_new)
-                print('Classical new phi angle = ',anglePhi_new)
-                print('Classical new psi angle = ',anglePsi_new)
 
         return [anglePhi_old, anglePsi_old]

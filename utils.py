@@ -406,12 +406,12 @@ class Utils():
 
         initial_steps = []
         final_steps = []
-        methods = []
+        methods = ''
         for key in data:
 
             initial_steps.append(data[key]['initial_step'])
             final_steps.append(data[key]['final_step'])
-            methods.append(key + ' | ')
+            methods += key + ' | '
                 
         ax = fig.add_subplot(111)
         # in methods [:-3] remove last ' | '

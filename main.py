@@ -174,8 +174,8 @@ for alternative_method in config_variables['methods_initialization']:
     if alternative_method != method_rotations_generation:
 
         try:
-            f = open(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
-            results[alternative_method] = tools.read_results_file(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            f = open(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
             alternative_results_found = True
             f.close()
         except IOError:
@@ -183,7 +183,7 @@ for alternative_method in config_variables['methods_initialization']:
 
 if alternative_results_found:
 
-    results[method_rotations_generation] = tools.read_results_file(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
+    results[method_rotations_generation] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
     tools.generate_combined_results_plot(results, proteinName, numberBitsRotation)
 
 

@@ -148,6 +148,7 @@ class QuantumMetropolis():
 
         # Optimize the circuit
 
+        '''
         print('Before optimization------- conditional_move_npeptide')
         print('gates = ', sub_circ.count_ops())
         print('depth = ', sub_circ.depth())
@@ -155,7 +156,7 @@ class QuantumMetropolis():
         print('After optimization--------')
         print('gates = ', sub_circ.count_ops())
         print('depth = ', sub_circ.depth())
-
+        '''
         conditional_move_gate_n = sub_circ.to_instruction()
 
         # Reflection gate --------------------------------------------------
@@ -474,9 +475,9 @@ class QuantumMetropolis():
         for i in range(self.n_repetitions):
             #list_gates[i].params[0]= beta
             qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
-            print('<i> q circuit created')
+            #print('<i> q circuit created')
 
-            print('\n')
+            #print('\n')
 
         start_time = time.time()
         

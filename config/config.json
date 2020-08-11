@@ -14,7 +14,7 @@
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",
 
-    "initial_step": 50,
+    "initial_step": 10,
     "final_step": 51,
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,

@@ -13,6 +13,12 @@
     "input_filename_energy_psi4": "inputRotations",
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",
+    "methods_initialization": ["minifold", "random"],
+
+    "color_quantum_minifold": "red",
+    "color_classical_minifold": "blue",
+    "color_quantum_random": "yellow",
+    "color_classical_random": "cyan",
 
     "initial_step": 10,
     "final_step": 51,

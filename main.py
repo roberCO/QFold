@@ -163,6 +163,29 @@ tools.write_tts(config_variables['initial_step'], config_variables['final_step']
 # Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
 precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)
 
+# MERGE RESULTS: if the results generated are comparable with similar results generated previously, it generates the shared plot
+# For example, if this execution generates results for minifold 4 bits rotation GG and there are results for random 4 bits GG
+# it combines the results into only one plot
+
+results = {}
+alternative_results_found = False
+for alternative_method in config_variables['methods_initialization']:
+
+    if alternative_method != method_rotations_generation:
+
+        try:
+            f = open(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            alternative_results_found = True
+            f.close()
+        except IOError:
+            print('<!> Info: No results for method', alternative_method,'found\n')
+
+if alternative_results_found:
+
+    results[method_rotations_generation] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
+    tools.generate_combined_results_plot(results, proteinName, numberBitsRotation)
+
 
 print('\n\n********************************************************')
 print('**                       RESULTS                      **')

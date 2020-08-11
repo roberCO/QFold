@@ -278,11 +278,6 @@ class QuantumMetropolis():
         oracle.construct_circuit()
         oracle_circuit = oracle.circuit
 
-        # Optimize the circuit of the oracle. First try it with printout
-        print('<i> Oracle gate and depth count')
-        print('gates = ', oracle_circuit.count_ops())
-        print('depth = ', oracle_circuit.depth())
-
         #print(oracle_circuit)
         oracle_gate = oracle_circuit.to_instruction()
 
@@ -414,7 +409,6 @@ class QuantumMetropolis():
         # State definition. All angles range from 0 to 2pi
         # State definition. All angles range from 0 to 2pi
 
-        print('<i> Execute n quantum metropolis')
         g_angles = []
         for i in range(self.n_angles):
             g_angles.append(QuantumRegister(self.angle_precision_bits, name = 'angle' + str(i)))
@@ -446,8 +440,6 @@ class QuantumMetropolis():
         #qc.x(g_angles[1][0]) #(SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
         #qc.x(g_angles[0][0])
 
-        print('<i> Calculating gates')
-
         #U_gate = self.U_func_n()
 
         #for _ in range(2):
@@ -458,19 +450,14 @@ class QuantumMetropolis():
         # End of initialization
 
 
-        print('<i> Quantum metropolis ->', i,'repetition')
-        
         #beta = ((1+i)/self.n_repetitions)*self.beta_max
         beta = 2
         #It creates one different oracle for each beta
         oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
-        print('<i> Oracle created')
         
         W_gate = self.W_func_n(oracle)
-        print('<i> w gate created')
         
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
-        print('<i> w_gate added')
 
         for i in range(self.n_repetitions):
             #list_gates[i].params[0]= beta
@@ -481,7 +468,6 @@ class QuantumMetropolis():
 
         start_time = time.time()
         
-        print('<i> Calculating statevector')
         state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 

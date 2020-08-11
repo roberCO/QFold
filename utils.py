@@ -380,6 +380,7 @@ class Utils():
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.png', bbox_inches='tight')
+        plt.close()
 
     def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, number_bits_rotation, method_rotations_generation):
 
@@ -434,5 +435,5 @@ class Utils():
 
 
         plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_combined.png', bbox_inches='tight')
-
+        plt.close()
 

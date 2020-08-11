@@ -64,7 +64,7 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
             results[thread_index] = 1
 
         elif p_t == 0:
-            results [thread_index] = 999999999
+            results [thread_index] = 9999
 
         else:
             results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
@@ -149,7 +149,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
             c_accumulated_tts.append(classical_TTS)
             x_axis.append(step)
 
-            tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation)
+            tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
 
         index_to_get_results = []
 
@@ -157,6 +157,8 @@ for step in range(config_variables['initial_step'], config_variables['final_step
 min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
 delta_mean = tools.calculate_delta_mean(deltas_dict)
 std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
+
+tools.write_tts(config_variables['initial_step'], config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
 
 # Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
 precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)

@@ -363,7 +363,7 @@ class Utils():
         array = np.array(list(deltas_dict.items()), dtype='float32')
         return array[:,1].std()
 
-    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation):
+    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation, method_rotations_generation):
 
         fig = plt.figure()
         
@@ -379,4 +379,16 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'.png', bbox_inches='tight')
+        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.png', bbox_inches='tight')
+
+    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, number_bits_rotation, method_rotations_generation):
+
+        tts_json = {}
+
+        tts_json['initial_step'] = initial_step
+        tts_json['final_step'] = final_step
+        tts_json['quantum_tts'] = quantum_tts
+        tts_json['classical_tts'] = classical_tts
+
+        with open(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
+            json.dump(tts_json, outfile)

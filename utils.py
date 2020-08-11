@@ -392,3 +392,47 @@ class Utils():
 
         with open(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
             json.dump(tts_json, outfile)
+
+    def read_results_file(self, path_file):
+
+        with open(path_file) as json_file:
+            data = json.load(json_file)
+        
+        return data
+
+    def generate_combined_results_plot(self, data, protein_name, number_bits_rotation):
+
+        fig = plt.figure()
+
+        initial_steps = []
+        final_steps = []
+        methods = []
+        for key in data:
+
+            initial_steps.append(data[key]['initial_step'])
+            final_steps.append(data[key]['final_step'])
+            methods.append(key + ' | ')
+                
+        ax = fig.add_subplot(111)
+        # in methods [:-3] remove last ' | '
+        ax.set_title('Combined TTS comparision Q vs C for '+ methods[:-3])
+
+        interval = math.ceil((max(final_steps) - min(initial_steps))/10)
+        plt.xticks(np.arange(min(initial_steps), max(final_steps), interval))
+
+        for key in data:
+
+            ax.plot([x for x in range(data[key]['initial_step'], data[key]['final_step'])], data[key]['quantum_tts'], marker='o', markersize=3, color=self.config_variables['color_quantum_'+key], label = 'q_tts_'+key)
+            ax.plot([x for x in range(data[key]['initial_step'], data[key]['final_step'])], data[key]['classical_tts'], marker='o', markersize=3, color=self.config_variables['color_classical_'+key], label = 'c_tts_'+key)
+            
+        ax.set_ylabel('TTS')
+        ax.set_xlabel('Steps')
+        plt.tight_layout()
+
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+        plt.tight_layout()
+
+
+        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_combined.png', bbox_inches='tight')
+
+

@@ -48,9 +48,9 @@ class Initializer():
         atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
 
         #Calculate all posible energies for the phi and psi angles
-        energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation)
+        deltasJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation)
 
-        self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation, method_rotations_generation)
+        self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName):
@@ -148,7 +148,7 @@ class Initializer():
         return atoms
 
     #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation):
+    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation):
 
         rotationSteps = pow(2, int(numberBitsRotation))
         
@@ -159,13 +159,14 @@ class Initializer():
         print('    ⬤ Calculating energies for all posible rotations')
         energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1))
 
-        #Write the headers of the energies json that is going to be returned
-        energiesJson = {}
-        energiesJson['protein'] = proteinName
-        energiesJson['numberBitsRotation'] = numberBitsRotation
-        energiesJson['psi4_min_energy'] = min_energy_psi4
-        energiesJson['deltas'] = {}
+        self.write_json(energies, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
 
+        #Write the headers of the energies json that is going to be returned
+        deltasJson = {}
+        deltasJson['protein'] = proteinName
+        deltasJson['numberBitsRotation'] = numberBitsRotation
+        deltasJson['psi4_min_energy'] = min_energy_psi4
+        deltasJson['deltas'] = {}
 
         print('    ⬤ Calculating deltas for all possible combinations of rotations')
 
@@ -223,12 +224,12 @@ class Initializer():
                     delta = new_energy - old_energy
                     
                     #Add the values to the file with the precalculated energies
-                    energiesJson['deltas'][binary_key] = delta
+                    deltasJson['deltas'][binary_key] = delta
 
-        energiesJson['initial_min_energy'] = min_energy
-        energiesJson['index_min_energy'] = index_min_energy.replace(' ', '')
+        deltasJson['initial_min_energy'] = min_energy
+        deltasJson['index_min_energy'] = index_min_energy.replace(' ', '')
 
-        return energiesJson
+        return deltasJson
 
     # RECURSIVE function to calculate all energies of each possible rotation 
     def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, index_sequence='', energies = {}):
@@ -426,9 +427,9 @@ class Initializer():
 
         return all_angle_planes
 
-    def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation, method_rotations_generation):
+    def write_json(self, json, file_name, proteinName, numberBitsRotation, method_rotations_generation):
 
         #Create json with calculated energies
         #TODO: extract the path to a config file
-        with open(self.precalculated_energies_path+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
-            json.dump(energiesJson, outfile)
+        with open(self.precalculated_energies_path+file_name+'_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
+            json.dump(json, outfile)

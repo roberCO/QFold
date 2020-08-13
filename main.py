@@ -48,6 +48,14 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
 
         probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
 
+        if option == 0:
+            print('\nQuantum probabilities\n')
+        else:
+            print('\nClassical probabilities\n')
+
+        for key in probabilities_matrix.keys():
+            print(key, round(probabilities_matrix[key], 6))
+
         p_t = 0
 
         # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted

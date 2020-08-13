@@ -490,9 +490,9 @@ class QuantumMetropolis():
         a.savefig('./results/heatmap.png')
         '''
         #printout
-        print('<i> Final probabilities')
-        for key in probs.keys():
-            print(key,np.round(probs[key], decimals = 6))
+        #print('<i> Final probabilities')
+        #for key in probs.keys():
+        #    print(key,np.round(probs[key], decimals = 6))
 
         '''
         print('<i> Quantum state amplitudes')

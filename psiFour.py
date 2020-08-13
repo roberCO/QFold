@@ -106,7 +106,7 @@ class PsiFour():
 
     def readEnergyJson(self, proteinName, numberBitsRotation, method_rotations_generation):
 
-        with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
+        with open(self.precalculated_energies_path + 'delta_energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
             data = json.load(json_file)
 
             return [data['deltas'], data['psi4_min_energy'], data['initial_min_energy'], data['index_min_energy']]

@@ -427,9 +427,9 @@ class Initializer():
 
         return all_angle_planes
 
-    def write_json(self, json, file_name, proteinName, numberBitsRotation, method_rotations_generation):
+    def write_json(self, json_data, file_name, proteinName, numberBitsRotation, method_rotations_generation):
 
         #Create json with calculated energies
         #TODO: extract the path to a config file
         with open(self.precalculated_energies_path+file_name+'_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
-            json.dump(json, outfile)
+            json.dump(json_data, outfile)

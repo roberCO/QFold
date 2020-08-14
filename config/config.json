@@ -20,8 +20,8 @@
     "color_quantum_random": "yellow",
     "color_classical_random": "cyan",
 
-    "initial_step": 10,
-    "final_step": 51,
+    "initial_step": 2,
+    "final_step": 50,
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,
     "scaling_factor": 5000, 

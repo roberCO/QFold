@@ -48,6 +48,7 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
 
         probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
 
+        '''
         if option == 0:
             print('\nQuantum probabilities\n')
         else:
@@ -55,6 +56,7 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
 
         for key in probabilities_matrix.keys():
             print(key, round(probabilities_matrix[key], 6))
+        '''
 
         p_t = 0
 
@@ -132,7 +134,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
-    if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= (config_variables['final_step'] - config_variables['initial_step']):
+    if thread_index % config_variables['n_threads_pool'] == 0 or int(thread_index/2) >= (config_variables['final_step'] - config_variables['initial_step']):
 
         # It pauses execution until all threads ends
         for process in threads:
@@ -155,9 +157,8 @@ for step in range(config_variables['initial_step'], config_variables['final_step
 
             q_accumulated_tts.append(quantum_TTS)
             c_accumulated_tts.append(classical_TTS)
-            x_axis.append(step)
 
-            tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
+            tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
 
         index_to_get_results = []
 

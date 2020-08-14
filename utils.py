@@ -363,7 +363,9 @@ class Utils():
         array = np.array(list(deltas_dict.items()), dtype='float32')
         return array[:,1].std()
 
-    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation, method_rotations_generation):
+    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation, method_rotations_generation, initial_step):
+
+        x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]
 
         fig = plt.figure()
         

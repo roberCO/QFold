@@ -450,8 +450,7 @@ class QuantumMetropolis():
         # End of initialization
 
 
-        #beta = ((1+i)/self.n_repetitions)*self.beta_max
-        beta = 2
+        beta = self.beta_max
         #It creates one different oracle for each beta
         oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
         

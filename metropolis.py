@@ -74,7 +74,10 @@ class Metropolis():
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
-            Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)] * self.scaling_factor
+            if self.scaling_factor == -1:
+                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
+            else:
+                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)] * self.scaling_factor
 
             if Delta_E < 0:
                 probability_threshold = 1

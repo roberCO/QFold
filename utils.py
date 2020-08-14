@@ -371,7 +371,9 @@ class Utils():
         
         ax = fig.add_subplot(111)
         ax.set_title('TTS comparision for Quantum vs Classical Metropolis')
-        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, 1.0))
+
+        interval = math.ceil((initial_step+len(q_accumulated_tts)-initial_step)/10)
+        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, interval))
 
         ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
         ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
@@ -381,7 +383,9 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.png', bbox_inches='tight')
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+
+        plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
     def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, number_bits_rotation, method_rotations_generation):
@@ -393,7 +397,8 @@ class Utils():
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
 
-        with open(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
+        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
     def read_results_file(self, path_file):
@@ -435,7 +440,7 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.tight_layout()
 
-
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_combined.png', bbox_inches='tight')
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'._combined.png'
+        plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 

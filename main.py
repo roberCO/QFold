@@ -71,13 +71,13 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
         # Result is the calculated TTS
 
         if p_t >= 1:
-            results[thread_index] = 1
+            results[thread_index] = [1, step]
 
         elif p_t == 0:
-            results [thread_index] = 9999
+            results [thread_index] = [9999, step]
 
         else:
-            results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
+            results[thread_index] = [tools.calculateTTS(config_variables['precision_solution'], step, p_t), step]
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
@@ -142,18 +142,20 @@ for step in range(config_variables['initial_step'], config_variables['final_step
 
         for index in range(index_to_get_results[0], index_to_get_results[-1]+1, 2):
 
-            quantum_TTS = results[index]
-            classical_TTS = results[index+1]
+            quantum_TTS = results[index][0]
+            quantum_step = results[index][1]
+            classical_TTS = results[index+1][0]
+            classical_step = results[index+1][0]
 
             if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
                 
                 min_q_tts['value'] = quantum_TTS
-                min_q_tts['step'] = step
+                min_q_tts['step'] = quantum_step
 
             if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
                 
                 min_c_tts['value'] = classical_TTS
-                min_c_tts['step'] = step
+                min_c_tts['step'] = classical_step
 
             q_accumulated_tts.append(quantum_TTS)
             c_accumulated_tts.append(classical_TTS)

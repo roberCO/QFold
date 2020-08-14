@@ -1,10 +1,10 @@
-glycylglycine #https://pubchem.ncbi.nlm.nih.gov/compound/11163
-Glycylcysteine #https://pubchem.ncbi.nlm.nih.gov/compound/7408690
-DL-Alanyl-DL-alanine #https://pubchem.ncbi.nlm.nih.gov/compound/601
-Glycylvaline #https://pubchem.ncbi.nlm.nih.gov/compound/97417
-Valylglycine #https://pubchem.ncbi.nlm.nih.gov/compound/136487
-Alanylserine #https://pubchem.ncbi.nlm.nih.gov/compound/96821
-Glycyl-L-threonine #https://pubchem.ncbi.nlm.nih.gov/compound/111257
-Threoninyl-Glycine #https://pubchem.ncbi.nlm.nih.gov/compound/7010576
-Serylalanine #https://pubchem.ncbi.nlm.nih.gov/compound/17958834
-Alanylcysteine #https://pubchem.ncbi.nlm.nih.gov/compound/13019623
+glycylglycine GG #https://pubchem.ncbi.nlm.nih.gov/compound/11163
+Glycylcysteine GC #https://pubchem.ncbi.nlm.nih.gov/compound/7408690
+DL-Alanyl-DL-alanine AA #https://pubchem.ncbi.nlm.nih.gov/compound/601
+Glycylvaline GV #https://pubchem.ncbi.nlm.nih.gov/compound/97417
+Valylglycine VG #https://pubchem.ncbi.nlm.nih.gov/compound/136487
+Alanylserine AS #https://pubchem.ncbi.nlm.nih.gov/compound/96821
+Glycyl-L-threonine GT #https://pubchem.ncbi.nlm.nih.gov/compound/111257
+Threoninyl-Glycine TG #https://pubchem.ncbi.nlm.nih.gov/compound/7010576
+Serylalanine SA #https://pubchem.ncbi.nlm.nih.gov/compound/17958834
+Alanylcysteine AC #https://pubchem.ncbi.nlm.nih.gov/compound/13019623

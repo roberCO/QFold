@@ -440,7 +440,7 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.tight_layout()
 
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'._combined.png'
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'_combined.png'
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 

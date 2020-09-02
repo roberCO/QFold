@@ -1,10 +1,11 @@
-Lysyl aspartyl isoleucine #https://pubchem.ncbi.nlm.nih.gov/compound/90478376
-Fas C-Terminal Tripeptide #https://pubchem.ncbi.nlm.nih.gov/compound/9209375#section=3D-Conformer
-Aadcv #https://pubchem.ncbi.nlm.nih.gov/compound/448130#section=3D-Conformer
-Seryl-lysyl-aspartic acid #https://pubchem.ncbi.nlm.nih.gov/compound/196643#section=3D-Conformer
-Tripeptide-53 #https://pubchem.ncbi.nlm.nih.gov/compound/131801085#section=3D-Conformer
-Bialaphos #https://pubchem.ncbi.nlm.nih.gov/compound/5462314#section=3D-Conformer
-Seryl-lysyl-leucine #https://pubchem.ncbi.nlm.nih.gov/compound/131223#section=3D-Conformer
-SH-Tripeptide-4 #https://pubchem.ncbi.nlm.nih.gov/compound/10193131#section=3D-Conformer
-Glycylglycylglycine #https://pubchem.ncbi.nlm.nih.gov/compound/11161
-L-Methionylglycine #https://pubchem.ncbi.nlm.nih.gov/compound/6992930
+glycylglycylglycine       GGG #https://pubchem.ncbi.nlm.nih.gov/compound/11161
+alanylglutaminyllysine    AQK #https://pubchem.ncbi.nlm.nih.gov/compound/131801085
+lysylaspartylisoleucine   KDI #https://pubchem.ncbi.nlm.nih.gov/compound/90478376
+seryllysylleucine         SKL #https://pubchem.ncbi.nlm.nih.gov/compound/131223
+melanostatin PLG #https://pubchem.ncbi.nlm.nih.gov/compound/92910
+soleucylprolylproline IPP #https://pubchem.ncbi.nlm.nih.gov/compound/9949212#section=Biologic-Description
+SH-Tripeptide-4           LGD #https://pubchem.ncbi.nlm.nih.gov/compound/10193131
+Fas C-Terminal Tripeptide SLV #https://pubchem.ncbi.nlm.nih.gov/compound/9209375
+Seryl-lysyl-aspartic acid SKD #https://pubchem.ncbi.nlm.nih.gov/compound/196643
+aadcv #https://pubchem.ncbi.nlm.nih.gov/compound/448130
+bialaphos XAA #https://pubchem.ncbi.nlm.nih.gov/compound/5462314

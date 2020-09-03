@@ -91,7 +91,7 @@ except IOError:
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
@@ -160,7 +160,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
             q_accumulated_tts.append(quantum_TTS)
             c_accumulated_tts.append(classical_TTS)
 
-            tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
+            tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
 
         index_to_get_results = []
 
@@ -169,7 +169,19 @@ min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
 delta_mean = tools.calculate_delta_mean(deltas_dict)
 std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
 
-tools.write_tts(config_variables['initial_step'], config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
+final_stats = {'q': min_q_tts, 'c': min_c_tts}
+
+tools.write_tts(
+    config_variables['initial_step'], 
+    config_variables['final_step'], 
+    q_accumulated_tts, 
+    c_accumulated_tts, 
+    proteinName,
+    aminoacids,
+    numberBitsRotation, 
+    method_rotations_generation,
+    inizialitation_stats,
+    final_stats)
 
 # Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
 precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)

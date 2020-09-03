@@ -45,11 +45,13 @@ class Initializer():
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
-        atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
+        [atoms, inizialitation_stats] = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
 
         #Calculate all posible energies for the phi and psi angles
         deltasJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation)
 
+        # Add the stadistics about the precision of the inizializator
+        deltasJson['inizialitation_stats'] = inizialitation_stats
         self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
@@ -144,8 +146,18 @@ class Initializer():
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
-        self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
-        return atoms
+        [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
+
+        initilization_stats = {
+            'phis_precision': phis_precision, 
+            'psis_precision': psis_precision, 
+            'phi_angles_psi4': phi_angles_psi4, 
+            'psi_angles_psi4': psi_angles_psi4, 
+            'phis_initial_rotation': phis_initial_rotation,
+            'psis_initial_rotation': psis_initial_rotation
+            }
+
+        return [atoms, initilization_stats]
 
     #This method returns the json with all rotations and energies associated to these rotations
     def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation):

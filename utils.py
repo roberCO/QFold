@@ -341,6 +341,8 @@ class Utils():
         print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
         print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
 
+        return [phi_precisions, psi_precisions]
+
     def angle_to_binary(self, angle, number_bits_rotation):
 
         return ('0'*(number_bits_rotation - len(format(angle,'b'))) + format(angle,'b'))
@@ -363,7 +365,7 @@ class Utils():
         array = np.array(list(deltas_dict.items()), dtype='float32')
         return array[:,1].std()
 
-    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation, method_rotations_generation, initial_step):
+    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
 
         x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]
 
@@ -383,12 +385,12 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, number_bits_rotation, method_rotations_generation):
+    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, inizialitation_stats, final_stats):
 
         tts_json = {}
 
@@ -396,8 +398,10 @@ class Utils():
         tts_json['final_step'] = final_step
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
+        tts_json['initialization_stats'] = inizialitation_stats
+        tts_json['final_stats'] = final_stats
 
-        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 

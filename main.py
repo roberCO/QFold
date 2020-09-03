@@ -145,7 +145,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
             quantum_TTS = results[index][0]
             quantum_step = results[index][1]
             classical_TTS = results[index+1][0]
-            classical_step = results[index+1][0]
+            classical_step = results[index+1][1]
 
             if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
                 

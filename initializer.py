@@ -148,6 +148,14 @@ class Initializer():
         #Calculate the precision in constrast of the real value calculated by psi4
         [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
 
+        # if it is necessary convert float32 in standard python type (float32 is not serializable by json)
+        if type(phis_initial_rotation[0]) is np.float32:
+            phis_initial_rotation = [value.item() for value in phis_initial_rotation]
+        
+        if type(psis_initial_rotation[0]) is np.float32:
+            psis_initial_rotation = [value.item() for value in psis_initial_rotation]
+
+        # phis/psis initial rotation is a float 32 and it is not serializable by the json, so it is necessary to convert to a native type of python
         initilization_stats = {
             'phis_precision': phis_precision, 
             'psis_precision': psis_precision, 

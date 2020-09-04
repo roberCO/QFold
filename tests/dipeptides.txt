@@ -6,5 +6,5 @@ valylglycine    VG #https://pubchem.ncbi.nlm.nih.gov/compound/136487
 alanylserine    AS #https://pubchem.ncbi.nlm.nih.gov/compound/96821
 glycylthreonine GT #https://pubchem.ncbi.nlm.nih.gov/compound/111257
 glycylalanine   GA #https://pubchem.ncbi.nlm.nih.gov/compound/98153
-gerylalanine    SA #https://pubchem.ncbi.nlm.nih.gov/compound/17958834
+serylalanine    SA #https://pubchem.ncbi.nlm.nih.gov/compound/17958834
 alanylcysteine  AC #https://pubchem.ncbi.nlm.nih.gov/compound/13019623

@@ -2,6 +2,8 @@ import utils
 
 import json
 import numpy as np
+import bokeh
+from bokeh.io import export_png
 
 #Read config file with the QFold configuration variables
 config_path = './config/config.json'
@@ -11,7 +13,9 @@ config_variables = tools.get_config_variables()
 
 # list elements to read
 input_files = [
-    'glycylglycylglycine_GGG_1_minifold_20_1000'
+    'glycylglycylglycine_GGG_1_minifold_20_1000',
+    'glycylglycylglycine_GGG_1_random_20_1000'
+
 ]
 
 for input_name in input_files:
@@ -37,42 +41,57 @@ for protein_key in data.keys():
     min_tts[aas+'_'+bits+'_'+init_mode] = min(data[protein_key]['final_stats']['q']['value'], data[protein_key]['final_stats']['c']['value'])
 
 # generate plot of minifold vs random inizialization mode
+# https://towardsdatascience.com/interactive-bar-charts-with-bokeh-7230e5653ba3
+
 from bokeh.io import output_file, show
 from bokeh.models import ColumnDataSource
-from bokeh.palettes import GnBu3, OrRd3
+from bokeh.palettes import Set1
 from bokeh.plotting import figure
+import random
+from bokeh.palettes import Turbo256
+from bokeh.models import FactorRange
 
-output_file("stacked_split.html")
 
-fruits = ['Apples', 'Pears', 'Nectarines', 'Plums', 'Grapes', 'Strawberries']
-years = ["2015", "2016", "2017"]
+precision_minifold = [10, 20, 30, 40, 50, 60]
+precision_random = [5, 10, 15, 20, 25, 30] 
+tts_minifold = [-5, -10, -15, -20, -25, -30]
+tts_random =  [-10, -20, -30, -40, -50, -60]
 
-exports = {'fruits' : fruits,
-           '2015'   : [2, 1, 4, 3, 2, 4],
-           '2016'   : [5, 3, 4, 2, 4, 6],
-           '2017'   : [3, 2, 4, 4, 5, 3]}
-imports = {'fruits' : fruits,
-           '2015'   : [-1, 0, -1, -3, -2, -1],
-           '2016'   : [-2, -1, -3, -1, -2, -2],
-           '2017'   : [-1, -2, -1, 0, -2, -2]}
 
-p = figure(y_range=fruits, plot_height=250, x_range=(-16, 16), title="Fruit import/export, by year",
-           toolbar_location=None)
+output_file("random_vs_minifold.html")
 
-p.hbar_stack(years, y='fruits', height=0.9, color=GnBu3, source=ColumnDataSource(exports),
-             legend_label=["%s exports" % x for x in years])
+proteins = ['gg_3', 'gg_4', 'gc_3', 'gc_4', 'aa_3', 'aa_4']
+metrics = ["precision_minifold", "precision_random", "tts_minifold", "tts_random"]
 
-p.hbar_stack(years, y='fruits', height=0.9, color=OrRd3, source=ColumnDataSource(imports),
-             legend_label=["%s imports" % x for x in years])
+y_precision = [ (protein, metric) for protein in proteins for metric in metrics[:2]]
+y_tts = [ (protein, metric) for protein in proteins for metric in metrics[2:]]
+
+counts_precision = sum(zip(precision_minifold, precision_random), ())
+counts_tts = sum(zip(tts_minifold, tts_random), ())
+
+source_precision = ColumnDataSource(data=dict(y=y_precision, counts_precision=counts_precision, color=random.sample(Turbo256,12)))
+source_tts = ColumnDataSource(data=dict(y=y_tts, counts_tts=counts_tts, color=random.sample(Turbo256,12)))
+
+p = figure(x_range=(-100, 100), y_range=FactorRange(*y_precision), plot_height=250, title="Precision and TTS comparison for minifold an random initialization",
+            toolbar_location=None)
+
+precision_names = metrics[0]
+tts_names = metrics[2]
+
+#p.hbar_stack(metrics, y='proteins', height=0.9, color='#008000', source=ColumnDataSource(precision), legend_label= precision_names)
+p.hbar(y='y', right='counts_precision', height=0.9, fill_color='color', source=source_precision)
+
+#p.hbar_stack(metrics, y='proteins', height=0.9, color='#ff0000', source=ColumnDataSource(tts), legend_label=tts_names)
+#p.hbar(y='y', left='counts_tts', height=0.9, fill_color='color', source=source_tts)
+
 
 p.y_range.range_padding = 0.1
 p.ygrid.grid_line_color = None
-p.legend.location = "top_left"
+#p.legend.location = "top_left"
 p.axis.minor_tick_line_color = None
 p.outline_line_color = None
 
 show(p)
-
 
 
 # generate plot of the evolution of tts with different steps comparing classical vs quantum

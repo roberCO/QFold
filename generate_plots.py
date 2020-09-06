@@ -50,7 +50,7 @@ from bokeh.plotting import figure
 import random
 from bokeh.palettes import Turbo256
 from bokeh.models import FactorRange
-
+from bokeh.layouts import row
 
 precision_minifold = [10, 20, 30, 40, 50, 60]
 precision_random = [5, 10, 15, 20, 25, 30] 
@@ -61,7 +61,7 @@ tts_random =  [-10, -20, -30, -40, -50, -60]
 output_file("random_vs_minifold.html")
 
 proteins = ['gg_3', 'gg_4', 'gc_3', 'gc_4', 'aa_3', 'aa_4']
-metrics = ["precision_minifold", "precision_random", "tts_minifold", "tts_random"]
+metrics = ["minifold", "random", "tts_minifold", "tts_random"]
 
 y_precision = [ (protein, metric) for protein in proteins for metric in metrics[:2]]
 y_tts = [ (protein, metric) for protein in proteins for metric in metrics[2:]]
@@ -69,29 +69,39 @@ y_tts = [ (protein, metric) for protein in proteins for metric in metrics[2:]]
 counts_precision = sum(zip(precision_minifold, precision_random), ())
 counts_tts = sum(zip(tts_minifold, tts_random), ())
 
-source_precision = ColumnDataSource(data=dict(y=y_precision, counts_precision=counts_precision, color=random.sample(Turbo256,12)))
-source_tts = ColumnDataSource(data=dict(y=y_tts, counts_tts=counts_tts, color=random.sample(Turbo256,12)))
+color_precision = ['green','green','green','green','green','green','green','green','green','green','green','green']
+color_tts = ['red', 'red','red','red','red','red','red','red','red','red','red','red']
+source_precision = ColumnDataSource(data=dict(y=y_precision, counts=counts_precision, color=color_precision))
+source_tts = ColumnDataSource(data=dict(y=y_tts, counts=counts_tts, color=color_tts))
 
-p = figure(x_range=(-100, 100), y_range=FactorRange(*y_precision), plot_height=250, title="Precision and TTS comparison for minifold an random initialization",
+
+plot_precision = figure(x_range=(0, 100), y_range=FactorRange(*y_precision), plot_height=250, title="Precision comparison  minifold vs random",
+            toolbar_location=None)
+plot_tts = figure(x_range=(-100, 0), y_range=FactorRange(*y_tts), plot_height=250, title="TTS comparison minifold vs random",
             toolbar_location=None)
 
-precision_names = metrics[0]
-tts_names = metrics[2]
-
 #p.hbar_stack(metrics, y='proteins', height=0.9, color='#008000', source=ColumnDataSource(precision), legend_label= precision_names)
-p.hbar(y='y', right='counts_precision', height=0.9, fill_color='color', source=source_precision)
+plot_precision.hbar(y='y', right='counts', height=0.9, fill_color='color', source=source_precision)
 
 #p.hbar_stack(metrics, y='proteins', height=0.9, color='#ff0000', source=ColumnDataSource(tts), legend_label=tts_names)
-#p.hbar(y='y', left='counts_tts', height=0.9, fill_color='color', source=source_tts)
+plot_tts.hbar(y='y', right='counts', height=0.9, fill_color='color', source=source_tts)
 
 
-p.y_range.range_padding = 0.1
-p.ygrid.grid_line_color = None
-#p.legend.location = "top_left"
-p.axis.minor_tick_line_color = None
-p.outline_line_color = None
+plot_precision.y_range.range_padding = 0.1
+plot_precision.ygrid.grid_line_color = None
+#plot_precision.legend.location = "top_left"
+plot_precision.axis.minor_tick_line_color = None
+plot_precision.outline_line_color = None
 
-show(p)
+plot_tts.y_range.range_padding = 0.1
+plot_tts.ygrid.grid_line_color = None
+#plot_tts.legend.location = "top_left"
+plot_tts.axis.minor_tick_line_color = None
+plot_tts.outline_line_color = None
+plot_tts.yaxis.visible = False
+
+
+show(row(plot_tts, plot_precision))
 
 
 # generate plot of the evolution of tts with different steps comparing classical vs quantum

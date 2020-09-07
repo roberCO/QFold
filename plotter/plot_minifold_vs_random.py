@@ -1,6 +1,3 @@
-
-# https://towardsdatascience.com/interactive-bar-charts-with-bokeh-7230e5653ba3
-
 from bokeh.io import output_file, show
 from bokeh.models import ColumnDataSource
 from bokeh.palettes import Set1

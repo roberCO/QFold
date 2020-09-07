@@ -475,6 +475,8 @@ class Utils():
             stats['classical_tts'] = data[protein_key]['classical_tts']
             stats['initial_step'] = data[protein_key]['initial_step']
             stats['final_step'] = data[protein_key]['final_step']
+            stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
+            stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
             
             results[aas+'_'+bits+'_'+init_mode] = stats
 

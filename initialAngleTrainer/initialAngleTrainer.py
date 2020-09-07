@@ -1,7 +1,7 @@
 import sys
 import minifoldTrainer
 import sys 
-sys.path.insert(1, '/home/rco/Desktop/qFold/QFold/')
+sys.path.insert(1, '/home/roberto/Escritorio/qfold/QFold/')
 import utils
 
 if len(sys.argv) == 2 and sys.argv[1] == 'list_trainers':

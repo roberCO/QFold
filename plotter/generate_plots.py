@@ -29,10 +29,10 @@ for input_name in input_files:
     results.update(tools.read_results_data(input_name))
 
 # generate plot of minifold vs random inizialization mode
-#plot_m_vs_r(results)
+plot_m_vs_r(results)
 
 # generate plot of the evolution of tts with different steps comparing classical vs quantum
-#plot_tts_ev(results)
+plot_tts_ev(results)
 
 # generate plot of the comparison between quantum and classical difference of tts
 plot_q_vs_c(results)

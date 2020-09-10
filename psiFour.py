@@ -6,13 +6,14 @@ import json
 
 class PsiFour():
 
-    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, basis = 'cc-pvdz'):
+    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, n_threads, basis = 'cc-pvdz'):
 
         self.psi4_path = psi4_path
         self.input_filename = input_filename
         self.output_filename = output_filename
         self.precalculated_energies_path = precalculated_energies_path
         self.energy_method = energy_method
+        self.n_threads = n_threads
         self.basis = basis
 
     def getAtomsFromProtein(self, protein):
@@ -58,7 +59,7 @@ class PsiFour():
     def executePsiCommand(self):
 
         # execute psi4 by command line (it generates the file output.dat with the information)
-        subprocess.run([self.psi4_path, self.input_filename+".dat", self.output_filename+".dat"], stdout=subprocess.DEVNULL)
+        subprocess.run([self.psi4_path,'-n', '8', self.input_filename+".dat", self.output_filename+".dat"], stdout=subprocess.DEVNULL)
 
     def writeFileEnergies(self, atoms):
 

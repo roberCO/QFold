@@ -11,7 +11,7 @@ import numpy as np
 
 class Initializer():
 
-    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, basis = 'cc-pvdz'):
+    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, basis = 'cc-pvdz', n_threads = 1):
 
         ## PARAMETERS ##
 
@@ -22,7 +22,7 @@ class Initializer():
         self.precalculated_energies_path = precalculated_energies_path
 
         #Declare the instances to use the functions of these classes
-        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, basis)
+        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, n_threads, basis)
         self.tools = utils.Utils()
 
         #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that

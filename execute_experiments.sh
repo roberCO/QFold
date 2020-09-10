@@ -1,19 +1,35 @@
 #!/bin/bash
 
-# check the input parameters ($1 path of proteins | $2 initial number of bits | $3 final number of bits)
-if [ "$1" == "" ] || [ "$2" == "" ] || [ "$3" == "" ] || [ "$4" == "" ]; then
-    echo "Any parameter is missing"
-    echo "Parameter 1 (protein name): " $1
-    echo "Parameter 2 (amminoacids): " $2 
-    echo "Parameter 3 (initial number bits): " $3
-    echo "Parameter 4 (final number bits): " $4
+python main.py glycylglycine GG 3 minifold
+python main.py glycylglycine GG 3 random
+python main.py glycylglycine GG 4 minifold
+python main.py glycylglycine GG 4 random
 
-    exit 1
-fi
 
-for index in $(seq $3 $4)
-do
-    python main.py $1 $2 $index minifold
-    python main.py $1 $2 $index random
-    printf "Precalculated energies files (minifold and random) for protein $1 with $index bits created!\n\n"
-done
+python main.py alanylcysteine AC 3 minifold
+python main.py alanylcysteine AC 3 random
+python main.py alanylcysteine AC 4 minifold
+python main.py alanylcysteine AC 4 random
+
+mv config/config.json config/config_temp.json
+jq -r '.final_step |= 10' config/config_temp.json > config/config.json
+
+python main.py serylalanine SA 3 minifold
+python main.py serylalanine SA 3 random
+python main.py serylalanine SA 4 minifold
+python main.py serylalanine SA 4 random
+
+python main.py valylglycine VG 3 minifold
+python main.py valylglycine VG 3 random
+python main.py valylglycine VG 4 minifold
+python main.py valylglycine VG 4 random
+
+python main.py glycylcysteine GC 3 minifold
+python main.py glycylcysteine GC 3 random
+python main.py glycylcysteine GC 4 minifold
+python main.py glycylcysteine GC 4 random
+
+python main.py glycylglycylglycine GGG 3 minifold
+python main.py glycylglycylglycine GGG 3 random
+python main.py glycylglycylglycine GGG 4 minifold
+python main.py glycylglycylglycine GGG 4 random

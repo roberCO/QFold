@@ -36,10 +36,18 @@ angleInitializer = initializer.Initializer(
     config_variables['model_path'], 
     config_variables['window_size'], 
     config_variables['maximum_aminoacid_length'],
+    config_variables['n_threads_pool'],
     config_variables['basis']
     )
 
-psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_filename_energy_psi4'], config_variables['output_filename_energy_psi4'], config_variables['precalculated_energies_path'], config_variables['energy_method'], config_variables['basis'])
+psi = psiFour.PsiFour(
+    config_variables['psi4_path'], 
+    config_variables['input_filename_energy_psi4'], 
+    config_variables['output_filename_energy_psi4'], 
+    config_variables['precalculated_energies_path'], 
+    config_variables['energy_method'], 
+    config_variables['n_threads_pool'],
+    config_variables['basis'])
 
 # Number of results is the number of steps multiplied by 2 (one for quantum and other for classical)
 total_number_resutls = (config_variables['final_step'] - config_variables['initial_step'])*2

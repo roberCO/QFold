@@ -9,6 +9,8 @@ from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Q
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit import BasicAer
 from qiskit.visualization import plot_state_city, plot_state_hinton
+from qiskit.providers.aer.backends import QasmSimulator
+from qiskit.quantum_info import Statevector
 
 import numpy as np
 import math
@@ -467,11 +469,18 @@ class QuantumMetropolis():
 
         start_time = time.time()
         
-        state = qi.Statevector.from_instruction(qc)
+        backend = Aer.get_backend('statevector_simulator')
+        backend_options = {"method" : "statevector"}
+        experiment = execute(qc, backend, backend_options=backend_options)
+        result = experiment.result()
+
+        probabilities = Statevector(result.get_statevector(qc)).probabilities()
+
+        #state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
 
         # Extract probabilities in the measurement of the angles phi and psi
-        probabilities = state.probabilities([j+self.n_ancilla_bits+2+self.move_id_len for j in range(self.angle_precision_bits * self.n_angles)])
+        #probabilities = state.probabilities([j+self.n_ancilla_bits+2+self.move_id_len for j in range(self.angle_precision_bits * self.n_angles)])
 
         probs = {}
         for index_probabilites in range(2**(self.angle_precision_bits *self.n_angles)):

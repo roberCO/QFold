@@ -434,12 +434,6 @@ class QuantumMetropolis():
         for i in range(self.n_repetitions):
             #list_gates[i].params[0]= beta
             qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
-<<<<<<< HEAD
-=======
-            #print('<i> q circuit created')
-
-            #print('\n')
->>>>>>> develop
 
         start_time = time.time()
         

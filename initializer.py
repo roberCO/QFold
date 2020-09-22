@@ -11,7 +11,7 @@ import numpy as np
 
 class Initializer():
 
-    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, basis = 'cc-pvdz', n_threads = 1):
+    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, n_threads, basis = 'cc-pvdz'):
 
         ## PARAMETERS ##
 

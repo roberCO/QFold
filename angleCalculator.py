@@ -17,21 +17,21 @@ class AngleCalculator():
         self.qTools = quantumUtils.QuantumUtils()
         self.n_angles = (number_aminoacids -1)*2
 
-    def calculate3DStructure(self, deltas_dict, n_repetitions, beta_max, option=0):
+    def calculate3DStructure(self, deltas_dict, n_steps, beta_max, option=0):
 
         #Quantum calculation option for 3D structure
         if option == 0: 
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_repetitions, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta_max, self.scaling_factor, deltas_dict)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta_max, self.scaling_factor, deltas_dict)
             return qMetropolis.execute_quantum_metropolis_n()
 
         #Classical calculation option for 3D structure
         elif option == 1:
 
             probabilities_matrix = {}
-            classical_metropolis = metropolis.Metropolis(self.bits_rotation, self.n_iterations, self.n_angles/2, self.scaling_factor, deltas_dict)
+            classical_metropolis = metropolis.Metropolis(self.bits_rotation, n_steps, self.n_angles/2, self.scaling_factor, deltas_dict)
             
-            for _ in range(n_repetitions):
+            for _ in range(self.n_iterations):
                 
                 [phi, psi] = classical_metropolis.execute_metropolis()
 
@@ -42,11 +42,9 @@ class AngleCalculator():
                     position_angles += str(phi[index]) + str(psi[index])
 
                 if position_angles in probabilities_matrix.keys():
-                    probabilities_matrix[position_angles] += (1/n_repetitions)
+                    probabilities_matrix[position_angles] += (1/self.n_iterations)
                 else:
                     # create the new entry for this result
-                    probabilities_matrix[position_angles] = (1/n_repetitions)
+                    probabilities_matrix[position_angles] = (1/self.n_iterations)
 
-
-            print('Classical metropolis calculated for', n_repetitions, 'steps')
             return probabilities_matrix        

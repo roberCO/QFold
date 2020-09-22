@@ -341,6 +341,8 @@ class Utils():
         print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
         print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
 
+        return [phi_precisions, psi_precisions]
+
     def angle_to_binary(self, angle, number_bits_rotation):
 
         return ('0'*(number_bits_rotation - len(format(angle,'b'))) + format(angle,'b'))
@@ -363,13 +365,17 @@ class Utils():
         array = np.array(list(deltas_dict.items()), dtype='float32')
         return array[:,1].std()
 
-    def plot_tts(self, x_axis, q_accumulated_tts, c_accumulated_tts, protein_name, number_bits_rotation, method_rotations_generation):
+    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
+
+        x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]
 
         fig = plt.figure()
         
         ax = fig.add_subplot(111)
         ax.set_title('TTS comparision for Quantum vs Classical Metropolis')
-        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, 1.0))
+
+        interval = math.ceil((initial_step+len(q_accumulated_tts)-initial_step)/10)
+        plt.xticks(np.arange(min(x_axis), max(x_axis)+1, interval))
 
         ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
         ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
@@ -379,10 +385,12 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.png', bbox_inches='tight')
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+
+        plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, number_bits_rotation, method_rotations_generation):
+    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, inizialitation_stats, final_stats):
 
         tts_json = {}
 
@@ -390,8 +398,11 @@ class Utils():
         tts_json['final_step'] = final_step
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
+        tts_json['initialization_stats'] = inizialitation_stats
+        tts_json['final_stats'] = final_stats
 
-        with open(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
+        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
     def read_results_file(self, path_file):
@@ -433,7 +444,40 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.tight_layout()
 
-
-        plt.savefig(self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_combined.png', bbox_inches='tight')
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'_combined.png'
+        plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
+    def read_results_data(self, input_name):
+
+        results = {}
+        data = {}
+        # read data
+        path = './'+self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
+        with open('./'+self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json') as json_file:
+                    data[input_name] = json.load(json_file)
+
+        # prepare the data
+        for protein_key in data.keys():
+
+            stats = {}
+
+            aas = protein_key.split('_')[1]
+            bits = protein_key.split('_')[2]
+            init_mode = protein_key.split('_')[3]
+            phi_prec = data[protein_key]['initialization_stats']['phis_precision']
+            psi_prec = data[protein_key]['initialization_stats']['psis_precision']
+            
+            # divided by 2 because it is the mean between phi and psi and by 100 to normalize the precision
+            stats['precision'] = np.mean(np.mean(phi_prec) + np.mean(psi_prec))/2/100
+            stats['min_tts'] = min(data[protein_key]['final_stats']['q']['value'], data[protein_key]['final_stats']['c']['value'])
+            stats['quantum_tts'] = data[protein_key]['quantum_tts']
+            stats['classical_tts'] = data[protein_key]['classical_tts']
+            stats['initial_step'] = data[protein_key]['initial_step']
+            stats['final_step'] = data[protein_key]['final_step']
+            stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
+            stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
+            
+            results[aas+'_'+bits+'_'+init_mode] = stats
+
+        return results

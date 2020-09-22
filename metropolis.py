@@ -8,10 +8,10 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, bits_rotation, n_iterations, number_angles, scaling_factor, deltas_dict):
+    def __init__(self, bits_rotation, n_steps, number_angles, scaling_factor, deltas_dict):
 
         self.bits_rotation = bits_rotation
-        self.n_iterations = n_iterations
+        self.n_steps = n_steps
         self.scaling_factor = scaling_factor 
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles)
@@ -37,7 +37,7 @@ class Metropolis():
             anglePsi_old.append(np.random.choice(self.rotatition_steps))
             anglePhi_old.append(np.random.choice(self.rotatition_steps))
 
-        for iteration in range(self.n_iterations):
+        for iteration in range(1, self.n_steps+1):
 
             # initially the new angles are equal to the old (then one angle will be randomly modified)
             # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
@@ -74,11 +74,18 @@ class Metropolis():
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
-            Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)] * self.scaling_factor
+            if self.scaling_factor == -1:
+                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
+            else:
+                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)] * self.scaling_factor
 
-            # Lets use a non_optimal simple schedule
-            beta = iteration / self.n_iterations
-            probability_threshold = np.exp(-beta*Delta_E)
+            if Delta_E < 0:
+                probability_threshold = 1
+            else:
+                # Lets use a non_optimal simple schedule
+                beta = iteration / self.n_steps
+                probability_threshold = np.exp(-beta*Delta_E)
+
             random_number = np.random.random_sample()
 
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.

@@ -11,7 +11,7 @@ import numpy as np
 
 class Initializer():
 
-    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, basis = 'cc-pvdz'):
+    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, n_threads, basis = 'cc-pvdz'):
 
         ## PARAMETERS ##
 
@@ -22,7 +22,7 @@ class Initializer():
         self.precalculated_energies_path = precalculated_energies_path
 
         #Declare the instances to use the functions of these classes
-        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, basis)
+        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, n_threads, basis)
         self.tools = utils.Utils()
 
         #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that
@@ -45,12 +45,14 @@ class Initializer():
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
-        atoms = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
+        [atoms, inizialitation_stats] = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
 
         #Calculate all posible energies for the phi and psi angles
-        energiesJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation)
+        deltasJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation)
 
-        self.writeFileEnergies(energiesJson, proteinName, numberBitsRotation, method_rotations_generation)
+        # Add the stadistics about the precision of the inizializator
+        deltasJson['inizialitation_stats'] = inizialitation_stats
+        self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName):
@@ -144,11 +146,29 @@ class Initializer():
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
-        self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
-        return atoms
+        [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
+
+        # if it is necessary convert float32 in standard python type (float32 is not serializable by json)
+        if type(phis_initial_rotation[0]) is np.float32:
+            phis_initial_rotation = [value.item() for value in phis_initial_rotation]
+        
+        if type(psis_initial_rotation[0]) is np.float32:
+            psis_initial_rotation = [value.item() for value in psis_initial_rotation]
+
+        # phis/psis initial rotation is a float 32 and it is not serializable by the json, so it is necessary to convert to a native type of python
+        initilization_stats = {
+            'phis_precision': phis_precision, 
+            'psis_precision': psis_precision, 
+            'phi_angles_psi4': phi_angles_psi4, 
+            'psi_angles_psi4': psi_angles_psi4, 
+            'phis_initial_rotation': phis_initial_rotation,
+            'psis_initial_rotation': psis_initial_rotation
+            }
+
+        return [atoms, initilization_stats]
 
     #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation):
+    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation):
 
         rotationSteps = pow(2, int(numberBitsRotation))
         
@@ -159,13 +179,14 @@ class Initializer():
         print('    ⬤ Calculating energies for all posible rotations')
         energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1))
 
-        #Write the headers of the energies json that is going to be returned
-        energiesJson = {}
-        energiesJson['protein'] = proteinName
-        energiesJson['numberBitsRotation'] = numberBitsRotation
-        energiesJson['psi4_min_energy'] = min_energy_psi4
-        energiesJson['deltas'] = {}
+        self.write_json(energies, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
 
+        #Write the headers of the energies json that is going to be returned
+        deltasJson = {}
+        deltasJson['protein'] = proteinName
+        deltasJson['numberBitsRotation'] = numberBitsRotation
+        deltasJson['psi4_min_energy'] = min_energy_psi4
+        deltasJson['deltas'] = {}
 
         print('    ⬤ Calculating deltas for all possible combinations of rotations')
 
@@ -223,12 +244,12 @@ class Initializer():
                     delta = new_energy - old_energy
                     
                     #Add the values to the file with the precalculated energies
-                    energiesJson['deltas'][binary_key] = delta
+                    deltasJson['deltas'][binary_key] = delta
 
-        energiesJson['initial_min_energy'] = min_energy
-        energiesJson['index_min_energy'] = index_min_energy.replace(' ', '')
+        deltasJson['initial_min_energy'] = min_energy
+        deltasJson['index_min_energy'] = index_min_energy.replace(' ', '')
 
-        return energiesJson
+        return deltasJson
 
     # RECURSIVE function to calculate all energies of each possible rotation 
     def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, index_sequence='', energies = {}):
@@ -426,9 +447,9 @@ class Initializer():
 
         return all_angle_planes
 
-    def writeFileEnergies(self, energiesJson, proteinName, numberBitsRotation, method_rotations_generation):
+    def write_json(self, json_data, file_name, proteinName, numberBitsRotation, method_rotations_generation):
 
         #Create json with calculated energies
         #TODO: extract the path to a config file
-        with open(self.precalculated_energies_path+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
-            json.dump(energiesJson, outfile)
+        with open(self.precalculated_energies_path+file_name+'_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json', 'w') as outfile:
+            json.dump(json_data, outfile)

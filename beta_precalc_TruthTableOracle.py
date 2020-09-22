@@ -48,7 +48,11 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         for key in self.deltas_dictionary.keys():
 
             if self.deltas_dictionary[key] >= 0:
-                probability = math.exp(-self.scaling_factor*self.beta * self.deltas_dictionary[key])
+
+                if self.scaling_factor == -1:
+                    probability = math.exp(-self.beta * self.deltas_dictionary[key])
+                else:
+                    probability = math.exp(-self.scaling_factor*self.beta * self.deltas_dictionary[key])
             else: 
                 probability = 1
             # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.

@@ -36,10 +36,18 @@ angleInitializer = initializer.Initializer(
     config_variables['model_path'], 
     config_variables['window_size'], 
     config_variables['maximum_aminoacid_length'],
+    config_variables['n_threads_pool'],
     config_variables['basis']
     )
 
-psi = psiFour.PsiFour(config_variables['psi4_path'], config_variables['input_filename_energy_psi4'], config_variables['output_filename_energy_psi4'], config_variables['precalculated_energies_path'], config_variables['energy_method'], config_variables['basis'])
+psi = psiFour.PsiFour(
+    config_variables['psi4_path'], 
+    config_variables['input_filename_energy_psi4'], 
+    config_variables['output_filename_energy_psi4'], 
+    config_variables['precalculated_energies_path'], 
+    config_variables['energy_method'], 
+    config_variables['n_threads_pool'],
+    config_variables['basis'])
 
 # Number of results is the number of steps multiplied by 2 (one for quantum and other for classical)
 total_number_resutls = (config_variables['final_step'] - config_variables['initial_step'])*2
@@ -47,6 +55,16 @@ results = results = [{} for x in range(total_number_resutls)]
 def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_min_energy):
 
         probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
+
+        '''
+        if option == 0:
+            print('\nQuantum probabilities\n')
+        else:
+            print('\nClassical probabilities\n')
+
+        for key in probabilities_matrix.keys():
+            print(key, round(probabilities_matrix[key], 6))
+        '''
 
         p_t = 0
 
@@ -61,18 +79,18 @@ def angle_calculator_thread(thread_index, option, deltas, step, beta_max, index_
         # Result is the calculated TTS
 
         if p_t >= 1:
-            results[thread_index] = 1
+            results[thread_index] = [1, step]
 
         elif p_t == 0:
-            results [thread_index] = 9999
+            results [thread_index] = [9999, step]
 
         else:
-            results[thread_index] = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
+            results[thread_index] = [tools.calculateTTS(config_variables['precision_solution'], step, p_t), step]
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
-    f = open(config_variables['precalculated_energies_path']+'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json')
+    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
@@ -81,7 +99,7 @@ except IOError:
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
 
 print('## 3D STRUCTURE CALCULATOR ##\n')
 
@@ -124,7 +142,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     index_to_get_results.append(thread_index)
     thread_index += 1
 
-    if thread_index % config_variables['n_threads_pool'] == 0 or thread_index + config_variables['n_threads_pool'] >= (config_variables['final_step'] - config_variables['initial_step']):
+    if thread_index % config_variables['n_threads_pool'] == 0 or int(thread_index/2) >= (config_variables['final_step'] - config_variables['initial_step']):
 
         # It pauses execution until all threads ends
         for process in threads:
@@ -132,24 +150,25 @@ for step in range(config_variables['initial_step'], config_variables['final_step
 
         for index in range(index_to_get_results[0], index_to_get_results[-1]+1, 2):
 
-            quantum_TTS = results[index]
-            classical_TTS = results[index+1]
+            quantum_TTS = results[index][0]
+            quantum_step = results[index][1]
+            classical_TTS = results[index+1][0]
+            classical_step = results[index+1][1]
 
             if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
                 
                 min_q_tts['value'] = quantum_TTS
-                min_q_tts['step'] = step
+                min_q_tts['step'] = quantum_step
 
             if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
                 
                 min_c_tts['value'] = classical_TTS
-                min_c_tts['step'] = step
+                min_c_tts['step'] = classical_step
 
             q_accumulated_tts.append(quantum_TTS)
             c_accumulated_tts.append(classical_TTS)
-            x_axis.append(step)
 
-            tools.plot_tts(x_axis, q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
+            tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
 
         index_to_get_results = []
 
@@ -158,7 +177,19 @@ min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
 delta_mean = tools.calculate_delta_mean(deltas_dict)
 std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
 
-tools.write_tts(config_variables['initial_step'], config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, proteinName, numberBitsRotation, method_rotations_generation)
+final_stats = {'q': min_q_tts, 'c': min_c_tts}
+
+tools.write_tts(
+    config_variables['initial_step'], 
+    config_variables['final_step'], 
+    q_accumulated_tts, 
+    c_accumulated_tts, 
+    proteinName,
+    aminoacids,
+    numberBitsRotation, 
+    method_rotations_generation,
+    inizialitation_stats,
+    final_stats)
 
 # Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
 precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)

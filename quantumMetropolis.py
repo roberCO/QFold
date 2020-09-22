@@ -1,31 +1,17 @@
-# Importing standard Qiskit libraries and configuring account
-from qiskit import QuantumCircuit, execute, Aer, IBMQ
-from qiskit.compiler import transpile, assemble
-import qiskit.quantum_info as qi
-
-# Import libraries
-import qiskit
-from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit, Clbit, Gate, Parameter, InstructionSet
-from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
-from qiskit import BasicAer
-from qiskit.visualization import plot_state_city, plot_state_hinton
-from qiskit.providers.aer.backends import QasmSimulator
-from qiskit.quantum_info import Statevector
-
 import numpy as np
-import math
-from copy import deepcopy
-import seaborn as sns; sns.set()
-
-import logging
-import beta_precalc_TruthTableOracle
-
-from math import pi
-
-from qiskit.aqua.utils.controlled_circuit import apply_cu3
-from qiskit.aqua import AquaError
 from itertools import product
 import time
+import math
+from math import pi
+
+# Importing standard Qiskit libraries and configuring account
+import qiskit
+from qiskit import QuantumCircuit, execute, Aer
+from qiskit.circuit import QuantumRegister, Qubit, Gate
+from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
+from qiskit.quantum_info import Statevector
+
+import beta_precalc_TruthTableOracle
 
 
 class QuantumMetropolis():
@@ -437,21 +423,6 @@ class QuantumMetropolis():
         for g_angle in g_angles:
             qc.h(g_angle)
 
-        # If initialization is from minifold
-
-        #qc.x(g_angles[1][0]) #(SELECT THE BITS THAT HAVE TO BE PUT AT STATE 1) TO BE DONE!!!
-        #qc.x(g_angles[0][0])
-
-        #U_gate = self.U_func_n()
-
-        #for _ in range(2):
-            #qc.append(U_gate, [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
-            #print('<i> q circuit created')
-                
-        
-        # End of initialization
-
-
         beta = self.beta_max
         #It creates one different oracle for each beta
         oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
@@ -472,9 +443,15 @@ class QuantumMetropolis():
         backend = Aer.get_backend('statevector_simulator')
         backend_options = {"method" : "statevector"}
         experiment = execute(qc, backend, backend_options=backend_options)
-        result = experiment.result()
+        state_vector = Statevector(experiment.result().get_statevector(qc))
 
-        probabilities = Statevector(result.get_statevector(qc)).probabilities()
+        # calculate the indices of the angles
+        # the angles qubits are at the end of the statevector
+        number_bits_angles = self.angle_precision_bits * self.n_angles
+        total_bits = state_vector.num_qubits
+        angle_qubits = [qubit_index for qubit_index in range ((total_bits - number_bits_angles), total_bits)]
+
+        probabilities = state_vector.probabilities(angle_qubits)
 
         #state = qi.Statevector.from_instruction(qc)
         print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
@@ -488,29 +465,6 @@ class QuantumMetropolis():
             key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
             probs[key] = probabilities[index_probabilites]#.as_integer
 
-        #ax = sns.heatmap(unifo)    
-        '''
-        backend = BasicAer.get_backend('statevector_simulator') # the device to run on
-        result = execute(qc, backend).result()
-        psi  = result.get_statevector(qc)
-        a = plot_state_hinton(psi)
-        #a.show()
-        a.savefig('./results/heatmap.png')
-        '''
-        #printout
-        #print('<i> Final probabilities')
-        #for key in probs.keys():
-        #    print(key,np.round(probs[key], decimals = 6))
-
-        '''
-        print('<i> Quantum state amplitudes')
-        i = 0
-        for item in np.round(state.data, decimals=8):
-            if np.absolute(item) > 1e-7:
-                index = np.binary_repr(i, width = self.angle_precision_bits *self.n_angles + 2 + self.move_id_len+self.n_ancilla_bits)
-                print(index[:4]+ ' '+index[4]+' '+index[5]+' '+index[6]+' '+index[7:],item,'\n')
-            i+=1
-        '''
         return probs
 
 # TO DO: initizialisation. 

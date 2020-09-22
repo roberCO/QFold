@@ -1,0 +1,14 @@
+# ignore the files of energies, only necessary to debug
+precalculated_energies/energies_*
+
+# ignore results files
+results/
+*.html
+
+# ignore files created by psi4
+*.dat
+
+# ignore configuration files of python and visual studio
+.vscode/launch.json
+__pycache__/
+plotter/__pycache__/

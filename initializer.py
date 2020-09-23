@@ -179,8 +179,6 @@ class Initializer():
         print('    ⬤ Calculating energies for all posible rotations')
         energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1))
 
-        self.write_json(energies, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
-
         #Write the headers of the energies json that is going to be returned
         deltasJson = {}
         deltasJson['protein'] = proteinName

@@ -7,6 +7,7 @@ results/
 
 # ignore files created by psi4
 *.dat
+psi.*
 
 # ignore configuration files of python and visual studio
 .vscode/launch.json

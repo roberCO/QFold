@@ -11,7 +11,7 @@ import numpy as np
 
 class Initializer():
 
-    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, n_threads, basis = 'cc-pvdz'):
+    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, n_threads, basis):
 
         ## PARAMETERS ##
 
@@ -20,15 +20,17 @@ class Initializer():
         self.max_aa_length = max_aa_length
         self.initialization_option = initialization_option
         self.precalculated_energies_path = precalculated_energies_path
+        self.basis = basis
 
         #Declare the instances to use the functions of these classes
+
         self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, n_threads, basis)
         self.tools = utils.Utils()
 
         #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that
         #TODO: To study if it is necessary to generalize this assumption
-        self.nitroConnections = [['C', 2]]
-        self.carboxyConnections = [['C', 1], ['O', 1], ['N', 1]]
+        #self.nitroConnections = [['C', 2]]
+        #self.carboxyConnections = [['C', 1], ['O', 1], ['N', 1]]
 
     #Calculate all posible energies for the protein and the number of rotations given
     def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids):
@@ -36,19 +38,15 @@ class Initializer():
         print('## Generating file of energies ##')
 
         #Get all atoms from the protein with x/y/z positions and connections
-        atoms = self.extractAtoms(proteinName)
-
-        #Identify the nitro and carboxy atoms
-        nitroAtom = self.findAtom(atoms, 'N', '', self.nitroConnections)
-        carboxyAtom = self.findAtom(atoms, '', 'Carboxy', self.carboxyConnections)
+        atoms, backbone = self.extractAtoms(proteinName)
 
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
-        [atoms, inizialitation_stats] = self.calculateInitialStructure(atoms, aminoacids, nitroAtom, carboxyAtom, method_rotations_generation)
+        [atoms, inizialitation_stats] = self.calculateInitialStructure(atoms, aminoacids, method_rotations_generation, backbone)
 
         #Calculate all posible energies for the phi and psi angles
-        deltasJson = self.calculateAllDeltasOfRotations(atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation)
+        deltasJson = self.calculateAllDeltasOfRotations(atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone)
 
         # Add the stadistics about the precision of the inizializator
         deltasJson['inizialitation_stats'] = inizialitation_stats
@@ -63,9 +61,9 @@ class Initializer():
 
         print('    ⬤ Calculating connections between atoms')
         #Calculate the connection between atoms
-        atoms = self.tools.calculateAtomConnection(atoms)
+        atoms, backbone = self.tools.calculateAtomConnection(atoms)
 
-        return atoms
+        return atoms, backbone
 
     #Find the atom that satisfies the parameters
     def findAtom(self, atoms, element, cType, connections):
@@ -108,11 +106,11 @@ class Initializer():
 
         return found_atoms
 
-    def calculateInitialStructure(self, atoms, aminoacids, nitro_atom, carboxy_atom, method_rotations_generation):       
+    def calculateInitialStructure(self, atoms, aminoacids, method_rotations_generation, backbone):       
     
         #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
         #Get the value of angles returned by psi4
-        [atoms, phi_angles_psi4, psi_angles_psi4] = self.flat_protein(atoms, nitro_atom, carboxy_atom)
+        [atoms, phi_angles_psi4, psi_angles_psi4] = self.flat_protein(atoms, backbone)
 
         phis_initial_rotation = []
         psis_initial_rotation = []
@@ -122,7 +120,7 @@ class Initializer():
             print('\n## RANDOM initialization for protein structure ##\n')
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
-            for _ in range(len(nitro_atom)):
+            for _ in range(len(phi_angles_psi4)):
 
                 phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
                 psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
@@ -141,8 +139,8 @@ class Initializer():
         #Rotate all angles to get the initial protein structure
         for index in range(len(phis_initial_rotation)):
 
-                self.tools.rotate('psi', psis_initial_rotation[index], carboxy_atom[index])
-                self.tools.rotate('phi', phis_initial_rotation[index], nitro_atom[index]) 
+                self.tools.rotate(angle_type = 'psi', angle = psis_initial_rotation[index], starting_atom = backbone[3*index+2], backbone = backbone)
+                self.tools.rotate(angle_type = 'phi', angle = phis_initial_rotation[index], starting_atom = backbone[3*index+4], backbone = backbone) 
 
 
         #Calculate the precision in constrast of the real value calculated by psi4
@@ -168,7 +166,7 @@ class Initializer():
         return [atoms, initilization_stats]
 
     #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllDeltasOfRotations(self, atoms, nitroAtom, carboxyAtom, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation):
+    def calculateAllDeltasOfRotations(self, atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone):
 
         rotationSteps = pow(2, int(numberBitsRotation))
         
@@ -267,8 +265,10 @@ class Initializer():
                 
                 #Perform the rotations over a copy
                 copied_atoms = copy.deepcopy(atoms)
-                copied_nitroAtoms = self.findAtom(copied_atoms, 'N', '', self.nitroConnections)
-                copied_carboxyAtoms = self.findAtom(copied_atoms, '', 'Carboxy', self.carboxyConnections)
+                for at in copied_atoms:
+                    if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2:
+                        nitro_start = at
+                copied_backbone = self.tools.main_chain_builder([nitro_start])
 
                 x_values = []
                 y_values = []
@@ -288,9 +288,10 @@ class Initializer():
 
                 for index in range(len(x_values)):
 
-                    #Always rotate from state (0,0)
-                    self.tools.rotate('phi', (x_values[index]/rotation_steps) * 2*math.pi, copied_nitroAtoms[index]) 
-                    self.tools.rotate('psi', (y_values[index]/rotation_steps) * 2*math.pi, copied_carboxyAtoms[index])
+                    #Always rotate from state (0,0) angle_type, angle, starting_atom, backbone
+                    self.tools.rotate(angle_type='psi', angle=(y_values[index]/rotation_steps) * 2*math.pi, starting_atom = copied_backbone[3*index + 2], backbone = copied_backbone)
+                    self.tools.rotate(angle_type='phi', angle=(x_values[index]/rotation_steps) * 2*math.pi, starting_atom = copied_backbone[3*index + 4], backbone = copied_backbone) 
+                    
                 
                 #Calculate the energy of the protein structure after the previous rotations
                 energies[index_sequence] = self.calculateEnergyOfRotation(copied_atoms)
@@ -298,8 +299,7 @@ class Initializer():
 
                 # We eliminate previous copies
                 del copied_atoms
-                del copied_carboxyAtoms
-                del copied_nitroAtoms
+                del copied_backbone
 
                 break
 
@@ -318,69 +318,23 @@ class Initializer():
 
         return energy
 
-    def flat_protein(self, atoms, nitro_atoms, carboxy_atoms):
+    def flat_protein(self, atoms, backbone):
 
-        phi_angles_psi4 = []
-        psi_angles_psi4 = []
+        # First we calculate all the angles. Psi uses the first atom from the next aminoacid, whereas phi uses the last from the previous
+        psi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
+        phi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
 
-        next_atom = self.get_initial_atom(atoms)
+        # Next we need to flatten the peptide
+        for i in range(len(psi_angles_psi4)):
+            # For psi we have to rotate -angle starting in the carboxy of the i-th aminoacid
+            self.tools.rotate(angle_type = 'psi', angle = -1*psi_angles_psi4[i], starting_atom = backbone[3*i+2], backbone = backbone)
+            # For phi we have to rotate -angle starting in the C_alpha of the (i+1)-th aminoacid
+            self.tools.rotate(angle_type ='phi', angle = -1*phi_angles_psi4[i], starting_atom = backbone[3*i+4], backbone = backbone)
 
-        all_psi = self.get_all_angle_planes(atoms, carboxy_atoms, 'psi')
-        all_phi = self.get_all_angle_planes(atoms, nitro_atoms, 'phi')
+        zeros = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
+        zeros += [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
 
-        end = False
-        while(not end):
-
-            end = True
-            found = False
-            for psi in all_psi:
-
-                for atom in psi:
-                    if next_atom.atomId == atom.atomId:
-                        found = True
-                        break
-
-                if found:
-
-                    end = False
-
-                    angle = self.tools.calculateAngle(psi, 'psi')
-                    psi_angles_psi4.append(angle)
-
-                    #Rotate the inverse (*-1) angles of psi4 to get angles to 0
-                    c_atom = psi[2] # psi in 2 contains the main atom of the plane (carboxy atom)
-                    self.tools.rotate('psi', -angle, c_atom)
-
-                    next_atom = psi[len(psi)-1] 
-
-                    break
-
-            # the end of the chain has been reached
-            if end:
-                break
-            
-            found = False
-            for phi in all_phi:
-
-                for atom in phi:
-                    if next_atom.atomId == atom.atomId:
-                        found = True
-                        break
-
-                if found: 
-
-                    angle = self.tools.calculateAngle(phi, 'phi')
-                    phi_angles_psi4.append(angle)
-
-                    #Rotate the inverse (*-1) angles of psi4 to get angles to 0
-                    n_atom = phi[2] # phi in 2 contains the main atom of the plane (nitro atom)
-                    self.tools.rotate('phi', -angle, n_atom)
-
-                    next_atom = phi[0] 
-
-                    break
-            
-
+        self.tools.plotting(list_of_atoms = atoms, title = 'Peptide_plot_flattened')
         return [atoms, phi_angles_psi4, psi_angles_psi4]
 
     def get_initial_atom(self, atoms):

@@ -1,4 +1,6 @@
 glycylglycylglycine       GGG #https://pubchem.ncbi.nlm.nih.gov/compound/11161
+glycylglycylalanine	  GGA #https://pubchem.ncbi.nlm.nih.gov/compound/6992378
+alanylalanylalanine	  AAA #https://pubchem.ncbi.nlm.nih.gov/compound/5478845
 alanylglutaminyllysine    AQK #https://pubchem.ncbi.nlm.nih.gov/compound/131801085
 lysylaspartylisoleucine   KDI #https://pubchem.ncbi.nlm.nih.gov/compound/90478376
 seryllysylleucine         SKL #https://pubchem.ncbi.nlm.nih.gov/compound/131223

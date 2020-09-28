@@ -3,10 +3,11 @@ import pandas as pd
 import re
 import atom
 import json
+import time
 
 class PsiFour():
 
-    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, n_threads, basis = 'cc-pvdz'):
+    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, n_threads, basis):
 
         self.psi4_path = psi4_path
         self.input_filename = input_filename
@@ -23,6 +24,7 @@ class PsiFour():
 
         #execute psi4
         self.executePsiCommand()
+        print('Psi4 file is ready')
 
         #read/parse outputfile
         [atoms, protein_id] = self.parsePsiOutputFile(protein)

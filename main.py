@@ -28,16 +28,17 @@ config_path = './config/config.json'
 tools = utils.Utils(config_path)
 config_variables = tools.get_config_variables()
 angleInitializer = initializer.Initializer(
-    config_variables['psi4_path'],
-    config_variables['input_filename_energy_psi4'], 
-    config_variables['output_filename_energy_psi4'],
-    config_variables['energy_method'],
-    config_variables['precalculated_energies_path'], 
-    config_variables['model_path'], 
-    config_variables['window_size'], 
-    config_variables['maximum_aminoacid_length'],
-    config_variables['n_threads_pool'],
-    config_variables['basis']
+    psi4_path = config_variables['psi4_path'],
+    input_file_energies_psi4 = config_variables['input_filename_energy_psi4'], 
+    output_file_energies_psi4 = config_variables['output_filename_energy_psi4'],
+    energy_method = config_variables['energy_method'],
+    precalculated_energies_path = config_variables['precalculated_energies_path'], 
+    model_path = config_variables['model_path'], 
+    window_size = config_variables['window_size'], 
+    max_aa_length = config_variables['maximum_aminoacid_length'],
+    initialization_option = config_variables['methods_initialization'],
+    n_threads = config_variables['n_threads_pool'],
+    basis = config_variables['basis']
     )
 
 psi = psiFour.PsiFour(

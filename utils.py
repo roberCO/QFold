@@ -46,7 +46,8 @@ class Utils():
     def calculateAngle(self, angle_atoms, angle_type):
         'Uses get dihedral to calculate angles between atoms'
         if angle_type == 'phi':
-            assert(angle_atoms[0].c_type == 'Carboxy' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].element == 'N' and angle_atoms[3].c_type == 'Carboxy')
+            # For angle phi we take the last atom of the previous aminoacid
+            assert(angle_atoms[0].c_type == 'Carboxy' and angle_atoms[1].c_type == 'N_backbone' and angle_atoms[2].c_type =='C_alpha' and angle_atoms[3].c_type == 'Carboxy')
             assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
             coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
             coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
@@ -56,7 +57,8 @@ class Utils():
             return self.get_dihedral(coords1, coords2, coords3, coords4)
 
         elif angle_type == 'psi':
-            assert(angle_atoms[0].element == 'N' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].c_type == 'Carboxy' and angle_atoms[3].element == 'N')
+            # For angle psi we take the first atom of the next aminoacid
+            assert(angle_atoms[0].c_type == 'N_backbone' and angle_atoms[1].c_type =='C_alpha' and angle_atoms[2].c_type == 'Carboxy' and angle_atoms[3].c_type == 'N_backbone')
             assert(angle_atoms[0] in angle_atoms[1].linked_to and angle_atoms[1] in angle_atoms[2].linked_to and angle_atoms[2] in angle_atoms[3].linked_to)
             coords1 = np.array([angle_atoms[0].x, angle_atoms[0].y, angle_atoms[0].z])
             coords2 = np.array([angle_atoms[1].x, angle_atoms[1].y, angle_atoms[1].z])
@@ -72,121 +74,204 @@ class Utils():
     def distance(self, atom, atom2):
         return np.sqrt((atom.x-atom2.x)**2+(atom.y-atom2.y)**2+(atom.z-atom2.z)**2)
 
-    def calculateAtomConnection(self, atoms):
+    def calculateAtomConnection(self, atoms, aminoacids):
 
+        #Let us first map the topology. Currently cost is O(N^2). Some other algorithm could be desirable
         for at1 in atoms:
             for at2 in atoms:
                 if at1 != at2:
-                    if at1.element == 'O' and at2.element == 'C' and self.distance(at1,at2)<2:
-                        at2.c_type = 'Carboxy'
+                    if at1.element != 'H' and at2.element != 'H' and self.distance(at1,at2)<2  and (at1 not in at2.linked_to): 
                         at1.linked_to = [at2] + at1.linked_to 
                         at2.linked_to = [at1] + at2.linked_to
-                        
-                    if at1.element == 'N' and at2.element == 'C' and self.distance(at1,at2)<2:
-                        if at2.c_type != 'Carboxy':
-                            at2.c_type = 'C_alpha'
-                        at1.linked_to = [at2] + at1.linked_to 
-                        at2.linked_to = [at1] + at2.linked_to
-                        
-                    if at1.element == 'H' and self.distance(at1,at2)<1.3: 
-                        at1.linked_to = [at2] + at1.linked_to 
-                        at2.linked_to = [at1] + at2.linked_to
-                        
-                    if at1.element == 'C' and at2.element == 'C' and self.distance(at1,at2)<2  and (at1 not in at2.linked_to) : 
-                        at1.linked_to = [at2] + at1.linked_to 
-                        at2.linked_to = [at1] + at2.linked_to 
 
-        return atoms
+                    elif at1.element != 'H' and at2.element == 'H' and self.distance(at1,at2)<1.3  and (at1 not in at2.linked_to):
+                        at1.linked_to = [at2] + at1.linked_to 
+                        at2.linked_to = [at1] + at2.linked_to
 
-    def rotate(self, angle_type, angle, starting_atom):
+        # Next we give an structure to each linked_to list
+        for at in atoms:
+            at.linked_to_dict = {'N': [], 'O': [], 'C': [], 'H': [], 'Other': []}
+            for at1 in at.linked_to:
+                if at1.element == 'N':
+                    at.linked_to_dict['N'].append(at1)
+                elif at1.element == 'O':
+                    at.linked_to_dict['O'].append(at1)
+                elif at1.element == 'C':
+                    at.linked_to_dict['C'].append(at1)
+                elif at1.element == 'H':
+                    at.linked_to_dict['H'].append(at1)
+                else:
+                    at.linked_to_dict['Other'].append(at1)
+
+        #self.plotting(list_of_atoms = atoms, title = 'Peptide_plot')
+
+        #make a list of nitrogen atoms where one could start the main chain
+        nitrogen_starts = []
+
+        # For any aminoacid except proline
+        if aminoacids[0] != 'P':
+            for at in atoms:
+                # This allows to identify any initial N to start except for Proline which has a weird structure
+                if at.element == 'N' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H'])==2:
+                    nitrogen_starts.append(at)
+
+        # For the protein starting at proline
+        elif aminoacids[0] == 'P':
+            for at in atoms:
+                # This allows to identify any initial N to start except for Proline which has a weird structure
+                if at.element == 'N' and self.is_proline_N(at):
+                    nitrogen_starts.append(at)
+
+        # Find main_chain
+        backbone = self.main_chain_builder(nitrogen_starts, aminoacids)
+
+        # Name the atoms
+        for (atom,i) in zip(backbone, range(len(backbone))):
+            if atom.element == 'N' and (i % 3 == 0):
+                atom.c_type = 'N_backbone'
+            elif atom.element == 'C' and (i % 3 == 1) and (atom.linked_to_dict['O'] == []):
+                atom.c_type = 'C_alpha'
+            elif atom.element == 'C' and (i % 3 == 2) and (atom.linked_to_dict['O'] != []):
+                atom.c_type = 'Carboxy'
+            else:
+                raise TypeError('The atom', atom.element, 'does not fulfill the requirements to be part of the backbone')
+
+        return atoms, backbone
+
+    def is_proline_N(self, atom):
+
+        carbon_ring = []
+
+        if atom.element != 'N' or len(atom.linked_to_dict['C']) != 2 or len(atom.linked_to_dict['H'])!=1:
+            return False
+        else:
+            carbons = atom.linked_to_dict['C']
+            if len(carbons[0].linked_to_dict['C']) == 1  and len(carbons[0].linked_to_dict['N']) == 1 and len(carbons[1].linked_to_dict['C']) == 2 and len(carbons[1].linked_to_dict['N']) == 1:
+                current_carbon = carbons[0]
+                ending_carbon = carbons[1]
+            elif len(carbons[1].linked_to_dict['C']) == 1  and len(carbons[1].linked_to_dict['N']) == 1 and len(carbons[0].linked_to_dict['C']) == 2 and len(carbons[0].linked_to_dict['N']) == 1:
+                current_carbon = carbons[1]
+                ending_carbon = carbons[0]
+            else:
+                return False
+            
+            for _ in range(2):
+                carbon_ring.append(current_carbon)
+                current_carbon = (current_carbon.linked_to_dict['C'][0] if current_carbon.linked_to_dict['C'][0] not in carbon_ring else current_carbon.linked_to_dict['C'][1])
+                if len(current_carbon.linked_to_dict['C']) != 2 or len(current_carbon.linked_to_dict['N']) != 0 or len(current_carbon.linked_to_dict['O']) != 0 or len(current_carbon.linked_to_dict['H']) != 2:
+                    return False
+                
+            return (True if current_carbon in ending_carbon.linked_to else False)
+            
+
+
+    def main_chain_builder(self, nitrogen_starts, aminoacids):
+        '''Takes all the nitrogens that are only connected to a single C and returns the backbone of the protein'''
+        best_chains = []
+        len_best_chain = 0
+        for nitro in nitrogen_starts:
+            candidate_chain = []
+            nit = nitro
+            amino_index = 0
+            while True:
+
+                aminolist = []
+                aminolist.append(nit)
+
+                # Searching for C-alpha
+                carbons = nit.linked_to_dict['C']
+                carbons_not_in_chain = [carbon for carbon in carbons if (carbon not in candidate_chain and carbon not in aminolist)]
+                if (len(carbons_not_in_chain)==1 and aminoacids[amino_index] != 'P'):
+                    car_alpha = carbons_not_in_chain[0]
+                    aminolist.append(car_alpha)
+                elif (len(carbons_not_in_chain)==2 and aminoacids[amino_index] == 'P'):
+                    car_alpha = (carbons_not_in_chain[0] if (len(carbons_not_in_chain[0].linked_to_dict['N']) == 1 and len(carbons_not_in_chain[0].linked_to_dict['C']) == 2 and len(carbons_not_in_chain[0].linked_to_dict['H']) == 1) else carbons_not_in_chain[1])
+                    aminolist.append(car_alpha)
+                else:
+                    break
+
+                # Searching for Carboxy
+                carbons = car_alpha.linked_to_dict['C']
+                carboxys_not_in_chain = [carbon for carbon in carbons if (carbon not in candidate_chain and carbon not in aminolist and len(carbon.linked_to_dict['O']) > 0)]
+                if len(carboxys_not_in_chain)==1:
+                    carbox = carboxys_not_in_chain[0]
+                    aminolist.append(carbox)
+                else:
+                    break
+
+                #We have a full aminoacid, so we save it to the candidate list
+                candidate_chain += aminolist
+                amino_index += 1
+
+                # Searching for next aminoacid Nitrogen
+                nitrogens = carbox.linked_to_dict['N']
+                nitrogens_not_in_chain = [n for n in nitrogens if (n not in candidate_chain and n not in aminolist)]
+                if len(nitrogens_not_in_chain)==1:
+                    nit = nitrogens_not_in_chain[0]
+                else:
+                    break
+
+            # Is the found chain longer than the one we already had?
+            if len(candidate_chain) > len_best_chain:
+                len_best_chain = len(candidate_chain)
+                best_chains = [candidate_chain]
+            elif len(candidate_chain) == len_best_chain:
+                best_chains.append(candidate_chain)
+            else: 
+                pass
+
+        if len(best_chains) != 1 or len(best_chains[0])//3 != len(aminoacids):
+            raise ValueError('There should be a single lengthy chain!', best_chains, nitrogen_starts)
+        else:
+            return best_chains[0]
+
+
+    def rotate(self, angle_type, angle, starting_atom, backbone):
+
+        previous_atom = backbone[backbone.index(starting_atom)-1]
+
         if angle_type == 'phi':
-            if starting_atom.element != 'N':
-                raise Exception('Wrong starting atom for the angle phi:',starting_atom.c_type )
-            for atom in starting_atom.linked_to:
-                if atom.c_type == 'C_alpha':
-                    atom_c_alpha = atom
+            if previous_atom.c_type != 'N_backbone' or starting_atom.c_type != 'C_alpha':
+                raise Exception('Wrong starting atom for the angle phi:',starting_atom.c_type,'or wrong previous atom',previous_atom.c_type )
                     
         elif angle_type == 'psi':
-            if starting_atom.c_type != 'Carboxy':
+            if previous_atom.c_type != 'C_alpha' or starting_atom.c_type != 'Carboxy':
                 raise Exception('Wrong starting atom for the angle phi:',starting_atom.c_type )
-            for atom in starting_atom.linked_to:
-                if atom.c_type == 'C_alpha':
-                    atom_c_alpha = atom
+
         else:
             raise Exception('Angle not recognised!:',angle_type)
         
         # Define the list of atoms to rotate and then rotate them
         
-        list_of_atoms_to_rotate = []
-        list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type,starting_atom)
-        list_of_atoms_to_rotate = self.decorations_to_rotate(list_of_atoms_to_rotate,starting_atom)
+        backbone2rotate = backbone[backbone.index(starting_atom)+1:]
+        ##self.backbone_to_rotate(angle_type,starting_atom, backbone)
+        list_of_atoms_to_rotate = self.decorations_to_rotate(backbone2rotate,backbone)
 
         for atom in list_of_atoms_to_rotate:
-            atom.rotate(atom_c_alpha, starting_atom, angle, angle_type)  
-
-    def backbone_to_rotate(self, angle_type, starting_atom):
-        # Define the list of atoms to rotate and then rotate them
-        list_of_atoms_to_rotate = []
-        if angle_type == 'phi': # Follows the structure N -> Carboxy -> C_alpha -> N
-            for atom in starting_atom.linked_to:
-                if starting_atom.element == 'N' and atom.c_type == 'Carboxy':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type, atom)
-
-                elif starting_atom.c_type == 'Carboxy' and atom.c_type == 'C_alpha':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type, atom)
-
-                elif starting_atom.c_type == 'C_alpha' and atom.element == 'N':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type, atom)
-
-                #elif atom.c_type == None:
-                #list_of_atoms_to_rotate += additional_atoms()
-                ## Leave this until we have backbone
-
-        elif angle_type == 'psi': # Follows the structure N -> C_alpha -> Carboxy -> N
-            for atom in starting_atom.linked_to:
-                if starting_atom.c_type == 'Carboxy' and atom.element == 'N':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type = angle_type, starting_atom = atom)
-
-                elif starting_atom.c_type == 'C_alpha' and atom.c_type == 'Carboxy':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type = angle_type, starting_atom = atom)
-
-                elif starting_atom.element == 'N' and atom.c_type == 'C_alpha':
-                    list_of_atoms_to_rotate += [atom]
-                    list_of_atoms_to_rotate += self.backbone_to_rotate(angle_type = angle_type, starting_atom = atom)            
-        else: 
-            raise Exception('Angle_type should be either phi or psi. However it currently is {}'.format(angle_type))
-            
-        return list_of_atoms_to_rotate
-
+            # The axis is defined by the starting atom and the atom prior to the starting atom in the backbone
+            atom.rotate(previous_atom, starting_atom, angle, angle_type)  
 
     #Input: list of backbone atoms. Returns a list of all atoms that must be rotated.
-    def decorations_to_rotate(self, backbone_list,starting_atom):
-
-        newly_added = backbone_list
+    def decorations_to_rotate(self, backbone2rotate, backbone):
         
+        atoms2rotate = backbone2rotate
+
+        newly_added = backbone2rotate
+
         while newly_added != []:
-            previously_added = newly_added #Don't want the changes made to newly_added to affect to previously added
+            previously_added = newly_added
             newly_added = []
-            for prev_atom in previously_added:
-                for atom in prev_atom.linked_to:
-                    if atom not in backbone_list and atom not in newly_added and atom != starting_atom:
-                        newly_added += [atom]
-            backbone_list += newly_added
-            previously_added = []
-        
-        for atom in starting_atom.linked_to:
-            if atom.element != 'N' and atom.c_type != 'Carboxy' and atom.c_type != 'C_alpha':
-                backbone_list += [atom]
-        
-        #Perhaps use a method to eliminate duplicate references in the list? I think there shouldn't be any.
-        return backbone_list
+            for atom in previously_added:
+                for at2 in atom.linked_to:
+                    if at2 not in atoms2rotate and at2 not in newly_added and at2 not in backbone:
+                        newly_added.append(at2)
 
-    def plotting(self, list_of_atoms, title):
+            atoms2rotate += newly_added 
+        
+        return atoms2rotate
+
+
+    def plotting(self, list_of_atoms, title, plane = False):
     
         #-----
         VecStart_x = []
@@ -248,14 +333,13 @@ class Utils():
 
         ax.scatter(xs, ys, zs,c=c,depthshade= False)
 
+        if plane:
+            XPhi, YPhi, ZPhi = self.calculatePlane(planePhiPoints)
+            XPsi, YPsi, ZPsi = self.calculatePlane(planePsiPoints)
 
-        XPhi, YPhi, ZPhi = self.calculatePlane(planePhiPoints)
-        XPsi, YPsi, ZPsi = self.calculatePlane(planePsiPoints)
-
-
-        # plot the mesh. Each array is 2D, so we flatten them to 1D arrays
-        ax.plot_surface(XPhi, YPhi, ZPhi, color = 'r', alpha = '0.5')
-        ax.plot_surface(XPsi, YPsi, ZPsi, color = 'g', alpha = '0.5')
+            # plot the mesh. Each array is 2D, so we flatten them to 1D arrays
+            ax.plot_surface(XPhi, YPhi, ZPhi, color = 'r', alpha = '0.5')
+            ax.plot_surface(XPsi, YPsi, ZPsi, color = 'g', alpha = '0.5')
 
 
         for i in range(len(xs)): 
@@ -301,42 +385,30 @@ class Utils():
         phi_precisions = []
         psi_precisions = []
 
-        for index in range(len(phi_angles_psi4)):
+        angles_initial_rotation = [phis_initial_rotation, psis_initial_rotation]
+        angles_psi4 = [phi_angles_psi4, psi_angles_psi4]
+        
+        # it calculates precision for phi (0) and psi(1)
+        for phi_psi in [0,1]:
 
-            option_1 = 0
-            option_2 = 0
+            for index in range(len(angles_psi4[phi_psi])):
 
-            if phis_initial_rotation[index] > phi_angles_psi4[index]:
+                if angles_initial_rotation[phi_psi][index] > angles_psi4[phi_psi][index]:
 
-                #Calculate the distance if the angles go to zero and starts again
-                option_1 = abs(math.pi - phis_initial_rotation[index]) + abs(-math.pi - phi_angles_psi4[index])
+                    #Calculate the distance if the angles go to zero and starts again
+                    option_1 = abs(math.pi - angles_initial_rotation[phi_psi][index]) + abs(-math.pi - angles_psi4[phi_psi][index])
 
-            else:
+                else:
 
-                #Calculate the distance if the angles go to zero and starts again
-                option_1 = abs(math.pi - phi_angles_psi4[index]) + abs(-math.pi - phis_initial_rotation[index])
+                    #Calculate the distance if the angles go to zero and starts again
+                    option_1 = abs(math.pi - angles_psi4[phi_psi][index]) + abs(-math.pi - angles_initial_rotation[phi_psi][index])
 
-            #option_2 is common for both previous cases
-            option_2 = abs(phis_initial_rotation[index] -  phi_angles_psi4[index])
-            
-            minimum_option = min(option_1, option_2)
-            phi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
-
-        for index in range(len(psi_angles_psi4)):
-
-            if psis_initial_rotation[index] > psi_angles_psi4[index]:
-
-                #Calculate the distance if the angles go to zero and starts again
-                option_1 = abs(math.pi - psis_initial_rotation[index]) + abs(-math.pi - psi_angles_psi4[index])
-
-            else:
-
-                #Calculate the distance if the angles go to zero and starts again
-                option_1 = abs(math.pi - psi_angles_psi4[index]) + abs(-math.pi - psis_initial_rotation[index])
+                #option_2 is common for both previous cases
+                option_2 = abs(angles_initial_rotation[phi_psi][index] -  angles_psi4[phi_psi][index])
                 
-            option_2 = abs(psis_initial_rotation[index] - psi_angles_psi4[index])
-            minimum_option = min(option_1, option_2)
-            psi_precisions.append((1-(minimum_option / (2*math.pi)))*100)
+                minimum_option = min(option_1, option_2)
+
+                phi_precisions.append((1-(minimum_option / (math.pi)))*100) if phi_psi == 0 else psi_precisions.append((1-(minimum_option / (math.pi)))*100)
         
         print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
         print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
@@ -454,7 +526,7 @@ class Utils():
         data = {}
         # read data
         path = './'+self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
-        with open('./'+self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json') as json_file:
+        with open(path) as json_file:
                     data[input_name] = json.load(json_file)
 
         # prepare the data

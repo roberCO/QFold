@@ -27,18 +27,13 @@ class Initializer():
         self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, n_threads, basis)
         self.tools = utils.Utils()
 
-        #HARDCODED. It is assumed that all aminoacids has the nitro and carboxy conexions like that
-        #TODO: To study if it is necessary to generalize this assumption
-        #self.nitroConnections = [['C', 2]]
-        #self.carboxyConnections = [['C', 1], ['O', 1], ['N', 1]]
-
     #Calculate all posible energies for the protein and the number of rotations given
     def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids):
 
         print('## Generating file of energies ##')
 
         #Get all atoms from the protein with x/y/z positions and connections
-        atoms, backbone = self.extractAtoms(proteinName)
+        atoms, backbone = self.extractAtoms(proteinName, aminoacids)
 
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
@@ -53,7 +48,7 @@ class Initializer():
         self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
-    def extractAtoms(self, proteinName):
+    def extractAtoms(self, proteinName,aminoacids):
 
         print('    ⬤ Extracting atoms from proteins')
         #call psi4 to get the atoms of the protein
@@ -61,7 +56,7 @@ class Initializer():
 
         print('    ⬤ Calculating connections between atoms')
         #Calculate the connection between atoms
-        atoms, backbone = self.tools.calculateAtomConnection(atoms)
+        atoms, backbone = self.tools.calculateAtomConnection(atoms,aminoacids)
 
         return atoms, backbone
 
@@ -175,7 +170,7 @@ class Initializer():
         bits_number_angles = math.ceil(np.log2(len(aminoacids)-1))
 
         print('    ⬤ Calculating energies for all posible rotations')
-        energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1))
+        energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1), aminoacids)
 
         self.write_json(energies, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
 
@@ -250,7 +245,7 @@ class Initializer():
         return deltasJson
 
     # RECURSIVE function to calculate all energies of each possible rotation 
-    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, index_sequence='', energies = {}):
+    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, aminoacids, index_sequence='', energies = {}):
 
         # iterate to calculate all possible rotations
         # for example if there are 4 rotation steps, it executes the loop 4 times, but in each iteration, it calls recursively to all rotations starting with 0 (first iteration)  
@@ -259,7 +254,7 @@ class Initializer():
             if protein_sequence_length > 0:
                 # returned energy is added to a data structure (this structure is multi-dimensional)
                 # index_sequence contains the accumulated index (it helps to know the general index_sequence)
-                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, index_sequence+str(index)+' ', energies)
+                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, aminoacids, index_sequence+str(index)+' ', energies)
             
             else:
                 
@@ -268,7 +263,7 @@ class Initializer():
                 for at in copied_atoms:
                     if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2:
                         nitro_start = at
-                copied_backbone = self.tools.main_chain_builder([nitro_start])
+                copied_backbone = self.tools.main_chain_builder([nitro_start], aminoacids)
 
                 x_values = []
                 y_values = []

@@ -74,7 +74,7 @@ class Utils():
     def distance(self, atom, atom2):
         return np.sqrt((atom.x-atom2.x)**2+(atom.y-atom2.y)**2+(atom.z-atom2.z)**2)
 
-    def calculateAtomConnection(self, atoms):
+    def calculateAtomConnection(self, atoms, aminoacids):
 
         #Let us first map the topology. Currently cost is O(N^2). Some other algorithm could be desirable
         for at1 in atoms:
@@ -103,17 +103,27 @@ class Utils():
                 else:
                     at.linked_to_dict['Other'].append(at1)
 
-        self.plotting(list_of_atoms = atoms, title = 'Peptide_plot')
+        #self.plotting(list_of_atoms = atoms, title = 'Peptide_plot')
 
         #make a list of nitrogen atoms where one could start the main chain
         nitrogen_starts = []
-        for at in atoms:
-            # This allows to identify any initial N to start except for Proline which has a weird structure
-            if at.element == 'N' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H'])==2:
-                nitrogen_starts.append(at)
+
+        # For any aminoacid except proline
+        if aminoacids[0] != 'P':
+            for at in atoms:
+                # This allows to identify any initial N to start except for Proline which has a weird structure
+                if at.element == 'N' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H'])==2:
+                    nitrogen_starts.append(at)
+
+        # For the protein starting at proline
+        elif aminoacids[0] == 'P':
+            for at in atoms:
+                # This allows to identify any initial N to start except for Proline which has a weird structure
+                if at.element == 'N' and self.is_proline_N(at):
+                    nitrogen_starts.append(at)
 
         # Find main_chain
-        backbone = self.main_chain_builder(nitrogen_starts)
+        backbone = self.main_chain_builder(nitrogen_starts, aminoacids)
 
         # Name the atoms
         for (atom,i) in zip(backbone, range(len(backbone))):
@@ -128,14 +138,41 @@ class Utils():
 
         return atoms, backbone
 
+    def is_proline_N(self, atom):
 
-    def main_chain_builder(self, nitrogen_starts):
+        carbon_ring = []
+
+        if atom.element != 'N' or len(atom.linked_to_dict['C']) != 2 or len(atom.linked_to_dict['H'])!=1:
+            return False
+        else:
+            carbons = atom.linked_to_dict['C']
+            if len(carbons[0].linked_to_dict['C']) == 1  and len(carbons[0].linked_to_dict['N']) == 1 and len(carbons[1].linked_to_dict['C']) == 2 and len(carbons[1].linked_to_dict['N']) == 1:
+                current_carbon = carbons[0]
+                ending_carbon = carbons[1]
+            elif len(carbons[1].linked_to_dict['C']) == 1  and len(carbons[1].linked_to_dict['N']) == 1 and len(carbons[0].linked_to_dict['C']) == 2 and len(carbons[0].linked_to_dict['N']) == 1:
+                current_carbon = carbons[1]
+                ending_carbon = carbons[0]
+            else:
+                return False
+            
+            for _ in range(2):
+                carbon_ring.append(current_carbon)
+                current_carbon = (current_carbon.linked_to_dict['C'][0] if current_carbon.linked_to_dict['C'][0] not in carbon_ring else current_carbon.linked_to_dict['C'][1])
+                if len(current_carbon.linked_to_dict['C']) != 2 or len(current_carbon.linked_to_dict['N']) != 0 or len(current_carbon.linked_to_dict['O']) != 0 or len(current_carbon.linked_to_dict['H']) != 2:
+                    return False
+                
+            return (True if current_carbon in ending_carbon.linked_to else False)
+            
+
+
+    def main_chain_builder(self, nitrogen_starts, aminoacids):
         '''Takes all the nitrogens that are only connected to a single C and returns the backbone of the protein'''
         best_chains = []
         len_best_chain = 0
         for nitro in nitrogen_starts:
             candidate_chain = []
             nit = nitro
+            amino_index = 0
             while True:
 
                 aminolist = []
@@ -144,8 +181,11 @@ class Utils():
                 # Searching for C-alpha
                 carbons = nit.linked_to_dict['C']
                 carbons_not_in_chain = [carbon for carbon in carbons if (carbon not in candidate_chain and carbon not in aminolist)]
-                if len(carbons_not_in_chain)==1:
+                if (len(carbons_not_in_chain)==1 and aminoacids[amino_index] != 'P'):
                     car_alpha = carbons_not_in_chain[0]
+                    aminolist.append(car_alpha)
+                elif (len(carbons_not_in_chain)==2 and aminoacids[amino_index] == 'P'):
+                    car_alpha = (carbons_not_in_chain[0] if (len(carbons_not_in_chain[0].linked_to_dict['N']) == 1 and len(carbons_not_in_chain[0].linked_to_dict['C']) == 2 and len(carbons_not_in_chain[0].linked_to_dict['H']) == 1) else carbons_not_in_chain[1])
                     aminolist.append(car_alpha)
                 else:
                     break
@@ -161,6 +201,7 @@ class Utils():
 
                 #We have a full aminoacid, so we save it to the candidate list
                 candidate_chain += aminolist
+                amino_index += 1
 
                 # Searching for next aminoacid Nitrogen
                 nitrogens = carbox.linked_to_dict['N']
@@ -169,7 +210,6 @@ class Utils():
                     nit = nitrogens_not_in_chain[0]
                 else:
                     break
-
 
             # Is the found chain longer than the one we already had?
             if len(candidate_chain) > len_best_chain:
@@ -180,8 +220,8 @@ class Utils():
             else: 
                 pass
 
-        if len(best_chains) != 1:
-            raise ValueError('There should be a single lenghy chain!', best_chains, nitrogen_starts)
+        if len(best_chains) != 1 or len(best_chains[0])//3 != len(aminoacids):
+            raise ValueError('There should be a single lengthy chain!', best_chains, nitrogen_starts)
         else:
             return best_chains[0]
 

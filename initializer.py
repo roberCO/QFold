@@ -115,10 +115,13 @@ class Initializer():
             print('\n## RANDOM initialization for protein structure ##\n')
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
+            print('len_angles_phi',len(phi_angles_psi4))
             for _ in range(len(phi_angles_psi4)):
 
                 phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
                 psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
+
+                print('Angles', phis_initial_rotation,psis_initial_rotation)
 
         #minifold
         elif method_rotations_generation == 'minifold':
@@ -142,6 +145,7 @@ class Initializer():
         [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
 
         # if it is necessary convert float32 in standard python type (float32 is not serializable by json)
+        print(phis_initial_rotation, psis_initial_rotation)
         if type(phis_initial_rotation[0]) is np.float32:
             phis_initial_rotation = [value.item() for value in phis_initial_rotation]
         
@@ -261,8 +265,11 @@ class Initializer():
                 #Perform the rotations over a copy
                 copied_atoms = copy.deepcopy(atoms)
                 for at in copied_atoms:
-                    if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2:
+                    if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2 and aminoacids[0] != 'P':
                         nitro_start = at
+                    elif at.c_type == 'N_backbone' and self.tools.is_proline_N(at) and aminoacids[0] == 'P':
+                        nitro_start = at
+
                 copied_backbone = self.tools.main_chain_builder([nitro_start], aminoacids)
 
                 x_values = []
@@ -329,7 +336,7 @@ class Initializer():
         zeros = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
         zeros += [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
 
-        self.tools.plotting(list_of_atoms = atoms, title = 'Peptide_plot_flattened')
+        #self.tools.plotting(list_of_atoms = atoms, title = 'Peptide_plot_flattened')
         return [atoms, phi_angles_psi4, psi_angles_psi4]
 
     def get_initial_atom(self, atoms):

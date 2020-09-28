@@ -404,7 +404,7 @@ class Utils():
                     option_1 = abs(math.pi - angles_psi4[phi_psi][index]) + abs(-math.pi - angles_initial_rotation[phi_psi][index])
 
                 # option 2 is the inverse space of option 1
-                option_2_alt = abs(2*math.pi - option_1)
+                option_2 = abs(2*math.pi - option_1)
 
                 minimum_option = min(option_1, option_2)
 

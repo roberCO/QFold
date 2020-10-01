@@ -454,7 +454,7 @@ class QuantumMetropolis():
         probabilities = state_vector.probabilities(angle_qubits)
 
         #state = qi.Statevector.from_instruction(qc)
-        print("<i>QUANTUM METROPOLIS: Time to calculate statevector: %s seconds" % (time.time() - start_time))
+        time_statevector = time.time() - start_time
 
         # Extract probabilities in the measurement of the angles phi and psi
         #probabilities = state.probabilities([j+self.n_ancilla_bits+2+self.move_id_len for j in range(self.angle_precision_bits * self.n_angles)])
@@ -465,7 +465,7 @@ class QuantumMetropolis():
             key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
             probs[key] = probabilities[index_probabilites]#.as_integer
 
-        return probs
+        return [probs, time_statevector]
 
 # TO DO: initizialisation. 
 

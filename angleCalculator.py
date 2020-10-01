@@ -2,6 +2,7 @@ import quantumUtils
 import math
 import metropolis
 import quantumMetropolis
+import time
 
 class AngleCalculator():
 
@@ -23,7 +24,13 @@ class AngleCalculator():
         if option == 0: 
 
             qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta_max, self.scaling_factor, deltas_dict)
-            return qMetropolis.execute_quantum_metropolis_n()
+            
+            start_time = time.time()
+            [result, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
+            q_time = time.time() - start_time
+            print("<i> QUANTUM METROPOLIS: Time for", n_steps,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
+
+            return result
 
         #Classical calculation option for 3D structure
         elif option == 1:
@@ -31,8 +38,9 @@ class AngleCalculator():
             probabilities_matrix = {}
             classical_metropolis = metropolis.Metropolis(self.bits_rotation, n_steps, self.n_angles/2, self.scaling_factor, deltas_dict)
             
+            start_time = time.time()
             for _ in range(self.n_iterations):
-                
+
                 [phi, psi] = classical_metropolis.execute_metropolis()
 
                 # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
@@ -47,4 +55,6 @@ class AngleCalculator():
                     # create the new entry for this result
                     probabilities_matrix[position_angles] = (1/self.n_iterations)
 
+            print("<i> CLASSICAL METROPOLIS: Time for", n_steps, "steps: %s seconds\n" % (time.time() - start_time))
+            
             return probabilities_matrix        

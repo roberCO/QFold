@@ -53,6 +53,10 @@ class Initializer():
         print('    ⬤ Extracting atoms from proteins')
         #call psi4 to get the atoms of the protein
         atoms = self.psi.getAtomsFromProtein(proteinName)
+        
+        # if atoms length is 0 means that the proteins was not find in the database
+        if len(atoms) == 0:
+            raise Exception("Protein name not found. There is no atoms for that protein")
 
         print('    ⬤ Calculating connections between atoms')
         #Calculate the connection between atoms

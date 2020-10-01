@@ -102,7 +102,7 @@ except IOError:
 #TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
 
-print('## 3D STRUCTURE CALCULATOR ##\n')
+print('## 3D STRUCTURE CALCULATOR FOR', proteinName,'with', numberBitsRotation,'bits and', method_rotations_generation,'initialization##\n')
 
 angleCalculator = angleCalculator.AngleCalculator(
     numberBitsRotation, 
@@ -124,17 +124,12 @@ thread_index = 0
 index_to_get_results = []
 for step in range(config_variables['initial_step'], config_variables['final_step']):
 
-    print('\nExecuting quantum metropolis with', step, 'steps')
-
     #Thread for quantum metropolis
     process = Thread(target=angle_calculator_thread, args=[thread_index, 0, deltas_dict, step, config_variables['beta_max'], index_min_energy])
     process.start()
     threads.append(process) 
     index_to_get_results.append(thread_index)
     thread_index += 1
-
-
-    print('Executing classical metropolis with', step, 'steps\n')
 
     #Thread for classical metropolis
     process = Thread(target=angle_calculator_thread, args=[thread_index, 1, deltas_dict, step, config_variables['beta_max'], index_min_energy])

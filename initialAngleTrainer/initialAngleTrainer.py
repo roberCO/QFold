@@ -14,7 +14,7 @@ elif len(sys.argv) == 3 and sys.argv[1] == 'trainer':
     option = int(sys.argv[2])
 
     #Read config file with the QFold configuration variables
-    config_path = '../config/config.json'
+    config_path = './config/config.json'
 
     tools = utils.Utils(config_path)
     config_variables = tools.get_config_variables()

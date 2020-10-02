@@ -17,10 +17,10 @@ class PsiFour():
         self.n_threads = n_threads
         self.basis = basis
 
-    def getAtomsFromProtein(self, protein):
+    def getAtomsFromProtein(self, protein, protein_id):
 
         #create input file
-        self.createInputFile(protein)
+        self.createInputFile(protein, protein_id)
 
         #execute psi4
         self.executePsiCommand()
@@ -39,13 +39,13 @@ class PsiFour():
         return atoms
 
 
-    def createInputFile(self, protein, protein_id=0):
+    def createInputFile(self, protein, protein_id):
 
         inputFile = open(self.input_filename+'.dat', 'w')
 
         inputFile.write('molecule ' + protein + '{\n')
 
-        if protein_id == 0:
+        if protein_id == -1:
             inputFile.write(' pubchem: '+ protein+'\n')
         else:
             inputFile.write(' pubchem: '+ protein_id+'\n')

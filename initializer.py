@@ -28,12 +28,12 @@ class Initializer():
         self.tools = utils.Utils()
 
     #Calculate all posible energies for the protein and the number of rotations given
-    def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids):
+    def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id):
 
         print('## Generating file of energies ##')
 
         #Get all atoms from the protein with x/y/z positions and connections
-        atoms, backbone = self.extractAtoms(proteinName, aminoacids)
+        atoms, backbone = self.extractAtoms(proteinName, aminoacids, protein_id)
 
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
@@ -48,11 +48,11 @@ class Initializer():
         self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
-    def extractAtoms(self, proteinName,aminoacids):
+    def extractAtoms(self, proteinName, aminoacids, protein_id):
 
         print('    ⬤ Extracting atoms from proteins')
         #call psi4 to get the atoms of the protein
-        atoms = self.psi.getAtomsFromProtein(proteinName)
+        atoms = self.psi.getAtomsFromProtein(proteinName, protein_id)
         
         # if atoms length is 0 means that the proteins was not find in the database
         if len(atoms) == 0:

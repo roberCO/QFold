@@ -5,9 +5,9 @@ import angleCalculator
 import psiFour
 import utils
 
-if(len(sys.argv) != 5):
+if len(sys.argv) != 5 and len(sys.argv) != 6:
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations method_rotations_generation")
-    print ("<!> Example: python main.py Glycylglycine GG 6 random (6 bits for rotations are 64 steps)")
+    print ("<!> Example: python main.py Glycylglycine GG 6 random optional_protein_id (6 bits for rotations are 64 steps)")
     sys.exit(0)
 
 print('\n###################################################################')
@@ -20,6 +20,12 @@ proteinName = sys.argv[1].lower()
 aminoacids = sys.argv[2]
 numberBitsRotation = int(sys.argv[3])
 method_rotations_generation = sys.argv[4]
+
+if len(sys.argv) == 6:
+    protein_id = sys.argv[5]
+else:
+    protein_id = -1
+
 rotationSteps = 2**(int(numberBitsRotation))
 
 #Read config file with the QFold configuration variables
@@ -95,7 +101,7 @@ try:
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids)
+    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id)
 
 #Create an empty list of enery list
 #HARDCODED for proteins with only two aminoacids

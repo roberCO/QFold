@@ -172,8 +172,8 @@ class Utils():
         for nitro in nitrogen_starts:
             candidate_chain = []
             nit = nitro
-            amino_index = 0
-            while True:
+
+            for amino_index in range(len(aminoacids)):
 
                 aminolist = []
                 aminolist.append(nit)
@@ -193,6 +193,8 @@ class Utils():
                 # Searching for Carboxy
                 carbons = car_alpha.linked_to_dict['C']
                 carboxys_not_in_chain = [carbon for carbon in carbons if (carbon not in candidate_chain and carbon not in aminolist and len(carbon.linked_to_dict['O']) > 0)]
+                if amino_index+1 < len(aminoacids):
+                    carboxys_not_in_chain = [carbox for carbox in carboxys_not_in_chain if len(carbox.linked_to_dict['N']) > 0]
                 if len(carboxys_not_in_chain)==1:
                     carbox = carboxys_not_in_chain[0]
                     aminolist.append(carbox)
@@ -201,7 +203,6 @@ class Utils():
 
                 #We have a full aminoacid, so we save it to the candidate list
                 candidate_chain += aminolist
-                amino_index += 1
 
                 # Searching for next aminoacid Nitrogen
                 nitrogens = carbox.linked_to_dict['N']

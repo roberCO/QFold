@@ -178,7 +178,7 @@ class Initializer():
         bits_number_angles = math.ceil(np.log2(len(aminoacids)-1))
 
         print('    ⬤ Calculating energies for all posible rotations')
-        energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1), aminoacids)
+        energies = self.calculate_all_energies(atoms, rotationSteps, 2*(len(aminoacids)-1), aminoacids)
 
         #Write the headers of the energies json that is going to be returned
         deltasJson = {}

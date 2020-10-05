@@ -17,12 +17,21 @@ while read p; do
     proteinline="$(tr -s ' ' <<< "$p")"
     protein="$(cut -d' ' -f1 <<<"$proteinline")"
     aa="$(cut -d' ' -f2 <<<"$proteinline")"
-    
+    id="$(cut -d' ' -f3 <<<"$proteinline")"
+    id=${id/"("/""}
+    id=${id/")"/""}
+
+
     for index in $(seq $2 $3)
     do
     
-        python3 main.py $protein $aa $index minifold
-        python3 main.py $protein $aa $index random
+	if [[ $id == *"#"* ]]; then
+  		python main.py $protein $aa $index minifold
+		python main.py $protein $aa $index random
+	else
+		python main.py $protein $aa $index minifold $id
+                python main.py $protein $aa $index random $id
+	fi
         
     done
 done <$1

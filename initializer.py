@@ -8,6 +8,7 @@ import random
 import sys
 import progressbar
 import numpy as np
+import time
 
 class Initializer():
 
@@ -178,7 +179,8 @@ class Initializer():
         bits_number_angles = math.ceil(np.log2(len(aminoacids)-1))
 
         print('    ⬤ Calculating energies for all posible rotations')
-        energies = self.calculate_all_energies(atoms, rotationSteps, 2**(len(aminoacids)-1), aminoacids)
+        number_angles = 2*(len(aminoacids)-1)
+        energies = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
 
         #Write the headers of the energies json that is going to be returned
         deltasJson = {}
@@ -251,16 +253,19 @@ class Initializer():
         return deltasJson
 
     # RECURSIVE function to calculate all energies of each possible rotation 
-    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, aminoacids, index_sequence='', energies = {}):
+    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, max_lenght, aminoacids, index_sequence='', energies = {}):
 
         # iterate to calculate all possible rotations
         # for example if there are 4 rotation steps, it executes the loop 4 times, but in each iteration, it calls recursively to all rotations starting with 0 (first iteration)  
         for index in range(rotation_steps):
 
+            if max_lenght == protein_sequence_length:
+                start_time = time.time()
+
             if protein_sequence_length > 0:
                 # returned energy is added to a data structure (this structure is multi-dimensional)
                 # index_sequence contains the accumulated index (it helps to know the general index_sequence)
-                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, aminoacids, index_sequence+str(index)+' ', energies)
+                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, max_lenght, aminoacids, index_sequence+str(index)+' ', energies)
             
             else:
                 
@@ -299,13 +304,16 @@ class Initializer():
                 
                 #Calculate the energy of the protein structure after the previous rotations
                 energies[index_sequence] = self.calculateEnergyOfRotation(copied_atoms)
-                print(index_sequence)
 
                 # We eliminate previous copies
                 del copied_atoms
                 del copied_backbone
 
                 break
+
+            if max_lenght == protein_sequence_length:
+                total_time = time.time() - start_time
+                print("Step", index, "calculated for aminoacids", aminoacids, "in", total_time, "seconds", "(", total_time/rotation_steps, "per each)")
 
         return energies
 

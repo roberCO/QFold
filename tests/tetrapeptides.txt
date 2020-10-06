@@ -1,10 +1,4 @@
-Acetyl tetrapeptide-9 #https://pubchem.ncbi.nlm.nih.gov/compound/11606295
-Thymocartin #https://pubchem.ncbi.nlm.nih.gov/compound/3033954
-Krds tetrapeptide #https://pubchem.ncbi.nlm.nih.gov/compound/164005
-Ginseng Tetrapeptide #https://pubchem.ncbi.nlm.nih.gov/compound/10253669
-Arginyl-glycyl-aspartyl-valine #https://pubchem.ncbi.nlm.nih.gov/compound/9933202#section=2D-Structure
-Arg-gly-asp-ser #https://pubchem.ncbi.nlm.nih.gov/compound/107775#section=3D-Status
-Eosinophilotactic Tetrapeptide (VGDE) #https://pubchem.ncbi.nlm.nih.gov/compound/14496749
-Eosinophilotactic Peptide #https://pubchem.ncbi.nlm.nih.gov/compound/14728932
-Tetrapeptide-21 #https://pubchem.ncbi.nlm.nih.gov/compound/42630677
-Alanyl-glycyl-seryl-glutamic acid #https://pubchem.ncbi.nlm.nih.gov/compound/188349
+Alanylglycylserylglutamic AGSE (188349)    #https://pubchem.ncbi.nlm.nih.gov/compound/188349
+valylglycylserylglutamic  VGSE (14728932)  #https://pubchem.ncbi.nlm.nih.gov/compound/14728932
+tetrapeptide4             GEPG (42630676)  #https://pubchem.ncbi.nlm.nih.gov/compound/42630676
+tetrapeptide6             VPAA (121491893) #https://pubchem.ncbi.nlm.nih.gov/compound/121491893

@@ -313,7 +313,7 @@ class Initializer():
 
             if max_lenght == protein_sequence_length:
                 total_time = time.time() - start_time
-                print("Step", index+1, "of", rotation_steps,"calculated for aminoacids", aminoacids, "in", total_time, "seconds", "(", total_time/(rotation_steps*(max_lenght-1)), "per each)")
+                print("Step", index+1, "of", rotation_steps,"calculated for aminoacids", aminoacids, "in", total_time, "seconds", "(", total_time/(rotation_steps**(max_lenght-1)), "per each)")
 
         return energies
 

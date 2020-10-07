@@ -61,7 +61,7 @@ class PsiFour():
     def executePsiCommand(self):
 
         # execute psi4 by command line (it generates the file output.dat with the information)
-        subprocess.run([self.psi4_path,'-n', '8', self.input_filename+".dat", self.output_filename+".dat"], stdout=subprocess.DEVNULL)
+        subprocess.run([self.psi4_path,'-n', self.n_threads, self.input_filename+".dat", self.output_filename+".dat"], stdout=subprocess.DEVNULL)
 
     def writeFileEnergies(self, atoms):
 

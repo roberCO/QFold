@@ -11,7 +11,7 @@ def plot_q_vs_c(data):
         title='TTS comparison quantum vs random', 
         x_axis_type="log", 
         y_axis_type="log", 
-        y_range=(10**-9, 10**9), 
+        y_range=(1/5, 5),
         x_range=(1, 10**6)
         )
 

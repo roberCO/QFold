@@ -526,7 +526,7 @@ class Utils():
         results = {}
         data = {}
         # read data
-        path = './'+self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
+        path = self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
         with open(path) as json_file:
                     data[input_name] = json.load(json_file)
 

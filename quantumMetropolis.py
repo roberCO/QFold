@@ -68,7 +68,7 @@ class QuantumMetropolis():
     def conditional_move_npeptide(self,circuit,ancilla,coin,move_value,move_id,angles):
         '''
         Conditioned on coin, perform a move. Tested ok.
-        We use a repetitive structure where we perform the conditional sum and substraction for each angle.
+        We use a repetitive structure where we perform the conditional sum and subtraction for each angle.
         '''
         # For each angle
         for i in range(self.n_angles):
@@ -81,7 +81,7 @@ class QuantumMetropolis():
                     circuit.x(move_id[j])
 
             circuit.mcx(control_qubits= [coin[0]]+[move_id[j] for j in range(move_id.size)], target_qubit = ancilla[0])#create a single control
-            self.sumsubstract1(circuit,angle,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #sum or substract 1 to the angle
+            self.sumsubtract1(circuit,angle,ancilla[0],ancilla[1],ancilla[2],move_value[0]) #sum or subtract 1 to the angle
             circuit.mcx(control_qubits= [coin[0]]+[move_id[j] for j in range(move_id.size)], target_qubit = ancilla[0])#create a single control        
             
             # Undo the move_id preparation: for instance, if we are controlling on i= 2 move 111->010
@@ -194,10 +194,10 @@ class QuantumMetropolis():
                 circuit.mcx(control_qubits = [control,qubit_string[i],start], target_qubit = end)
         circuit.x(start)
 
-    def substract1(self, circuit,qubit_string,control,start,end):
+    def subtract1(self, circuit,qubit_string,control,start,end):
         '''
         Outputs:
-        Substracts register 2 (1 qubit) from register 1 in register 1. Tested ok.
+        subtracts register 2 (1 qubit) from register 1 in register 1. Tested ok.
         
         Input:
         circuit: QuantumCircuit with registers qubit_string, control, ancilla
@@ -209,7 +209,7 @@ class QuantumMetropolis():
         start: Qubit. Use ancilla[1] or similar
         end: Qubit. Use ancilla[2] or similar
         
-        Comments: In binary, substracting is the same procedure as summing when we exchange 0s and 1s
+        Comments: In binary, subtracting is the same procedure as summing when we exchange 0s and 1s
         '''
         circuit.x(qubit_string)
 
@@ -217,20 +217,20 @@ class QuantumMetropolis():
         
         circuit.x(qubit_string)
 
-    def sumsubstract1(self,circuit,qubit_string,control,start,end,move_value):
+    def sumsubtract1(self,circuit,qubit_string,control,start,end,move_value):
         '''
         Outputs:
-        Sum/Substracts register 2 (control, 1 qubit) from register 1 (qubit_string) in register 1. Tested ok.
+        Sum/subtracts register 2 (control, 1 qubit) from register 1 (qubit_string) in register 1. Tested ok.
 
         Input:
         circuit: QuantumCircuit with registers qubit_string, control, ancilla and move_value
-        qubit_string: QuantumRegister where the sum/substraction is performed
+        qubit_string: QuantumRegister where the sum/subtraction is performed
         control: Qubit. Use ancilla[0] or similar. It encodes the probability of change.
         start: Qubit. Use ancilla[1] or similar
         end: Qubit. Use ancilla[2] or similar
-        move_value: 1 to substract, 0 to sum
+        move_value: 1 to subtract, 0 to sum
 
-        Comments: In binary, substracting is the same procedure as summing when we exchange 0s and 1s
+        Comments: In binary, subtracting is the same procedure as summing when we exchange 0s and 1s
         '''
         circuit.cx(move_value,qubit_string)
 

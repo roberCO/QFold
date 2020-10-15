@@ -55,6 +55,6 @@ class AngleCalculator():
                     # create the new entry for this result
                     probabilities_matrix[position_angles] = (1/self.n_iterations)
 
-            print("<i> CLASSICAL METROPOLIS: Time for", n_steps, "steps: %s seconds\n" % (time.time() - start_time))
+            print("<i> CLASSICAL METROPOLIS: Time for", n_steps, "steps: %s seconds" % (time.time() - start_time))
             
             return probabilities_matrix        

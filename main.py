@@ -4,6 +4,7 @@ import initializer
 import angleCalculator
 import psiFour
 import utils
+import time
 
 if len(sys.argv) != 5 and len(sys.argv) != 6:
     print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations method_rotations_generation")
@@ -15,6 +16,8 @@ print('##                             QFOLD                             ##')
 print('##                                                               ##')
 print('## Tool that combines AI and QC to solve protein folding problem ##')
 print('###################################################################\n')
+
+start_time = time.time()
 
 proteinName = sys.argv[1].lower()
 aminoacids = sys.argv[2]
@@ -219,6 +222,7 @@ if alternative_results_found:
     results[method_rotations_generation] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
     tools.generate_combined_results_plot(results, proteinName, numberBitsRotation)
 
+execution_time = time.time() - start_time
 
 print('\n\n********************************************************')
 print('**                       RESULTS                      **')
@@ -233,5 +237,5 @@ print('** Precision QFold     =>', min_energy_difference,'%        **')
 print('** Precision vs Δ mean =>', precision_vs_delta_mean ,'     **')
 print('** Mean Δ              =>', delta_mean, '                  **')
 print('** Standard deviation  =>', std_dev_deltas, '        **')
-print('**                                                    **')
+print('** Execution time     =>', execution_time          ,' seconds   **')
 print('********************************************************\n\n')

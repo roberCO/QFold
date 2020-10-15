@@ -9,7 +9,7 @@ import numpy as np
 
 class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
-    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, scaling_factor, optimization=True, mct_mode='noancilla'):
+    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, scaling_factor, optimization=False, mct_mode='noancilla'):
 
         self.tools = utils.Utils()
 

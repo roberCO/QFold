@@ -526,7 +526,7 @@ class Utils():
         results = {}
         data = {}
         # read data
-        path = self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
+        path = self.config_variables['path_tts_plot']+input_name
         with open(path) as json_file:
                     data[input_name] = json.load(json_file)
 
@@ -535,9 +535,6 @@ class Utils():
 
             stats = {}
 
-            aas = protein_key.split('_')[1]
-            bits = protein_key.split('_')[2]
-            init_mode = protein_key.split('_')[3]
             phi_prec = data[protein_key]['initialization_stats']['phis_precision']
             psi_prec = data[protein_key]['initialization_stats']['psis_precision']
             
@@ -551,6 +548,12 @@ class Utils():
             stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
             stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
             
-            results[aas+'_'+bits+'_'+init_mode] = stats
+            protein_key = protein_key.replace('.json', '')
+            aas = protein_key.split('_')[3]
+            bits = protein_key.split('_')[4]
+            init_mode = protein_key.split('_')[5]
+            parameters = protein_key.split('_')[6]+'_'+protein_key.split('_')[7]
+
+            results[aas+'_'+bits+'_'+init_mode+'_'+parameters] = stats
 
         return results

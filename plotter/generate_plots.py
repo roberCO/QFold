@@ -1,5 +1,7 @@
 import sys
 sys.path.insert(1, '/home/roberto/Escritorio/qfold/QFold/')
+from os import listdir
+from os.path import isfile, join
 import utils
 
 from plot_minifold_vs_random import plot_m_vs_r
@@ -16,15 +18,10 @@ from bokeh.io import export_png
 config_path = './config/config.json'
 
 tools = utils.Utils(config_path)
+config_variables = tools.get_config_variables()
 
 # list elements to read
-input_files = [
-    'glycylglycylglycine_GGG_1_minifold_20_1000',
-    'glycylglycylglycine_GGG_1_random_20_1000',
-    'glycylglycine_GG_1_minifold_10_1000',
-    'glycylglycine_GG_1_random_10_1000'
-]
-
+input_files = [f for f in listdir(config_variables['path_tts_plot']) if isfile(join(config_variables['path_tts_plot'], f))]
 results = {}
 for input_name in input_files:
     results.update(tools.read_results_data(input_name))

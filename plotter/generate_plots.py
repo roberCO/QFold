@@ -5,7 +5,7 @@ from os.path import isfile, join
 import utils
 
 from plot_minifold_vs_random import plot_m_vs_r
-from plot_tts_evolution import plot_tts_ev
+from plot_tts_evolution import plot_tts_ev, plot_tts_ev_bits
 from plot_quantum_vs_classical import plot_q_vs_c
 from stadistics_calculator import calculate_stats
 
@@ -34,6 +34,9 @@ for input_name in input_files:
 
 # generate plot of the comparison between quantum and classical difference of tts
 #plot_q_vs_c(results)
+
+# generate plot of evolution quantum and classical with different bits
+#plot_tts_ev_bits(results)
 
 [stats, tts_tables] = calculate_stats(results)
 

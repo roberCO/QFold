@@ -31,7 +31,7 @@ def plot_q_vs_c(data):
         relation = min_tts_c / min_tts_q
         min_tts = min(min_tts_q, min_tts_c)
 
-        protein_name = protein_key.split('_')[0]+protein_key.split('_')[1]+protein_key.split('_')[2][0]
+        protein_name = protein_key.split('_')[0]+protein_key.split('_')[1]+protein_key.split('_')[2][0]+'_'+protein_key.split('_')[3]+'_'+protein_key.split('_')[4]
 
         # save data to create the label of each point
         x.append(min_tts)

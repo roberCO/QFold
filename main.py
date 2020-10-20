@@ -138,24 +138,24 @@ for index in range(0, len(results), 2):
 
     tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
 
+    final_stats = {'q': min_q_tts, 'c': min_c_tts}
+
+    tools.write_tts(
+        config_variables['initial_step'], 
+        config_variables['final_step'], 
+        q_accumulated_tts, 
+        c_accumulated_tts, 
+        proteinName,
+        aminoacids,
+        numberBitsRotation, 
+        method_rotations_generation,
+        inizialitation_stats,
+        final_stats)
+
 # Difference between the minimum energy of initializer minus the minimum energy of psi4
 min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
 delta_mean = tools.calculate_delta_mean(deltas_dict)
 std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
-
-final_stats = {'q': min_q_tts, 'c': min_c_tts}
-
-tools.write_tts(
-    config_variables['initial_step'], 
-    config_variables['final_step'], 
-    q_accumulated_tts, 
-    c_accumulated_tts, 
-    proteinName,
-    aminoacids,
-    numberBitsRotation, 
-    method_rotations_generation,
-    inizialitation_stats,
-    final_stats)
 
 # Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
 precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)

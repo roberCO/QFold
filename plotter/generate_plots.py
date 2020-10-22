@@ -6,7 +6,7 @@ import utils
 
 from plot_minifold_vs_random import plot_m_vs_r
 from plot_tts_evolution import plot_tts_ev, plot_tts_ev_bits
-from plot_quantum_vs_classical import plot_q_vs_c
+from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope
 from stadistics_calculator import calculate_stats
 
 import json
@@ -34,6 +34,7 @@ for input_name in input_files:
 
 # generate plot of the comparison between quantum and classical difference of tts
 #plot_q_vs_c(results)
+plot_q_vs_c_slope(results)
 
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)

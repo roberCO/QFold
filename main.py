@@ -68,8 +68,6 @@ except IOError:
     angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id)
 
 #Create an empty list of enery list
-#HARDCODED for proteins with only two aminoacids
-#TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
 
 print('## 3D STRUCTURE CALCULATOR FOR', proteinName,'with', numberBitsRotation,'bits and', method_rotations_generation,'initialization##\n')

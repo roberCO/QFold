@@ -7,13 +7,13 @@
     "epochs": 3,
     "batch_size": 16,
     
-    "psi4_path": "/Users/pablo/psi4conda/bin/psi4",
+    "psi4_path": "/home/roberto/installations/psi4conda/bin/psi4",
     "energy_method": "mp2",
     "basis": "6-31g",
     "input_filename_energy_psi4": "inputRotations",
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",
-    "methods_initialization": ["minifold", "random"],
+    "methods_initialization": ["minifold", "random", "original"],
 
     "color_quantum_minifold": "red",
     "color_classical_minifold": "blue",

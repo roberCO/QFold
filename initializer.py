@@ -110,27 +110,23 @@ class Initializer():
 
         phis_initial_rotation = []
         psis_initial_rotation = []
+
+        # First we calculate all the angles. Psi uses the first atom from the next aminoacid, whereas phi uses the last from the previous
+        psi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
+        phi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
         
         # Hardware does not modify it
-        if method_rotations_generation == 'hardware':
+        if method_rotations_generation == 'original':
 
-            for _ in range(len(aminoacids)-1):
-                phis_initial_rotation.append(0)
-                psis_initial_rotation.append(0)
-
-            # Calculate all the angles. Psi uses the first atom from the next aminoacid, whereas phi uses the last from the previous
-            psi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
-            phi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
-
-        else:
-    
-            #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
-            #Get the value of angles returned by psi4
-            [atoms, phi_angles_psi4, psi_angles_psi4] = self.flat_protein(atoms, backbone)
+            phis_initial_rotation = copy.deepcopy(phi_angles_psi4)
+            psis_initial_rotation = copy.deepcopy(psi_angles_psi4)
 
         #random between -π and π
-        if method_rotations_generation == 'random':
+        elif method_rotations_generation == 'random':
             print('\n## RANDOM initialization for protein structure ##\n')
+
+            #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
+            atoms = self.flat_protein(atoms, backbone)
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
             print('len_angles_phi',len(phi_angles_psi4))
@@ -144,6 +140,10 @@ class Initializer():
         #minifold
         elif method_rotations_generation == 'minifold':
             print('\n## MINIFOLD initialization for protein structure ##\n')
+
+            #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
+            atoms = self.flat_protein(atoms, backbone)
+
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
 
@@ -151,14 +151,6 @@ class Initializer():
 
                 phis_initial_rotation.append(angle[0])
                 psis_initial_rotation.append(angle[1])
-
-        #Rotate all angles to get the initial protein structure
-        if method_rotations_generation != 'hardware':
-
-            for index in range(len(phis_initial_rotation)):
-
-                    self.tools.rotate(angle_type = 'psi', angle = psis_initial_rotation[index], starting_atom = backbone[3*index+2], backbone = backbone)
-                    self.tools.rotate(angle_type = 'phi', angle = phis_initial_rotation[index], starting_atom = backbone[3*index+4], backbone = backbone) 
 
         #Calculate the precision in constrast of the real value calculated by psi4
         [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
@@ -346,10 +338,6 @@ class Initializer():
 
     def flat_protein(self, atoms, backbone):
 
-        # First we calculate all the angles. Psi uses the first atom from the next aminoacid, whereas phi uses the last from the previous
-        psi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
-        phi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
-
         # Next we need to flatten the peptide
         for i in range(len(psi_angles_psi4)):
             # For psi we have to rotate -angle starting in the carboxy of the i-th aminoacid
@@ -361,7 +349,7 @@ class Initializer():
         #zeros += [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
 
         #self.tools.plotting(list_of_atoms = atoms, title = 'Peptide_plot_flattened')
-        return [atoms, phi_angles_psi4, psi_angles_psi4]
+        return atoms
 
     def get_initial_atom(self, atoms):
 

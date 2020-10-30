@@ -126,7 +126,7 @@ class Initializer():
             print('\n## RANDOM initialization for protein structure ##\n')
 
             #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
-            atoms = self.flat_protein(atoms, backbone)
+            atoms = self.flat_protein(atoms, backbone, phi_angles_psi4, psi_angles_psi4)
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
             print('len_angles_phi',len(phi_angles_psi4))
@@ -142,7 +142,7 @@ class Initializer():
             print('\n## MINIFOLD initialization for protein structure ##\n')
 
             #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
-            atoms = self.flat_protein(atoms, backbone)
+            atoms = self.flat_protein(atoms, backbone, phi_angles_psi4, psi_angles_psi4)
 
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
@@ -336,7 +336,7 @@ class Initializer():
 
         return energy
 
-    def flat_protein(self, atoms, backbone):
+    def flat_protein(self, atoms, backbone, phi_angles_psi4, psi_angles_psi4):
 
         # Next we need to flatten the peptide
         for i in range(len(psi_angles_psi4)):

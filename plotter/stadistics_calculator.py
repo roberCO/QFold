@@ -86,7 +86,14 @@ def organize_data(data):
         protein_name = protein_key.split('_')[0]
         bits_name = protein_key.split('_')[1]
         method_name = protein_key.split('_')[2]
-        parameters_name = protein_key.split('_')[3]+'_'+protein_key.split('_')[4]
+
+        beta_type = 'undefined'
+        if protein_key.split('_')[5] == '0':
+            beta_type = 'beta-fixed'
+        elif protein_key.split('_')[5] == '1':
+            beta_type = 'beta-variable'
+
+        parameters_name = protein_key.split('_')[3]+'_'+protein_key.split('_')[4]+'_'+beta_type
 
         if not protein_name in structured_data.keys():
 

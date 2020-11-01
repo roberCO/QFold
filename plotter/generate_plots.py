@@ -34,7 +34,7 @@ for input_name in input_files:
 
 # generate plot of the comparison between quantum and classical difference of tts
 #plot_q_vs_c(results)
-plot_q_vs_c_slope(results)
+#plot_q_vs_c_slope(results)
 
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)

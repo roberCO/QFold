@@ -458,7 +458,7 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
@@ -474,7 +474,7 @@ class Utils():
         tts_json['initialization_stats'] = inizialitation_stats
         tts_json['final_stats'] = final_stats
 
-        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
@@ -549,11 +549,21 @@ class Utils():
             stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
             
             protein_key = protein_key.replace('.json', '')
-            aas = protein_key.split('_')[3]
-            bits = protein_key.split('_')[4]
-            init_mode = protein_key.split('_')[5]
-            parameters = protein_key.split('_')[6]+'_'+protein_key.split('_')[7]
 
-            results[aas+'_'+bits+'_'+init_mode+'_'+parameters] = stats
+            beta_padding = 0
+            # if the results are from beta variable, the key has two keys of padding.
+            # normal: tts_results_protein_aas_bits_initialization_beta_sf.json
+            # with beta var: tts_results_beta_var_protein_aas_bits_initialization_beta_sf.json
+
+            if protein_key.split('_')[2] == 'beta' and protein_key.split('_')[3] == 'var':
+                beta_padding = 2
+
+            aas = protein_key.split('_')[beta_padding+3]
+            bits = protein_key.split('_')[beta_padding+4]
+            init_mode = protein_key.split('_')[beta_padding+5]
+            parameters = protein_key.split('_')[beta_padding+6]+'_'+protein_key.split('_')[beta_padding+7]
+
+            # add a 0 if no beta var and 1 (beta_padding/2) if beta var
+            results[aas+'_'+bits+'_'+init_mode+'_'+parameters+'_'+str(int(beta_padding/2))] = stats
 
         return results

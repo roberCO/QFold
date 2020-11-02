@@ -9,14 +9,13 @@ import numpy as np
 
 class Beta_precalc_TruthTableOracle(TruthTableOracle):
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
-    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, scaling_factor, optimization=False, mct_mode='noancilla'):
+    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, optimization=False, mct_mode='noancilla'):
 
         self.tools = utils.Utils()
 
         self.beta = beta
         self.in_bits = in_bits
         self.out_bits = out_bits
-        self.scaling_factor = scaling_factor
         self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
 
         # If there are only two angles, we need to eliminate the penultimate digit of the keys:
@@ -48,11 +47,7 @@ class Beta_precalc_TruthTableOracle(TruthTableOracle):
         for key in self.deltas_dictionary.keys():
 
             if self.deltas_dictionary[key] >= 0:
-
-                if self.scaling_factor == -1:
-                    probability = math.exp(-self.beta * self.deltas_dictionary[key])
-                else:
-                    probability = math.exp(-self.scaling_factor*self.beta * self.deltas_dictionary[key])
+                probability = math.exp(-self.beta * self.deltas_dictionary[key])
             else: 
                 probability = 1
             # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.

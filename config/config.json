@@ -21,12 +21,12 @@
     "color_classical_random": "cyan",
 
     "initial_step": 2,
-    "final_step": 10,
+    "final_step": 25,
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,
-    "scaling_factor": 1, 
     "number_iterations": 10000,
-    "beta_max": 10,
+    "beta": 10000,
+    "beta_type": "variable",
     
     "precision_solution": 0.9,
 

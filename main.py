@@ -79,7 +79,6 @@ print('## 3D STRUCTURE CALCULATOR FOR', proteinName,'with', numberBitsRotation,'
 angleCalculator = angleCalculator.AngleCalculator(
     numberBitsRotation, 
     config_variables['ancilla_bits'], 
-    config_variables['scaling_factor'], 
     config_variables['number_iterations'],
     len(aminoacids)
     )
@@ -98,7 +97,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     for option in [0,1]:
 
         # calculate the probability matrix of the optimization algorithms
-        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
+        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta'], config_variables['beta_type'], option)
 
         p_t = 0
         # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted
@@ -108,35 +107,31 @@ for step in range(config_variables['initial_step'], config_variables['final_step
         else:
             p_t = 0
 
+        result = 0
         # Result is the calculated TTS
         if p_t >= 1:
-            results.append([1, step])
-
+            result = 1
         elif p_t == 0:
-            results.append([9999, step])
-
+            result = 9999, step
         else:
-            results.append([tools.calculateTTS(config_variables['precision_solution'], step, p_t), step])
+            result = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
 
-for index in range(0, len(results), 2):
-
-    quantum_TTS = results[index][0]
-    quantum_step = results[index][1]
-    classical_TTS = results[index+1][0]
-    classical_step = results[index+1][1]
-
-    if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
         
-        min_q_tts['value'] = quantum_TTS
-        min_q_tts['step'] = quantum_step
-
-    if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
+        if option == 0:
+            q_accumulated_tts.append(result)
+            
+            if result < min_q_tts['value'] or min_q_tts['value'] == -1:
         
-        min_c_tts['value'] = classical_TTS
-        min_c_tts['step'] = classical_step
+                min_q_tts['value'] = result
+                min_q_tts['step'] = step
 
-    q_accumulated_tts.append(quantum_TTS)
-    c_accumulated_tts.append(classical_TTS)
+        else: 
+            c_accumulated_tts.append(result)
+
+            if result < min_c_tts['value'] or min_c_tts['value'] == -1:
+        
+                min_c_tts['value'] = result
+                min_c_tts['step'] = step
 
     tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
 
@@ -153,14 +148,6 @@ for index in range(0, len(results), 2):
         method_rotations_generation,
         inizialitation_stats,
         final_stats)
-
-# Difference between the minimum energy of initializer minus the minimum energy of psi4
-min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
-delta_mean = tools.calculate_delta_mean(deltas_dict)
-std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
-
-# Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
-precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)
 
 # MERGE RESULTS: if the results generated are comparable with similar results generated previously, it generates the shared plot
 # For example, if this execution generates results for minifold 4 bits rotation GG and there are results for random 4 bits GG
@@ -196,9 +183,5 @@ print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']
 print('**                                                    **')
 print('** -------------------------------------------------- **')
 print('**                                                    **')
-print('** Precision QFold     =>', min_energy_difference,'%        **')
-print('** Precision vs Δ mean =>', precision_vs_delta_mean ,'     **')
-print('** Mean Δ              =>', delta_mean, '                  **')
-print('** Standard deviation  =>', std_dev_deltas, '        **')
-print('** Execution time     =>', str(datetime.timedelta(seconds=execution_time)) ,'  **')
+print('** Execution time     =>', str(datetime.timedelta(seconds=execution_time)) ,' in hh:mm:ss  **')
 print('********************************************************\n\n')

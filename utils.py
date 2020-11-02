@@ -424,19 +424,6 @@ class Utils():
 
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
 
-    def calculate_diff_vs_mean_diffs(self, min_energy_difference, deltas_mean):
-
-        return (1 - (min_energy_difference/deltas_mean)) * 100
-
-    def calculate_delta_mean(self, deltas_dict):
-
-        array = np.array(list(deltas_dict.items()), dtype='float32')
-        return array[:,1].mean()
-
-    def calculate_std_dev_deltas(self, deltas_dict):
-
-        array = np.array(list(deltas_dict.items()), dtype='float32')
-        return array[:,1].std()
 
     def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
 
@@ -458,7 +445,11 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+
+        if self.config_variables['beta_type'] == 'fixed':
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+        elif self.config_variables['beta_type'] == 'variable':
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
@@ -474,7 +465,12 @@ class Utils():
         tts_json['initialization_stats'] = inizialitation_stats
         tts_json['final_stats'] = final_stats
 
-        json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        json_name = ''
+        if self.config_variables['beta_type'] == 'fixed':
+            json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+        elif self.config_variables['beta_type'] == 'variable':
+            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+        
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
@@ -517,7 +513,7 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.tight_layout()
 
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'_combined.png'
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta'])+'_combined.png'
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
@@ -561,9 +557,9 @@ class Utils():
             aas = protein_key.split('_')[beta_padding+3]
             bits = protein_key.split('_')[beta_padding+4]
             init_mode = protein_key.split('_')[beta_padding+5]
-            parameters = protein_key.split('_')[beta_padding+6]+'_'+protein_key.split('_')[beta_padding+7]
+            beta = protein_key.split('_')[beta_padding+6]
 
             # add a 0 if no beta var and 1 (beta_padding/2) if beta var
-            results[aas+'_'+bits+'_'+init_mode+'_'+parameters+'_'+str(int(beta_padding/2))] = stats
+            results[aas+'_'+bits+'_'+init_mode+'_'+beta+'_'+str(int(beta_padding/2))] = stats
 
         return results

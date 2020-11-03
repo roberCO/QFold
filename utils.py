@@ -6,6 +6,7 @@ import struct
 import copy
 import math
 import json
+import argparse
 
 class Utils():
 
@@ -24,6 +25,21 @@ class Utils():
 
     def get_config_variables(self):
         return self.config_variables
+
+    def parse_arguments(self):
+
+        parser = argparse.ArgumentParser(description="Tool that combines AI and QC to solve protein folding problem.\n Example: python main.py glycylglycine GG 5 minifold simulation -c")
+
+        parser.add_argument("protein_name", help="name of the protein to analyze", type=str)
+        parser.add_argument("aminoacids", help="aminoacids that compose the protein", type=str)
+        parser.add_argument("bits", help="number of bits that codify the rotations. Number of allowed rotations is 2**bits", type=int)
+        parser.add_argument("initialization", help="initialization mode of protein structure [original | minifold | random]", type=str)
+        parser.add_argument("mode", help="execution mode [simulation - return TTS | experiment - return TTS in IBMQ | real - return protein structure]", type=str)
+
+        parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=int)
+        parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
+
+        return parser.parse_args()
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""

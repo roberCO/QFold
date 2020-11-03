@@ -7,10 +7,11 @@ import utils
 import time
 import datetime
 
-if len(sys.argv) != 5 and len(sys.argv) != 6:
-    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations method_rotations_generation")
-    print ("<!> Example: python main.py Glycylglycine GG 6 random optional_protein_id (6 bits for rotations are 64 steps)")
-    sys.exit(0)
+#Read config file with the QFold configuration variables
+config_path = './config/config.json'
+tools = utils.Utils(config_path)
+
+args = tools.parse_arguments()
 
 print('\n###################################################################')
 print('##                             QFOLD                             ##')
@@ -20,22 +21,9 @@ print('###################################################################\n')
 
 start_time = time.time()
 
-proteinName = sys.argv[1].lower()
-aminoacids = sys.argv[2]
-numberBitsRotation = int(sys.argv[3])
-method_rotations_generation = sys.argv[4]
+rotationSteps = 2**(int(args.bits))
+if args.id == None: args.id = -1
 
-if len(sys.argv) == 6:
-    protein_id = sys.argv[5]
-else:
-    protein_id = -1
-
-rotationSteps = 2**(int(numberBitsRotation))
-
-#Read config file with the QFold configuration variables
-config_path = './config/config.json'
-
-tools = utils.Utils(config_path)
 config_variables = tools.get_config_variables()
 angleInitializer = initializer.Initializer(
     psi4_path = config_variables['psi4_path'],
@@ -61,26 +49,26 @@ psi = psiFour.PsiFour(
     config_variables['basis'])
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
-#The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
+#The format should be energies[args.protein_name][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
-    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json')
+    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id)
+    angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
 #Create an empty list of enery list
-#HARDCODED for proteins with only two aminoacids
-#TODO modify to any number of aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
+#HARDCODED for proteins with only two args.aminoacids
+#TODO modify to any number of args.aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
 
-print('## 3D STRUCTURE CALCULATOR FOR', proteinName,'with', numberBitsRotation,'bits and', method_rotations_generation,'initialization##\n')
+print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
 angleCalculator = angleCalculator.AngleCalculator(
-    numberBitsRotation, 
+    args.bits, 
     config_variables['ancilla_bits'], 
     config_variables['number_iterations'],
-    len(aminoacids)
+    len(args.aminoacids)
     )
 
 q_accumulated_tts = []
@@ -133,7 +121,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
                 min_c_tts['value'] = result
                 min_c_tts['step'] = step
 
-    tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
+    tools.plot_tts(q_accumulated_tts, c_accumulated_tts, args.protein_name, args.aminoacids, args.bits, args.initialization, config_variables['initial_step'])
 
     final_stats = {'q': min_q_tts, 'c': min_c_tts}
 
@@ -142,10 +130,10 @@ for step in range(config_variables['initial_step'], config_variables['final_step
         config_variables['final_step'], 
         q_accumulated_tts, 
         c_accumulated_tts, 
-        proteinName,
-        aminoacids,
-        numberBitsRotation, 
-        method_rotations_generation,
+        args.protein_name,
+        args.aminoacids,
+        args.bits, 
+        args.initialization,
         inizialitation_stats,
         final_stats)
 
@@ -157,11 +145,11 @@ results = {}
 alternative_results_found = False
 for alternative_method in config_variables['methods_initialization']:
 
-    if alternative_method != method_rotations_generation:
+    if alternative_method != args.initialization:
 
         try:
-            f = open(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
-            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            f = open(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+alternative_method+'.json')
+            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+alternative_method+'.json')
             alternative_results_found = True
             f.close()
         except IOError:
@@ -169,8 +157,8 @@ for alternative_method in config_variables['methods_initialization']:
 
 if alternative_results_found:
 
-    results[method_rotations_generation] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
-    tools.generate_combined_results_plot(results, proteinName, numberBitsRotation)
+    results[args.initialization] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json') 
+    tools.generate_combined_results_plot(results, args.protein_name, args.bits)
 
 execution_time = time.time() - start_time
 

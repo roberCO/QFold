@@ -39,7 +39,8 @@ class Utils():
         parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=int)
         parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
 
-        return parser.parse_args()
+        self.args = parser.parse_args()
+        return self.args
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
@@ -441,7 +442,7 @@ class Utils():
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
 
 
-    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
+    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, initial_step):
 
         x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]
 
@@ -455,7 +456,7 @@ class Utils():
 
         ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
         ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
-            
+
         ax.set_ylabel('TTS')
         ax.set_xlabel('Steps')
         plt.tight_layout()
@@ -463,14 +464,14 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
         if self.config_variables['beta_type'] == 'fixed':
-            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
         elif self.config_variables['beta_type'] == 'variable':
-            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, inizialitation_stats, final_stats):
+    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, inizialitation_stats, final_stats):
 
         tts_json = {}
 
@@ -483,9 +484,9 @@ class Utils():
 
         json_name = ''
         if self.config_variables['beta_type'] == 'fixed':
-            json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+            json_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         elif self.config_variables['beta_type'] == 'variable':
-            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)

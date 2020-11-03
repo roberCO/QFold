@@ -7,7 +7,7 @@ import utils
 
 class AngleCalculator():
 
-    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, number_aminoacids, initialization_stats, tools):
+    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, number_aminoacids, initialization_stats, tools, qiskit_api_path, selected_device):
 
         self.bits_rotation = bits_rotation
         self.rotation_steps = 2**bits_rotation
@@ -18,6 +18,9 @@ class AngleCalculator():
         self.qTools = quantumUtils.QuantumUtils()
         self.n_angles = (number_aminoacids -1)*2
         self.initialization_stats = initialization_stats
+
+        self.qiskit_api_path = qiskit_api_path
+        self.selected_device = selected_device
 
         self.tools = tools
 
@@ -32,7 +35,7 @@ class AngleCalculator():
         for step in range(initial_step, final_step):
 
             ###### Quantum Metropolis ######
-            qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, deltas_dict)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, deltas_dict, self.tools.args.mode, self.qiskit_api_path, self.selected_device)
         
             start_time = time.time()
             [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()

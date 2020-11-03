@@ -2,6 +2,7 @@ import numpy as np
 from itertools import product
 import time
 import math
+import json
 from math import pi
 
 # Importing standard Qiskit libraries and configuring account
@@ -10,13 +11,14 @@ from qiskit import QuantumCircuit, execute, Aer
 from qiskit.circuit import QuantumRegister, Qubit, Gate
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit.quantum_info import Statevector
+from qiskit import IBMQ
 
 import beta_precalc_TruthTableOracle
 
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, input_oracle):
+    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, input_oracle, mode, qiskit_api_path, selected_device):
 
         #Global variables
 
@@ -36,6 +38,9 @@ class QuantumMetropolis():
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
 
+        self.qiskit_api_path = qiskit_api_path
+        self.selected_device = selected_device
+
         if self.n_ancilla_bits < 3:
             raise ValueError('The minimum number of ancilla qubits needed for this algorithm is 3! Currently there are only', self.n_ancilla_bits) 
 
@@ -51,8 +56,25 @@ class QuantumMetropolis():
         # The delta E's dictionary
         self.input_oracle = input_oracle
 
+        if mode == 'experiment':
+            self.device = self.login_ibmq()
+        elif mode == 'simulation':
+            self.device = Aer.get_backend('statevector_simulator')
+            backend_options = {"method" : "statevector"}
+
         # For n angles
         [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
+
+    def login_ibmq(self):
+
+        #read the file that contains the Qiskit user API
+        with open(self.qiskit_api_path) as json_file:
+            api_token = json.load(json_file)['qiskit_token']
+
+        IBMQ.save_account(api_token, overwrite=True)
+        IBMQ.load_account()
+        provider = IBMQ.get_provider(hub = 'ibm-q')
+        return provider.get_backend(self.selected_device)
 
     def move_preparation(self, circuit,move_value,move_id):
         '''
@@ -443,9 +465,7 @@ class QuantumMetropolis():
 
         start_time = time.time()
         
-        backend = Aer.get_backend('statevector_simulator')
-        backend_options = {"method" : "statevector"}
-        experiment = execute(qc, backend, backend_options=backend_options)
+        experiment = execute(qc, backend=self.device, backend_options=backend_options)
         state_vector = Statevector(experiment.result().get_statevector(qc))
 
         # calculate the indices of the angles

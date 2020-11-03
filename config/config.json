@@ -14,6 +14,8 @@
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",
     "methods_initialization": ["minifold", "random", "original"],
+    "path_qiskit_token":"./config/qiskit_API_token.json",
+    "device_ibm_q": "ibmqx2",
 
     "color_quantum_minifold": "red",
     "color_classical_minifold": "blue",
@@ -21,7 +23,7 @@
     "color_classical_random": "cyan",
 
     "initial_step": 2,
-    "final_step": 25,
+    "final_step": 3,
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,
     "number_iterations": 10000,

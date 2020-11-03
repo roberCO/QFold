@@ -70,7 +70,9 @@ angleCalculator = angleCalculator.AngleCalculator(
     config_variables['number_iterations'],
     len(args.aminoacids),
     initialization_stats,
-    tools
+    tools,
+    config_variables['path_qiskit_token'],
+    config_variables['device_ibm_q']
     )
 
 [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(

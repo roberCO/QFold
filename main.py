@@ -3,12 +3,15 @@ import initializer
 import angleCalculator
 import psiFour
 import utils
-import time
 
-if len(sys.argv) != 5 and len(sys.argv) != 6:
-    print ("<*> ERROR: Wrong number of parameters - Usage: python main.py proteinName aminoacids_chain numberBitsForRotations method_rotations_generation")
-    print ("<!> Example: python main.py Glycylglycine GG 6 random optional_protein_id (6 bits for rotations are 64 steps)")
-    sys.exit(0)
+import time
+import datetime
+
+#Read config file with the QFold configuration variables
+config_path = './config/config.json'
+tools = utils.Utils(config_path)
+
+args = tools.parse_arguments()
 
 print('\n###################################################################')
 print('##                             QFOLD                             ##')
@@ -18,22 +21,9 @@ print('###################################################################\n')
 
 start_time = time.time()
 
-proteinName = sys.argv[1].lower()
-aminoacids = sys.argv[2]
-numberBitsRotation = int(sys.argv[3])
-method_rotations_generation = sys.argv[4]
+rotationSteps = 2**(int(args.bits))
+if args.id == None: args.id = -1
 
-if len(sys.argv) == 6:
-    protein_id = sys.argv[5]
-else:
-    protein_id = -1
-
-rotationSteps = 2**(int(numberBitsRotation))
-
-#Read config file with the QFold configuration variables
-config_path = './config/config.json'
-
-tools = utils.Utils(config_path)
 config_variables = tools.get_config_variables()
 angleInitializer = initializer.Initializer(
     psi4_path = config_variables['psi4_path'],
@@ -59,25 +49,26 @@ psi = psiFour.PsiFour(
     config_variables['basis'])
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
-#The format should be energies[proteinName][numberBitsForRotation] ex: energiesGlycylglycine2.json
+#The format should be energies[args.protein_name][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
-    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json')
+    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculate_delta_energies(proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id)
+    angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
 #Create an empty list of enery list
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(proteinName, numberBitsRotation, method_rotations_generation)
+#HARDCODED for proteins with only two args.aminoacids
+#TODO modify to any number of args.aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
+[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, inizialitation_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
 
-print('## 3D STRUCTURE CALCULATOR FOR', proteinName,'with', numberBitsRotation,'bits and', method_rotations_generation,'initialization##\n')
+print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
 angleCalculator = angleCalculator.AngleCalculator(
-    numberBitsRotation, 
+    args.bits, 
     config_variables['ancilla_bits'], 
-    config_variables['scaling_factor'], 
     config_variables['number_iterations'],
-    len(aminoacids)
+    len(args.aminoacids)
     )
 
 q_accumulated_tts = []
@@ -94,7 +85,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     for option in [0,1]:
 
         # calculate the probability matrix of the optimization algorithms
-        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta_max'], option)
+        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta'], config_variables['beta_type'], option)
 
         p_t = 0
         # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted
@@ -104,37 +95,33 @@ for step in range(config_variables['initial_step'], config_variables['final_step
         else:
             p_t = 0
 
+        result = 0
         # Result is the calculated TTS
         if p_t >= 1:
-            results.append([1, step])
-
+            result = 1
         elif p_t == 0:
-            results.append([9999, step])
-
+            result = 9999, step
         else:
-            results.append([tools.calculateTTS(config_variables['precision_solution'], step, p_t), step])
+            result = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
 
-for index in range(0, len(results), 2):
-
-    quantum_TTS = results[index][0]
-    quantum_step = results[index][1]
-    classical_TTS = results[index+1][0]
-    classical_step = results[index+1][1]
-
-    if quantum_TTS < min_q_tts['value'] or min_q_tts['value'] == -1:
         
-        min_q_tts['value'] = quantum_TTS
-        min_q_tts['step'] = quantum_step
-
-    if classical_TTS < min_c_tts['value'] or min_c_tts['value'] == -1:
+        if option == 0:
+            q_accumulated_tts.append(result)
+            
+            if result < min_q_tts['value'] or min_q_tts['value'] == -1:
         
-        min_c_tts['value'] = classical_TTS
-        min_c_tts['step'] = classical_step
+                min_q_tts['value'] = result
+                min_q_tts['step'] = step
 
-    q_accumulated_tts.append(quantum_TTS)
-    c_accumulated_tts.append(classical_TTS)
+        else: 
+            c_accumulated_tts.append(result)
 
-    tools.plot_tts(q_accumulated_tts, c_accumulated_tts, proteinName, aminoacids, numberBitsRotation, method_rotations_generation, config_variables['initial_step'])
+            if result < min_c_tts['value'] or min_c_tts['value'] == -1:
+        
+                min_c_tts['value'] = result
+                min_c_tts['step'] = step
+
+    tools.plot_tts(q_accumulated_tts, c_accumulated_tts, args.protein_name, args.aminoacids, args.bits, args.initialization, config_variables['initial_step'])
 
     final_stats = {'q': min_q_tts, 'c': min_c_tts}
 
@@ -143,20 +130,12 @@ for index in range(0, len(results), 2):
         config_variables['final_step'], 
         q_accumulated_tts, 
         c_accumulated_tts, 
-        proteinName,
-        aminoacids,
-        numberBitsRotation, 
-        method_rotations_generation,
+        args.protein_name,
+        args.aminoacids,
+        args.bits, 
+        args.initialization,
         inizialitation_stats,
         final_stats)
-
-# Difference between the minimum energy of initializer minus the minimum energy of psi4
-min_energy_difference = (1 - (initial_min_energy - psi4_min_energy)) *100
-delta_mean = tools.calculate_delta_mean(deltas_dict)
-std_dev_deltas = tools.calculate_std_dev_deltas(deltas_dict)
-
-# Compare the difference between the minimum energy of initializer minus the minimum energy of psi4 with the mean of energy deltas
-precision_vs_delta_mean = tools.calculate_diff_vs_mean_diffs(min_energy_difference, delta_mean)
 
 # MERGE RESULTS: if the results generated are comparable with similar results generated previously, it generates the shared plot
 # For example, if this execution generates results for minifold 4 bits rotation GG and there are results for random 4 bits GG
@@ -166,11 +145,11 @@ results = {}
 alternative_results_found = False
 for alternative_method in config_variables['methods_initialization']:
 
-    if alternative_method != method_rotations_generation:
+    if alternative_method != args.initialization:
 
         try:
-            f = open(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
-            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+alternative_method+'.json')
+            f = open(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+alternative_method+'.json')
+            results[alternative_method] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+alternative_method+'.json')
             alternative_results_found = True
             f.close()
         except IOError:
@@ -178,8 +157,8 @@ for alternative_method in config_variables['methods_initialization']:
 
 if alternative_results_found:
 
-    results[method_rotations_generation] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') 
-    tools.generate_combined_results_plot(results, proteinName, numberBitsRotation)
+    results[args.initialization] = tools.read_results_file(config_variables['path_tts_plot']+'tts_results_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json') 
+    tools.generate_combined_results_plot(results, args.protein_name, args.bits)
 
 execution_time = time.time() - start_time
 
@@ -192,9 +171,5 @@ print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']
 print('**                                                    **')
 print('** -------------------------------------------------- **')
 print('**                                                    **')
-print('** Precision QFold     =>', min_energy_difference,'%        **')
-print('** Precision vs Δ mean =>', precision_vs_delta_mean ,'     **')
-print('** Mean Δ              =>', delta_mean, '                  **')
-print('** Standard deviation  =>', std_dev_deltas, '        **')
-print('** Execution time     =>', execution_time          ,' seconds   **')
+print('** Execution time     =>', str(datetime.timedelta(seconds=execution_time)) ,' in hh:mm:ss  **')
 print('********************************************************\n\n')

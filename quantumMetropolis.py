@@ -7,14 +7,22 @@ from math import pi
 
 # Importing standard Qiskit libraries and configuring account
 import qiskit
-from qiskit import QuantumCircuit, execute, Aer
-from qiskit.circuit import QuantumRegister, Qubit, Gate
+from qiskit import QuantumCircuit, execute, Aer, IBMQ
+from qiskit.circuit import QuantumRegister, ClassicalRegister, Qubit, Gate
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit.quantum_info import Statevector
-from qiskit import IBMQ
 
 import beta_precalc_TruthTableOracle
 
+from qiskit.compiler import transpile
+
+#import utils
+from collections import OrderedDict
+from qiskit.providers.aer import noise
+
+# Import measurement calibration functions
+import mitiq
+import scipy
 
 class QuantumMetropolis():
 
@@ -56,11 +64,13 @@ class QuantumMetropolis():
         # The delta E's dictionary
         self.input_oracle = input_oracle
 
+        '''
         if mode == 'experiment':
             self.device = self.login_ibmq()
         elif mode == 'simulation':
             self.device = Aer.get_backend('statevector_simulator')
-            backend_options = {"method" : "statevector"}
+            self.backend_options = {"method" : "statevector"}
+        '''
 
         # For n angles
         [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
@@ -73,8 +83,10 @@ class QuantumMetropolis():
 
         IBMQ.save_account(api_token, overwrite=True)
         IBMQ.load_account()
-        provider = IBMQ.get_provider(hub = 'ibm-q')
-        return provider.get_backend(self.selected_device)
+        self.provider = IBMQ.get_provider(hub = 'ibm-q')
+        self.backend = self.provider.get_backend(self.selected_device)
+        
+        return self.backend
 
     def move_preparation(self, circuit,move_value,move_id):
         '''
@@ -465,7 +477,7 @@ class QuantumMetropolis():
 
         start_time = time.time()
         
-        experiment = execute(qc, backend=self.device, backend_options=backend_options)
+        experiment = execute(qc, backend=self.device, backend_options=self.backend_options)
         state_vector = Statevector(experiment.result().get_statevector(qc))
 
         # calculate the indices of the angles
@@ -490,8 +502,6 @@ class QuantumMetropolis():
 
         return [probs, time_statevector]
 
-# TO DO: initizialisation. 
-
     # this method converts the index returned by statevector into a string key. 
     # for example: key 10 is converted to 22 if there are two angles and two precision bits
     # for example: key 8 is converted to 0010 if there are four angles and three precision bits
@@ -515,3 +525,239 @@ class QuantumMetropolis():
             key_int -= result * denominator
 
         return key_str
+
+    def execute_real_hardware(self, beta, steps):
+
+        start_time = time.time()
+
+        deltas_dictionary = OrderedDict(sorted(self.input_oracle.items()))
+
+        deltas = {}
+        for (key,value) in deltas_dictionary.items():
+            deltas[key[:3]] = value
+        
+        self.n_iterations = 10
+        betas = [1e-10,1e-10]
+
+        raw_counts = {'beta=1e-10': [], 'beta=0.1': []}
+        noiseless_counts = {'beta=1e-10': [], 'beta=0.1': []}
+        qc = self.generate_circ(steps, deltas, betas)
+
+        for i in range(self.n_iterations):
+            print('iteration =',i)
+            counts= execute(qc, self.backend, shots=8192).result().get_counts()
+            raw_counts['beta=0'].append(counts['00'])
+            
+        noiseless_counts['beta=0'] = self.exe_noiseless(betas, steps, deltas)['00']
+
+        print(np.average(raw_counts['beta=0']))
+        print(np.std(raw_counts['beta=0']))
+
+        betas = [0.1,1]
+        qc = self.generate_circ(steps, deltas, betas = betas)
+
+        for i in range(self.n_iterations):
+            print('iteration =',i)
+            counts= execute(qc, self.backend, shots=8192).result().get_counts()
+            raw_counts['beta=1'].append(counts['00'])
+            
+        noiseless_counts['beta=1'] = self.exe_noiseless(betas, steps, deltas)['00']
+
+        print(np.average(raw_counts['beta=1']))
+        print(np.std(raw_counts['beta=1']))
+
+        beta0_bernouilli = self.generate_bernouilli(np.sum(raw_counts['beta=0']), 8192*self.n_iterations)
+        beta1_bernouilli = self.generate_bernouilli(np.sum(raw_counts['beta=1']), 8192*self.n_iterations)
+        scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
+
+        betas = [0.1,1]
+        qc = self.generate_circ(steps, deltas, betas = betas)
+        # linear_factory = mitiq.zne.inference.LinearFactory(scale_factors=[1.0, 1.05, 1.1, 1.15, 1.2, 1.25])
+        # mitigated = mitiq.execute_with_zne(qc, self.executor(qc), factory=linear_factory)
+
+        time_statevector = time.time() - start_time
+        probs = {}
+
+        return [probs, time_statevector]
+
+    def calculate_angles(self, deltas_dictionary, beta):
+    
+        exact_angles = {}
+
+        for key in deltas_dictionary.keys():
+
+            if deltas_dictionary[key] >= 0:
+                probability = math.exp(-beta * deltas_dictionary[key])
+            else: 
+                probability = 1
+            # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.
+            # That way 1 -> 000, but if probability is 0 there is some small probability of acceptance
+
+            # Instead of probability save angles so rotations are easier to perform afterwards sqrt(p) = sin(pi/2-theta/2).
+            # The theta/2 is because if you input theta, qiskits rotates theta/2. Also normalised (divided between pi the result)
+            exact_angles[key] = math.pi - 2 * math.asin(math.sqrt(probability))
+
+        # Order angles by key
+        exact_angles = OrderedDict(sorted(exact_angles.items()))
+
+        return exact_angles
+
+    def hardware_GG_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inv, iteration, beta):
+
+        '''Warning! This only works for GG 1 in experiment mode. Do not use elsewhere!'''
+        # First we have to identify the non-zero angles. For the rest we accept with probability 1
+        circuit.x(coin)
+        '''
+        Since the angles from 001 and 101 ~= 2.59; and those from 010 and 000 ~= 0.32 (when beta = .1, 
+        but they'll always be similar nevertheless), we will perform those rotations together
+        '''
+        non_zero_angles = {}
+        non_zero_angles['0x0'] = (angles['000']+angles['010'])/2
+        non_zero_angles['x01'] = (angles['001']+angles['101'])/2
+        
+        # Let us first perform the first
+        circuit.x(angle_phi)
+        circuit.x(move_id)
+        circuit.mcrx(theta = -inv*non_zero_angles['0x0'],
+                    q_controls = [move_id[0],angle_phi[0]], q_target = coin[0], use_basis_gates=True)
+        circuit.x(angle_phi)
+        circuit.x(move_id)
+        
+        # Let us perform the second
+        circuit.x(angle_psi)
+        circuit.mcrx(theta = -inv*non_zero_angles['x01'],
+                    q_controls = [move_id[0],angle_psi[0]], q_target = coin[0], use_basis_gates=True)
+        circuit.x(angle_psi)
+
+    def W_step(self, qc,coin,move_id,angle_psi,angle_phi,angles,iteration,beta): 
+        
+        # Perform the preparation of possible moves----
+        qc.h(move_id)
+
+        inv = 1
+        # Prepare the Boltzmann coin ------------------
+        self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv, iteration, beta)
+        
+        # Perform move ---------------------------------
+        # For the second angle
+        qc.ccx(coin,move_id,angle_psi)
+
+        # For the first angle
+        qc.x(move_id)
+        qc.ccx(coin,move_id,angle_phi)
+        qc.x(move_id)
+
+        if iteration == 0:
+            # Unprepare the Boltzmann coin--------------------
+            self.hardware_GG_1_coin_flip(qc,coin,move_id,angle_psi,angle_phi,angles,inv = -1,iteration=0,beta = beta)
+
+            # Perform the preparation of possible moves ----
+            qc.h(move_id)
+
+            #Reflection -------------------------------------
+            qc.x(move_id)
+            qc.x(coin)
+
+            # Perform a multicontrolled Z
+            qc.cz(move_id,coin)
+
+            qc.x(move_id)
+            qc.x(coin)
+
+    def generate_circ(self, steps, deltas, betas = [.1,1]):
+    
+        move_id  = QuantumRegister(1)
+        angle_phi = QuantumRegister(1)
+        angle_psi = QuantumRegister(1)
+        coin = QuantumRegister(1)
+        c_reg = ClassicalRegister(2)
+        qc = QuantumCircuit(coin,move_id,angle_psi,angle_phi,c_reg)
+
+        #Circuit ----------
+        qc.h(angle_phi)
+        qc.h(angle_psi)
+        for (i,beta) in zip(range(steps),betas):
+            angles = self.calculate_angles(deltas, beta)
+            self.W_step(qc,coin,move_id,angle_psi,angle_phi,angles,i,beta)
+
+        # Measure
+        qc.measure(angle_phi[0], c_reg[1])
+        qc.measure(angle_psi[0], c_reg[0])
+
+        # Transpiling -------
+
+        #layout = {5: angle_phi[0], 6: angle_psi[0], 4: move_id[0], 5: coin[0]}
+        layout = {2: angle_psi[0], 3: angle_phi[0], 1: coin[0], 0: move_id[0]} 
+        qc = transpile(qc, backend = self.backend, optimization_level=3, 
+                    initial_layout=layout, basis_gates = ['u1', 'u2', 'u3', 'cx'], routing_method = 'lookahead')
+        print('After optimization--------')
+        print('gates = ', qc.count_ops())
+        print('depth = ', qc.depth())
+        return qc
+
+    def exe_noiseless(self, betas, steps, deltas):
+
+        move_id  = QuantumRegister(1, name = 'move_id')
+        angle_phi = QuantumRegister(1, name = 'angle_phi')
+        angle_psi = QuantumRegister(1, name = 'angle_psi')
+        coin = QuantumRegister(1, name = 'coin')
+        c_reg = ClassicalRegister(4)
+        aerqc = QuantumCircuit(coin,move_id,angle_psi,angle_phi,c_reg)
+
+        #Circuit ----------
+        aerqc.h(angle_phi)
+        aerqc.h(angle_psi)
+        for (i,beta) in zip(range(steps),betas):
+            angles = self.calculate_angles(deltas, beta)
+            self.W_step(aerqc,coin,move_id,angle_psi,angle_phi,angles,i,beta)
+
+        # Measure
+        aerbackend = Aer.get_backend('statevector_simulator')
+        backend_options = {"method" : "statevector"}
+        experiment = execute(aerqc, aerbackend, backend_options=backend_options)
+        state_vector = Statevector(experiment.result().get_statevector(aerqc))
+
+        probabilities = state_vector.probabilities([3,2])
+        noiseless_counts = {}
+        noiseless_counts['00'] = float(probabilities[0])
+        noiseless_counts['01'] = float(probabilities[1])
+        noiseless_counts['10'] = float(probabilities[2])
+        noiseless_counts['11'] = float(probabilities[3])
+
+        return noiseless_counts
+
+    def generate_bernouilli(self, n_0,n):
+        array = np.random.binomial(1,n_0/n,n)
+        s = np.sum(array)
+        while s != n_0:
+            i = np.random.randint(n)
+            if s<n_0 and array[i] == 0:
+                array[i] = 1
+            elif s>n_0 and array[i] == 1:
+                array[i] = 0
+            s = np.sum(array)
+        return array    
+
+    
+
+    def executor(self, qc, circuit = qiskit.QuantumCircuit, shots = 8192):
+        """Returns the expectation value to be mitigated.
+
+        Args:
+            circuit: Circuit to run.
+            shots: Number of times to execute the circuit to compute the expectation value.
+        """
+
+        # (1) Run the circuit
+        raw_counts = 0
+        for i in range(self.n_iterations):
+            print('iteration =',i)
+            counts= execute(qc, self.backend, shots=shots, optimization_level=0).result().get_counts()
+            raw_counts += counts['00']
+            
+        # (2) Convert from raw measurement counts to the expectation value    
+        expectation_value = raw_counts/(shots*self.n_iterations)
+
+        return expectation_value
+
+    

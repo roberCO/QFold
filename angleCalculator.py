@@ -38,7 +38,14 @@ class AngleCalculator():
             qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, deltas_dict, self.tools.args.mode, self.qiskit_api_path, self.selected_device)
         
             start_time = time.time()
-            [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
+
+            if self.tools.args.mode == 'simulation':
+                [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
+            elif self.tools.args.mode == 'experiment':
+                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(beta, 2)
+            else:
+                print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
+
             q_time = time.time() - start_time
             print("<i> QUANTUM METROPOLIS: Time for", step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
             q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, precision_solution)

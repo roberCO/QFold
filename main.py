@@ -64,26 +64,8 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(
-    args.bits, 
-    config_variables['ancilla_bits'], 
-    config_variables['number_iterations'],
-    len(args.aminoacids),
-    initialization_stats,
-    tools,
-    config_variables['path_qiskit_token'],
-    config_variables['device_ibm_q']
-    )
-
-[min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(
-    deltas_dict, 
-    index_min_energy,
-    config_variables['initial_step'], 
-    config_variables['final_step'], 
-    config_variables['beta'], 
-    config_variables['beta_type'],
-    config_variables['precision_solution']
-    )
+angleCalculator = angleCalculator.AngleCalculator(tools, initialization_stats)
+[min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(deltas_dict, index_min_energy)
 
 execution_time = time.time() - start_time
 

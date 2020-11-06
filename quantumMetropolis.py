@@ -26,28 +26,29 @@ import scipy
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, input_oracle, mode, qiskit_api_path, selected_device):
+    def __init__(self, n_steps, n_angles, input_oracle, tools):
 
         #Global variables
 
+        self.tools = tools
+
         # Number steps
-        self.n_repetitions = n_repetitions
-
-        # Number of bits necessary to specify the position of each angle
-        self.angle_precision_bits = angle_precision_bits
-
-        #Oracle output ancilla bits
-        self.probability_bits = probability_bits
+        self.steps = n_steps
 
         self.n_angles = n_angles
-        self.beta = beta
-        self.beta_type = beta_type
+
+        # Number of bits necessary to specify the position of each angle
+        self.angle_precision_bits = self.tools.args.bits
+        #Oracle output ancilla bits
+        self.probability_bits = self.tools.config_variables['ancilla_bits']
+        self.beta = self.tools.config_variables['beta']
+        self.beta_type = self.tools.config_variables['beta_type']
+        self.qiskit_api_path = self.tools.config_variables['path_qiskit_token']
+        self.selected_device = self.tools.config_variables['device_ibm_q']
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
 
-        self.qiskit_api_path = qiskit_api_path
-        self.selected_device = selected_device
 
         if self.n_ancilla_bits < 3:
             raise ValueError('The minimum number of ancilla qubits needed for this algorithm is 3! Currently there are only', self.n_ancilla_bits) 
@@ -64,9 +65,9 @@ class QuantumMetropolis():
         # The delta E's dictionary
         self.input_oracle = input_oracle
 
-        if mode == 'experiment':
+        if self.tools.args.mode == 'experiment':
             self.device = self.login_ibmq()
-        elif mode == 'simulation':
+        elif self.tools.args.mode == 'simulation':
             self.device = Aer.get_backend('statevector_simulator')
             self.backend_options = {"method" : "statevector"}
 
@@ -464,10 +465,10 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
 
-        for i in range(self.n_repetitions):
+        for i in range(self.steps):
 
             if self.beta_type == 'variable':
-                beta_value =  i* (self.beta / self.n_repetitions)
+                beta_value =  i* (self.beta / self.steps)
                 #It creates one different oracle for each beta
                 oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
             

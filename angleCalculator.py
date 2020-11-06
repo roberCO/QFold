@@ -1,4 +1,3 @@
-import quantumUtils
 import math
 import metropolis
 import quantumMetropolis
@@ -7,24 +6,16 @@ import utils
 
 class AngleCalculator():
 
-    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, number_aminoacids, initialization_stats, tools, qiskit_api_path, selected_device):
-
-        self.bits_rotation = bits_rotation
-        self.rotation_steps = 2**bits_rotation
-        self.n_ancilla_bits = n_ancilla_bits
-        self.n_iterations = number_iterations
-        self.number_aminoacids = number_aminoacids
-
-        self.qTools = quantumUtils.QuantumUtils()
-        self.n_angles = (number_aminoacids -1)*2
-        self.initialization_stats = initialization_stats
-
-        self.qiskit_api_path = qiskit_api_path
-        self.selected_device = selected_device
+    def __init__(self, tools, initialization_stats):
 
         self.tools = tools
+        self.initialization_stats = initialization_stats
 
-    def calculate3DStructure(self, deltas_dict, index_min_energy, initial_step, final_step, beta, beta_type, precision_solution):
+        self.n_iterations = self.tools.config_variables['number_iterations']
+
+        self.n_angles = (len(self.tools.args.aminoacids) -1)*2
+
+    def calculate3DStructure(self, deltas_dict, index_min_energy):
 
         q_accumulated_tts = []
         c_accumulated_tts = []
@@ -32,26 +23,26 @@ class AngleCalculator():
         min_q_tts = {'step': 0, 'value': -1}
         min_c_tts = {'step': 0, 'value': -1}
 
-        for step in range(initial_step, final_step):
+        for step in range(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step']):
 
             ###### Quantum Metropolis ######
-            qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, deltas_dict, self.tools.args.mode, self.qiskit_api_path, self.selected_device)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.n_angles, deltas_dict, self.tools)
         
             start_time = time.time()
 
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
             elif self.tools.args.mode == 'experiment':
-                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(beta, 2)
+                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(self.tools.config_variables['beta'], 2)
             else:
                 print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
             q_time = time.time() - start_time
             print("<i> QUANTUM METROPOLIS: Time for", step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
-            q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, precision_solution)
+            q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
             ###### Classical Metropolis ######
-            classical_metropolis = metropolis.Metropolis(self.bits_rotation, step, self.n_angles/2, beta, beta_type, deltas_dict)
+            classical_metropolis = metropolis.Metropolis(step, self.n_angles, deltas_dict, self.tools)
             
             start_time = time.time()
             for _ in range(self.n_iterations):
@@ -70,7 +61,7 @@ class AngleCalculator():
                     probabilities_matrix[position_angles] = (1/self.n_iterations)
 
             print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
-            c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, precision_solution)
+            c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
 
             ###### Accumulated values Quantum Metropolis ######
@@ -83,11 +74,11 @@ class AngleCalculator():
             
 
             # plot data
-            self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, initial_step)
+            self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
 
             # generate json data
             final_stats = {'q': min_q_tts, 'c': min_c_tts}
-            self.tools.write_tts(initial_step, final_step, q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+            self.tools.write_tts(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
 
         return [min_q_tts, min_c_tts]
 

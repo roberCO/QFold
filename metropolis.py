@@ -8,19 +8,21 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
+    def __init__(self, n_steps, number_angles, deltas_dict, tools):
 
-        self.bits_rotation = bits_rotation
+        self.tools = tools
         self.n_steps = n_steps
-        self.beta = beta
-        self.beta_type = beta_type
         self.deltas_dict = deltas_dict
-        self.number_angles = int(number_angles)
+        self.number_angles = int(number_angles/2)
+
+        self.bits_rotation = self.tools.args.bits
+        
+        self.beta = self.tools.config_variables['beta']
+        self.beta_type = self.tools.config_variables['beta_variable']
 
         self.rotatition_steps = 2**self.bits_rotation
         self.bits_number_angles = math.ceil(np.log2(number_angles))
 
-        self.tools = utils.Utils()
 
     def execute_metropolis(self):
 

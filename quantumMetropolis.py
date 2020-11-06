@@ -64,13 +64,11 @@ class QuantumMetropolis():
         # The delta E's dictionary
         self.input_oracle = input_oracle
 
-        '''
         if mode == 'experiment':
             self.device = self.login_ibmq()
         elif mode == 'simulation':
             self.device = Aer.get_backend('statevector_simulator')
             self.backend_options = {"method" : "statevector"}
-        '''
 
         # For n angles
         [self.move_preparation_gate, self.conditional_move_gate_n, self.reflection_gate] = self.prepare_initial_circuits_n()
@@ -80,6 +78,9 @@ class QuantumMetropolis():
         #read the file that contains the Qiskit user API
         with open(self.qiskit_api_path) as json_file:
             api_token = json.load(json_file)['qiskit_token']
+
+        if api_token == '':
+            print('<*> ERROR!! It is necessary to introduce an qiskit API token')
 
         IBMQ.save_account(api_token, overwrite=True)
         IBMQ.load_account()

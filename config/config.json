@@ -16,6 +16,8 @@
     "methods_initialization": ["minifold", "random", "original"],
     "path_qiskit_token":"./config/qiskit_API_token.json",
     "device_ibm_q": "ibmqx2",
+    "ibmq_shots": 8192,
+    "betas":[0.1, 1],
 
     "color_quantum_minifold": "red",
     "color_classical_minifold": "blue",

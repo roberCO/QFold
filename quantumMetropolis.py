@@ -528,59 +528,38 @@ class QuantumMetropolis():
 
         return key_str
 
-    def execute_real_hardware(self, beta, steps):
+    def execute_real_hardware(self, steps, n_iterations):
+
+        counts = {}
 
         start_time = time.time()
+        shots = self.tools.config_variables['ibmq_shots']
 
+        # prepare dictionary with deltas
         deltas_dictionary = OrderedDict(sorted(self.input_oracle.items()))
-
         deltas = {}
         for (key,value) in deltas_dictionary.items():
             deltas[key[:3]] = value
         
-        self.n_iterations = 10
-        betas = [1e-10,1e-10]
 
-        raw_counts = {'beta=1e-10': [], 'beta=0.1': []}
-        noiseless_counts = {'beta=1e-10': [], 'beta=0.1': []}
-        qc = self.generate_circ(steps, deltas, betas)
+        qc = self.generate_circ(steps, deltas, self.tools.config_variables['betas'])
 
-        for i in range(self.n_iterations):
-            print('iteration =',i)
-            counts= execute(qc, self.backend, shots=8192).result().get_counts()
-            raw_counts['beta=0'].append(counts['00'])
-            
-        noiseless_counts['beta=0'] = self.exe_noiseless(betas, steps, deltas)['00']
+        # execute the circuit in the real quantum computer
+        print("<i> Waiting to get access to IBMQ processor")
+        counts['raw_counts'] = execute(qc, self.backend, shots=shots).result().get_counts()
+        print("<i> Circuit in IBMQ executed")
 
-        print(np.average(raw_counts['beta=0']))
-        print(np.std(raw_counts['beta=0']))
+        # execute the circuit without noise (simulation)
+        counts['noiseless_counts'] = self.exe_noiseless(qc, self.tools.config_variables['betas'], steps, deltas)
+        print("<i> Circuit in simulator executed")
 
-        betas = [0.1,1]
-        qc = self.generate_circ(steps, deltas, betas = betas)
-
-        for i in range(self.n_iterations):
-            print('iteration =',i)
-            counts= execute(qc, self.backend, shots=8192).result().get_counts()
-            raw_counts['beta=1'].append(counts['00'])
-            
-        noiseless_counts['beta=1'] = self.exe_noiseless(betas, steps, deltas)['00']
-
-        print(np.average(raw_counts['beta=1']))
-        print(np.std(raw_counts['beta=1']))
-
-        beta0_bernouilli = self.generate_bernouilli(np.sum(raw_counts['beta=0']), 8192*self.n_iterations)
-        beta1_bernouilli = self.generate_bernouilli(np.sum(raw_counts['beta=1']), 8192*self.n_iterations)
+        beta0_bernouilli = self.generate_bernouilli(np.sum(list(counts['raw_counts'].values())), shots*n_iterations)
+        beta1_bernouilli = self.generate_bernouilli(np.sum(list(counts['noiseless_counts'].values())), shots*n_iterations)
         scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
-        betas = [0.1,1]
-        qc = self.generate_circ(steps, deltas, betas = betas)
-        # linear_factory = mitiq.zne.inference.LinearFactory(scale_factors=[1.0, 1.05, 1.1, 1.15, 1.2, 1.25])
-        # mitigated = mitiq.execute_with_zne(qc, self.executor(qc), factory=linear_factory)
-
         time_statevector = time.time() - start_time
-        probs = {}
 
-        return [probs, time_statevector]
+        return [counts, time_statevector]
 
     def calculate_angles(self, deltas_dictionary, beta):
     
@@ -666,7 +645,7 @@ class QuantumMetropolis():
             qc.x(move_id)
             qc.x(coin)
 
-    def generate_circ(self, steps, deltas, betas = [.1,1]):
+    def generate_circ(self, steps, deltas, betas):
     
         move_id  = QuantumRegister(1)
         angle_phi = QuantumRegister(1)
@@ -692,28 +671,19 @@ class QuantumMetropolis():
         layout = {2: angle_psi[0], 3: angle_phi[0], 1: coin[0], 0: move_id[0]} 
         qc = transpile(qc, backend = self.backend, optimization_level=3, 
                     initial_layout=layout, basis_gates = ['u1', 'u2', 'u3', 'cx'], routing_method = 'lookahead')
-        print('After optimization--------')
-        print('gates = ', qc.count_ops())
-        print('depth = ', qc.depth())
+        
+        print('\n⬤⬤⬤⬤  Circuit stadistics after optimization  ⬤⬤⬤⬤\n')
+        print('•  Gates = ', qc.count_ops())
+        print('•  Depth = ', qc.depth())
+        print('\n') 
+        
         return qc
 
-    def exe_noiseless(self, betas, steps, deltas):
+    def exe_noiseless(self, aerqc, betas, steps, deltas):
 
-        move_id  = QuantumRegister(1, name = 'move_id')
-        angle_phi = QuantumRegister(1, name = 'angle_phi')
-        angle_psi = QuantumRegister(1, name = 'angle_psi')
-        coin = QuantumRegister(1, name = 'coin')
-        c_reg = ClassicalRegister(4)
-        aerqc = QuantumCircuit(coin,move_id,angle_psi,angle_phi,c_reg)
+        # Remove measures from circuit
+        aerqc.remove_final_measurements(False)
 
-        #Circuit ----------
-        aerqc.h(angle_phi)
-        aerqc.h(angle_psi)
-        for (i,beta) in zip(range(steps),betas):
-            angles = self.calculate_angles(deltas, beta)
-            self.W_step(aerqc,coin,move_id,angle_psi,angle_phi,angles,i,beta)
-
-        # Measure
         aerbackend = Aer.get_backend('statevector_simulator')
         backend_options = {"method" : "statevector"}
         experiment = execute(aerqc, aerbackend, backend_options=backend_options)
@@ -728,8 +698,8 @@ class QuantumMetropolis():
 
         return noiseless_counts
 
-    def generate_bernouilli(self, n_0,n):
-        array = np.random.binomial(1,n_0/n,n)
+    def generate_bernouilli(self, n_0, n):
+        array = np.random.binomial(1, n_0/n, n)
         s = np.sum(array)
         while s != n_0:
             i = np.random.randint(n)
@@ -740,9 +710,7 @@ class QuantumMetropolis():
             s = np.sum(array)
         return array    
 
-    
-
-    def executor(self, qc, circuit = qiskit.QuantumCircuit, shots = 8192):
+    def executor(self, qc, n_iterations, shots, circuit = qiskit.QuantumCircuit):
         """Returns the expectation value to be mitigated.
 
         Args:
@@ -752,14 +720,12 @@ class QuantumMetropolis():
 
         # (1) Run the circuit
         raw_counts = 0
-        for i in range(self.n_iterations):
+        for i in range(n_iterations):
             print('iteration =',i)
             counts= execute(qc, self.backend, shots=shots, optimization_level=0).result().get_counts()
             raw_counts += counts['00']
             
         # (2) Convert from raw measurement counts to the expectation value    
-        expectation_value = raw_counts/(shots*self.n_iterations)
+        expectation_value = raw_counts/(shots*n_iterations)
 
         return expectation_value
-
-    

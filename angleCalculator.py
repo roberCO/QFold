@@ -33,7 +33,7 @@ class AngleCalculator():
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
             elif self.tools.args.mode == 'experiment':
-                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(self.tools.config_variables['beta'], 2)
+                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(step, self.n_iterations)
             else:
                 print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 

@@ -36,11 +36,11 @@ for index in $(seq $2 $3); do
             if [[ $id == *"#"* ]]; then
 
                 for init in minifold random; do
-                    echo "python main.py $protein $aa $index $init"
+                    python main.py $protein $aa $index $init
                 done
             else
                 for init in minifold random; do
-                    echo "python main.py $protein $aa $index $init -i $id"
+                    python main.py $protein $aa $index $init -i $id
                 done
             fi
         done

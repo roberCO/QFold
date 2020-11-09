@@ -8,11 +8,12 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, bits_rotation, n_steps, number_angles, scaling_factor, deltas_dict):
+    def __init__(self, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
 
         self.bits_rotation = bits_rotation
         self.n_steps = n_steps
-        self.scaling_factor = scaling_factor 
+        self.beta = beta
+        self.beta_type = beta_type
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles)
 
@@ -74,17 +75,20 @@ class Metropolis():
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
-            if self.scaling_factor == -1:
-                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
-            else:
-                Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)] * self.scaling_factor
 
-            if Delta_E < 0:
-                probability_threshold = 1
+            beta_value = 0
+            if self.beta_type == 'fixed':
+                beta_value = self.beta
+            elif self.beta_type == 'variable':
+                beta_value = iteration * (self.beta / self.n_steps)
             else:
-                # Lets use a non_optimal simple schedule
-                beta = iteration / self.n_steps
-                probability_threshold = np.exp(-beta*Delta_E)
+                print('<*> ERROR: Beta type wrong value. Beta type should be variable or fixed but it is', self.beta_type)
+
+            Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
+            if Delta_E >= 0:
+                    probability_threshold = math.exp(-beta_value * Delta_E)
+            else: 
+                probability_threshold = 1
 
             random_number = np.random.random_sample()
 

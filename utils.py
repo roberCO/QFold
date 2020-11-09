@@ -6,6 +6,7 @@ import struct
 import copy
 import math
 import json
+import argparse
 
 class Utils():
 
@@ -24,6 +25,21 @@ class Utils():
 
     def get_config_variables(self):
         return self.config_variables
+
+    def parse_arguments(self):
+
+        parser = argparse.ArgumentParser(description="Tool that combines AI and QC to solve protein folding problem.\n Example: python main.py glycylglycine GG 5 minifold simulation -c")
+
+        parser.add_argument("protein_name", help="name of the protein to analyze", type=str)
+        parser.add_argument("aminoacids", help="aminoacids that compose the protein", type=str)
+        parser.add_argument("bits", help="number of bits that codify the rotations. Number of allowed rotations is 2**bits", type=int)
+        parser.add_argument("initialization", help="initialization mode of protein structure [original | minifold | random]", type=str)
+        parser.add_argument("mode", help="execution mode [simulation - return TTS | experiment - return TTS in IBMQ | real - return protein structure]", type=str)
+
+        parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=int)
+        parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
+
+        return parser.parse_args()
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
@@ -424,19 +440,6 @@ class Utils():
 
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
 
-    def calculate_diff_vs_mean_diffs(self, min_energy_difference, deltas_mean):
-
-        return (1 - (min_energy_difference/deltas_mean)) * 100
-
-    def calculate_delta_mean(self, deltas_dict):
-
-        array = np.array(list(deltas_dict.items()), dtype='float32')
-        return array[:,1].mean()
-
-    def calculate_std_dev_deltas(self, deltas_dict):
-
-        array = np.array(list(deltas_dict.items()), dtype='float32')
-        return array[:,1].std()
 
     def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
 
@@ -458,7 +461,11 @@ class Utils():
         plt.tight_layout()
 
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.png'
+
+        if self.config_variables['beta_type'] == 'fixed':
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+        elif self.config_variables['beta_type'] == 'variable':
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
@@ -474,7 +481,12 @@ class Utils():
         tts_json['initialization_stats'] = inizialitation_stats
         tts_json['final_stats'] = final_stats
 
-        json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'.json'
+        json_name = ''
+        if self.config_variables['beta_type'] == 'fixed':
+            json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+        elif self.config_variables['beta_type'] == 'variable':
+            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+        
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
@@ -517,7 +529,7 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         plt.tight_layout()
 
-        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta_max'])+'_'+str(self.config_variables['scaling_factor'])+'_combined.png'
+        plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+str(number_bits_rotation)+'_'+'_'+str(self.config_variables['beta'])+'_combined.png'
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
@@ -526,7 +538,7 @@ class Utils():
         results = {}
         data = {}
         # read data
-        path = self.config_variables['path_tts_plot']+ 'tts_results_'+input_name+'.json'
+        path = self.config_variables['path_tts_plot']+input_name
         with open(path) as json_file:
                     data[input_name] = json.load(json_file)
 
@@ -535,9 +547,6 @@ class Utils():
 
             stats = {}
 
-            aas = protein_key.split('_')[1]
-            bits = protein_key.split('_')[2]
-            init_mode = protein_key.split('_')[3]
             phi_prec = data[protein_key]['initialization_stats']['phis_precision']
             psi_prec = data[protein_key]['initialization_stats']['psis_precision']
             
@@ -551,6 +560,22 @@ class Utils():
             stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
             stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
             
-            results[aas+'_'+bits+'_'+init_mode] = stats
+            protein_key = protein_key.replace('.json', '')
+
+            beta_padding = 0
+            # if the results are from beta variable, the key has two keys of padding.
+            # normal: tts_results_protein_aas_bits_initialization_beta_sf.json
+            # with beta var: tts_results_beta_var_protein_aas_bits_initialization_beta_sf.json
+
+            if protein_key.split('_')[2] == 'beta' and protein_key.split('_')[3] == 'var':
+                beta_padding = 2
+
+            aas = protein_key.split('_')[beta_padding+3]
+            bits = protein_key.split('_')[beta_padding+4]
+            init_mode = protein_key.split('_')[beta_padding+5]
+            beta = protein_key.split('_')[beta_padding+6]
+
+            # add a 0 if no beta var and 1 (beta_padding/2) if beta var
+            results[aas+'_'+bits+'_'+init_mode+'_'+beta+'_'+str(int(beta_padding/2))] = stats
 
         return results

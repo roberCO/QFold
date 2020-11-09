@@ -23,7 +23,7 @@ def plot_m_vs_r(data):
 
     for protein_key in protein_keys:
         
-        protein = protein_key.split('_')[0]+'_'+protein_key.split('_')[1]
+        protein = protein_key.split('_')[0]+'_'+protein_key.split('_')[1]+'_'+protein_key.split('_')[3]+'_'+protein_key.split('_')[4]
         if not protein in proteins:
             proteins.append(protein)
 

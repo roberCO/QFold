@@ -16,13 +16,12 @@ import beta_precalc_TruthTableOracle
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta_max, scaling_factor, input_oracle):
+    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, input_oracle):
 
         #Global variables
 
         # Number steps
         self.n_repetitions = n_repetitions
-        self.scaling_factor = scaling_factor
 
         # Number of bits necessary to specify the position of each angle
         self.angle_precision_bits = angle_precision_bits
@@ -31,7 +30,8 @@ class QuantumMetropolis():
         self.probability_bits = probability_bits
 
         self.n_angles = n_angles
-        self.beta_max = beta_max
+        self.beta = beta
+        self.beta_type = beta_type
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
@@ -423,15 +423,21 @@ class QuantumMetropolis():
         for g_angle in g_angles:
             qc.h(g_angle)
 
-        beta = self.beta_max
-        #It creates one different oracle for each beta
-        oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits, scaling_factor = self.scaling_factor)
-        
-        W_gate = self.W_func_n(oracle)
-        
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
+        if self.beta_type == 'fixed':
+
+            #It creates one different oracle for each beta
+            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
 
         for i in range(self.n_repetitions):
+
+            if self.beta_type == 'variable':
+                beta_value =  i* (self.beta / self.n_repetitions)
+                #It creates one different oracle for each beta
+                oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
+            
+            W_gate = self.W_func_n(oracle)
+            
             #list_gates[i].params[0]= beta
             qc.append(W_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 

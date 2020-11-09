@@ -20,8 +20,9 @@ for index in $(seq $2 $3); do
 
     for beta in 100 1000 10000; do
 
+	echo "beta $beta"
         mv config/config.json config/config_temp.json
-        jq -r '.beta |= $beta' config/config_temp.json > config/config.json
+        jq -r '.beta |= "$beta"' config/config_temp.json > config/config.json
         rm config/config_temp.json
     
         for line in "${lines[@]}"; do

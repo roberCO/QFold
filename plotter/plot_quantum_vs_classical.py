@@ -11,7 +11,7 @@ def plot_q_vs_c(data):
         title='TTS comparison quantum vs random', 
         x_axis_type="log", 
         y_axis_type="log", 
-        y_range=(10**-9, 10**9), 
+        y_range=(1/6, 6),
         x_range=(1, 10**6)
         )
 
@@ -73,3 +73,46 @@ def plot_q_vs_c(data):
     plot_tts.title.align = 'center'
 
     show(plot_tts)
+
+def plot_q_vs_c_slope(data):
+
+    plot_q_c_slop = figure(
+        title='Evolution of tts with different steps', 
+        x_axis_label='Classical min(TTS)', 
+        y_axis_label='Quantum min(TTS)',
+        x_axis_type="log",
+        y_axis_type="log",
+        x_range=(10**2, 10**4), 
+        y_range=(10**2, 10**4))
+
+    x_point = []
+    y_point = []
+    line_color = []
+    marker = []
+    legend = []
+
+    for protein_key in data:
+
+        x_point.append(data[protein_key]['min_tts_c'])
+        y_point.append(data[protein_key]['min_tts_q'])
+        line_color.append('red' if 'minifold' in protein_key else 'blue')
+        marker.append('triangle' if 'minifold' in protein_key else 'circle')
+        legend.append('minifold' if 'minifold' in protein_key else 'random')
+
+    source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend))
+        #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')
+            
+        #plot_q_c_slop.circle(min_tts_c, min_tts_q, size=10, line_color='blue', color='transparent')
+        
+
+    plot_q_c_slop.scatter(x="x", y="y", size=10, line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source)
+    
+    x_line = [1, 10**6]
+    y_line = [1, 10**6]
+    plot_q_c_slop.line(x_line, y_line, line_width=2, line_color='red', line_dash="dashed")
+
+    plot_q_c_slop.yaxis.major_label_orientation = "vertical"
+    plot_q_c_slop.xgrid.grid_line_color = None
+    plot_q_c_slop.ygrid.grid_line_color = None
+
+    show(plot_q_c_slop)

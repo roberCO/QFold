@@ -23,7 +23,7 @@ def plot_m_vs_r(data):
 
     for protein_key in protein_keys:
         
-        protein = protein_key.split('_')[0]+'_'+protein_key.split('_')[1]
+        protein = protein_key.split('_')[0]+'_'+protein_key.split('_')[1]+'_'+protein_key.split('_')[3]+'_'+protein_key.split('_')[4]
         if not protein in proteins:
             proteins.append(protein)
 
@@ -61,9 +61,9 @@ def plot_m_vs_r(data):
     source_precision = ColumnDataSource(data=dict(y=y_precision, counts=counts_precision, color=color_precision))
     source_tts = ColumnDataSource(data=dict(y=y_tts, counts=counts_tts, color=color_tts))
 
-    plot_precision = figure(x_axis_label="Precision", x_range=(0, 1), y_range=FactorRange(*y_precision), plot_height=250, title="Precision comparison  minifold vs random",
+    plot_precision = figure(x_axis_label="Precision", x_range=(0, 1), y_range=FactorRange(*y_precision), plot_height=900, title="Precision comparison  minifold vs random",
                 toolbar_location=None)
-    plot_tts = figure(x_axis_label="TTS", x_range=(-100, 0), y_range=FactorRange(*y_tts), plot_height=250, title="TTS comparison minifold vs random",
+    plot_tts = figure(x_axis_label="TTS", x_range=(-1200, 0), y_range=FactorRange(*y_tts), plot_height=900, title="TTS comparison minifold vs random",
                 toolbar_location=None)
 
     #p.hbar_stack(metrics, y='proteins', height=0.9, color='#008000', source=ColumnDataSource(precision), legend_label= precision_names)

@@ -16,14 +16,25 @@ while read line; do
     lines+=("$line")
 done <$1
 
+betas=(100 1000 10000)
+
 for index in $(seq $2 $3); do
 
-    for beta in 100 1000 10000; do
+    for beta in "${betas[@]}"; do
 
-	echo "beta $beta"
-        mv config/config.json config/config_temp.json
-        jq -r '.beta |= "$beta"' config/config_temp.json > config/config.json
-        rm config/config_temp.json
+
+	mv config/config.json config/config_temp.json
+	if [[ $beta == 100 ]]; then
+		jq -r '.beta |= 100' config/config_temp.json > config/config.json
+	elif [[ $beta == 1000 ]]; then
+                jq -r '.beta |= 1000' config/config_temp.json > config/config.json
+	elif [[ $beta == 10000 ]]; then
+		jq -r '.beta |= 10000' config/config_temp.json > config/config.json
+	fi	
+	
+	rm config/config_temp.json
+
+	#rm config/config_temp.json
     
         for line in "${lines[@]}"; do
 
@@ -37,11 +48,11 @@ for index in $(seq $2 $3); do
             if [[ $id == *"#"* ]]; then
 
                 for init in minifold random; do
-                    python main.py $protein $aa $index $init
+                    echo "$beta python main.py $protein $aa $index $init simulation"
                 done
             else
                 for init in minifold random; do
-                    python main.py $protein $aa $index $init -i $id
+                    echo "python main.py $protein $aa $index $init -i simulation $id"
                 done
             fi
         done

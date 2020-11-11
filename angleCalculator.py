@@ -33,19 +33,21 @@ class AngleCalculator():
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
             elif self.tools.args.mode == 'experiment':
-                self.n_circuit_runs_to_average = self.tools.config_variables['n_circuit_runs_to_average']
-                [probabilities_matrix, time_statevector] = qMetropolis.execute_real_hardware(step, self.n_circuit_runs_to_average)
+                [experiment_result_matrix, time_statevector] = qMetropolis.execute_real_hardware(step, self.n_iterations)
             else:
                 print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
             q_time = time.time() - start_time
             print("<i> QUANTUM METROPOLIS: Time for", step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
-            q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
+
+            if self.tools.args.mode == 'simulation':
+                q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
             ###### Classical Metropolis ######
             classical_metropolis = metropolis.Metropolis(step, self.n_angles, deltas_dict, self.tools)
             
             start_time = time.time()
+            probabilities_matrix = {}
             for _ in range(self.n_iterations):
 
                 [phi, psi] = classical_metropolis.execute_metropolis()
@@ -62,24 +64,40 @@ class AngleCalculator():
                     probabilities_matrix[position_angles] = (1/self.n_iterations)
 
             print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
-            c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
+
+            if self.tools.args.mode == 'simulation':
+                c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
 
-            ###### Accumulated values Quantum Metropolis ######
-            q_accumulated_tts.append(q_tts)     
-            if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
-        
-            ###### Accumulated values Classical Metropolis ######
-            c_accumulated_tts.append(c_tts)
-            if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
+            if self.tools.args.mode == 'simulation':
+                ###### Accumulated values Quantum Metropolis ######
+                q_accumulated_tts.append(q_tts)     
+                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
             
+                ###### Accumulated values Classical Metropolis ######
+                c_accumulated_tts.append(c_tts)
+                if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
+                
 
-            # plot data
-            self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
+                # plot data
+                self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
 
-            # generate json data
-            final_stats = {'q': min_q_tts, 'c': min_c_tts}
-            self.tools.write_tts(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+                # generate json data
+                final_stats = {'q': min_q_tts, 'c': min_c_tts}
+                self.tools.write_tts(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+
+            elif self.tools.args.mode == 'experiment':
+
+                final_stats = {}
+
+                for experiment_result in experiment_result_matrix.keys():
+                        stats = {}
+                        for result in experiment_result_matrix[experiment_result].keys():
+                            stats[result] = experiment_result_matrix[experiment_result][result]
+
+                        final_stats += stats
+
+                self.tools.write_experiment_results(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
 
         return [min_q_tts, min_c_tts]
 

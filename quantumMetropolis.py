@@ -644,7 +644,7 @@ class QuantumMetropolis():
         qc.ccx(coin,move_id,angle_phi)
         qc.x(move_id)
 
-        if nW < nWs: # This happens unless we are in the last step, in which case uncomputing is unnecessary.
+        if nW < nWs-1: # This happens unless we are in the last step, in which case uncomputing is unnecessary.
             # Unprepare the Boltzmann coin--------------------
             self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = -1)
 
@@ -661,7 +661,9 @@ class QuantumMetropolis():
             qc.x(move_id)
             qc.x(coin)
 
-    def generate_circ(self, steps, deltas, betas):
+    def generate_circ(self, nWs, deltas, betas):
+
+        assert(len(betas) == nWs)
     
         move_id  = QuantumRegister(1)
         angle_phi = QuantumRegister(1)
@@ -673,9 +675,9 @@ class QuantumMetropolis():
         #Circuit ----------
         qc.h(angle_phi)
         qc.h(angle_psi)
-        for (i,beta) in zip(range(steps),betas):
+        for (i,beta) in zip(range(nWs),betas):
             angles = self.calculate_angles(deltas, beta)
-            self.W_step(qc,coin,move_id,angle_psi,angle_phi,angles,nW = i, nWs = steps - 1)
+            self.W_step(qc,coin,move_id,angle_psi,angle_phi,angles,nW = i, nWs = nWs)
 
         # Measure
         qc.measure(angle_phi[0], c_reg[1])

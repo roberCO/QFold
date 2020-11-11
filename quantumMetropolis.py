@@ -85,7 +85,11 @@ class QuantumMetropolis():
 
         IBMQ.save_account(api_token, overwrite=True)
         IBMQ.load_account()
-        self.provider = IBMQ.get_provider(hub = 'ibm-q')
+
+        self.provider = IBMQ.get_provider(hub=self.tools.config_variables['hub'],
+                                          group=self.tools.config_variables['group'], 
+                                          project=self.tools.config_variables['project'])
+
         self.backend = self.provider.get_backend(self.selected_device)
         
         return self.backend
@@ -530,8 +534,6 @@ class QuantumMetropolis():
 
     def execute_real_hardware(self, steps, n_iterations):
 
-        counts = {}
-
         start_time = time.time()
         shots = self.tools.config_variables['ibmq_shots']
 
@@ -541,25 +543,40 @@ class QuantumMetropolis():
         for (key,value) in deltas_dictionary.items():
             deltas[key[:3]] = value
         
+        raw_counts = {'betas=0': [], 'betas=betas': []}
+        noiseless_counts = {'betas=0': [], 'betas=betas': []}
 
-        qc = self.generate_circ(steps, deltas, self.tools.config_variables['betas'])
-
-        # execute the circuit in the real quantum computer
-        print("<i> Waiting to get access to IBMQ processor")
-        counts['raw_counts'] = execute(qc, self.backend, shots=shots).result().get_counts()
-        print("<i> Circuit in IBMQ executed")
-
-        # execute the circuit without noise (simulation)
-        counts['noiseless_counts'] = self.exe_noiseless(qc, self.tools.config_variables['betas'], steps, deltas)
+        # Let us first analyse the noise of the circuit for the ideal case of betas = 0, which should imply .25 chance of success
+        qc = self.generate_circ(steps, deltas, betas = [1e-10,1e-10])
+        for i in range(n_iterations):
+            print("<i> Waiting to get access to IBMQ processor. Betas = [1e-10,1e-10]. Iteration = ",i)
+            counts= execute(qc, self.backend, shots=shots).result().get_counts()
+            print("<i> Circuit in IBMQ executed")
+            raw_counts['betas=0'].append(counts['00'])
+        noiseless_counts['betas=0'] = self.exe_noiseless(qc)
         print("<i> Circuit in simulator executed")
 
-        beta0_bernouilli = self.generate_bernouilli(np.sum(list(counts['raw_counts'].values())), shots*n_iterations)
-        beta1_bernouilli = self.generate_bernouilli(np.sum(list(counts['noiseless_counts'].values())), shots*n_iterations)
-        scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
+        # Let us now analyse the actual circuit with the correct betas
+        qc = self.generate_circ(steps, deltas, betas = self.tools.config_variables['betas'])
+        for i in range(n_iterations):
+            print("<i> Waiting to get access to IBMQ processor. Betas =",self.tools.config_variables['betas'],". Iteration = ",i)
+            counts= execute(qc, self.backend, shots=shots).result().get_counts()
+            print("<i> Circuit in IBMQ executed")
+            raw_counts['betas=betas'].append(counts['00'])
+        noiseless_counts['betas=betas'] = self.exe_noiseless(qc)
+        print("<i> Circuit in simulator executed")
+
+        # In order to see if there is some statistical difference between the two noise circuit (due to the value of beta and the angles)
+        # we generate bernouilli distribuitions that follow the same statistics as those that we have measured
+        beta0_bernouilli = self.generate_bernouilli(np.sum(raw_counts['betas=0']), shots*n_iterations)
+        beta1_bernouilli = self.generate_bernouilli(np.sum(raw_counts['betas=betas']), shots*n_iterations)
+        statistic, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
+
+        print('The statistic value is', statistic, 'and the corresponding pvalue is', pvalue)
 
         time_statevector = time.time() - start_time
 
-        return [counts, time_statevector]
+        return [np.average(raw_counts['betas=betas']), time_statevector]
 
     def calculate_angles(self, deltas_dictionary, beta):
     
@@ -583,7 +600,7 @@ class QuantumMetropolis():
 
         return exact_angles
 
-    def hardware_GG_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inv, iteration, beta):
+    def hardware_GG_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inv):
 
         '''Warning! This only works for GG 1 in experiment mode. Do not use elsewhere!'''
         # First we have to identify the non-zero angles. For the rest we accept with probability 1
@@ -610,14 +627,13 @@ class QuantumMetropolis():
                     q_controls = [move_id[0],angle_psi[0]], q_target = coin[0], use_basis_gates=True)
         circuit.x(angle_psi)
 
-    def W_step(self, qc,coin,move_id,angle_psi,angle_phi,angles,iteration,beta): 
+    def W_step(self, qc,coin,move_id,angle_psi,angle_phi,angles,nW,nWs): 
         
         # Perform the preparation of possible moves----
         qc.h(move_id)
 
-        inv = 1
         # Prepare the Boltzmann coin ------------------
-        self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv, iteration, beta)
+        self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = 1)
         
         # Perform move ---------------------------------
         # For the second angle
@@ -628,9 +644,9 @@ class QuantumMetropolis():
         qc.ccx(coin,move_id,angle_phi)
         qc.x(move_id)
 
-        if iteration == 0:
+        if nW < nWs: # This happens unless we are in the last step, in which case uncomputing is unnecessary.
             # Unprepare the Boltzmann coin--------------------
-            self.hardware_GG_1_coin_flip(qc,coin,move_id,angle_psi,angle_phi,angles,inv = -1,iteration=0,beta = beta)
+            self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = -1)
 
             # Perform the preparation of possible moves ----
             qc.h(move_id)
@@ -659,7 +675,7 @@ class QuantumMetropolis():
         qc.h(angle_psi)
         for (i,beta) in zip(range(steps),betas):
             angles = self.calculate_angles(deltas, beta)
-            self.W_step(qc,coin,move_id,angle_psi,angle_phi,angles,i,beta)
+            self.W_step(qc,coin,move_id,angle_psi,angle_phi,angles,nW = i, nWs = steps - 1)
 
         # Measure
         qc.measure(angle_phi[0], c_reg[1])
@@ -679,17 +695,17 @@ class QuantumMetropolis():
         
         return qc
 
-    def exe_noiseless(self, aerqc, betas, steps, deltas):
+    def exe_noiseless(self, aerqc):
 
         # Remove measures from circuit
-        aerqc.remove_final_measurements(False)
+        aerqc.remove_final_measurements(True)
 
         aerbackend = Aer.get_backend('statevector_simulator')
         backend_options = {"method" : "statevector"}
         experiment = execute(aerqc, aerbackend, backend_options=backend_options)
         state_vector = Statevector(experiment.result().get_statevector(aerqc))
 
-        probabilities = state_vector.probabilities([3,2])
+        probabilities = state_vector.probabilities([3,2]) # IS this ordering ok?
         noiseless_counts = {}
         noiseless_counts['00'] = float(probabilities[0])
         noiseless_counts['01'] = float(probabilities[1])

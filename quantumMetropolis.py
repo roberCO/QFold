@@ -526,7 +526,7 @@ class QuantumMetropolis():
 
         return key_str
 
-    def execute_real_hardware(self, nW, n_iterations):
+    def execute_real_hardware(self, nW):
 
         start_time = time.time()
         shots = self.tools.config_variables['ibmq_shots']
@@ -570,17 +570,15 @@ class QuantumMetropolis():
             # sum all values of the same position and get the mean of each position to store in counts
             raw_counts = dict(functools.reduce(operator.add, map(collections.Counter, raw_counts)))
             raw_counts = {k:v/n_repetitions for k,v in raw_counts.items()}
-            print('raw_counts:', raw_counts)
-            counts[key_name_counts]['raw']=raw_counts
+            counts[key_name_counts]['raw'] = raw_counts
 
         # In order to see if there is some statistical difference between the two noise circuit (due to the value of beta and the angles)
         # we generate bernouilli distribuitions that follow the same statistics as those that we have measured
-        print('counts:', counts)
-        beta0_bernouilli = self.generate_bernouilli(np.sum(counts['betas=0']['raw']['00']), shots*n_repetitions)
-        beta1_bernouilli = self.generate_bernouilli(np.sum(counts['betas=betas']['raw']['00']), shots*n_repetitions)
-        execution_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
+        beta0_bernouilli = self.generate_bernouilli(int(np.sum(counts['betas=0']['raw']['00'])), shots*n_repetitions)
+        beta1_bernouilli = self.generate_bernouilli(int(np.sum(counts['betas=betas']['raw']['00'])), shots*n_repetitions)
+        exec_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
-        print('The statistic value is', execution_stats, 'and the corresponding pvalue is', pvalue)
+        execution_stats = 'The statistic value is ' + execution_stats + ' and the corresponding pvalue is '+ pvalue
 
         time_statevector = time.time() - start_time
 
@@ -705,7 +703,9 @@ class QuantumMetropolis():
         
         return qc
 
-    def exe_noiseless(self, aerqc):
+    def exe_noiseless(self, qc):
+
+        aerqc = qc.copy('aerqc')
 
         # Remove measures from circuit
         aerqc.remove_final_measurements(True)

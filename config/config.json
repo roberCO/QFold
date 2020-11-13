@@ -32,6 +32,8 @@
   "color_classical_random": "cyan",
   "initial_step": 2,
   "final_step": 3,
+  "w_real_mode": 20,
+  "number_repetitions_real_mode": 5,
   "path_tts_plot": "./results/",
   "ancilla_bits": 4,
   "number_iterations": 10000,

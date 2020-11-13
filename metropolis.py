@@ -18,12 +18,36 @@ class Metropolis():
         
         self.beta = self.tools.config_variables['beta']
         self.beta_type = self.tools.config_variables['beta_type']
+        self.n_iterations = self.tools.config_variables['number_iterations']
 
         self.rotatition_steps = 2**self.bits_rotation
         self.bits_number_angles = math.ceil(np.log2(number_angles))
 
 
     def execute_metropolis(self, nW):
+
+        probabilities_matrix = {}
+        for _ in range(self.n_iterations):
+
+            if self.tools.args.mode == 'real':
+                [phi, psi] = self.calculate_metropolis_result(self.tools.config_variables['w_real_mode'])
+            else:
+                [phi, psi] = self.calculate_metropolis_result(nW)
+
+            # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
+            # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
+            position_angles = ''
+            for index in range(len(phi)): position_angles += str(phi[index]) + str(psi[index])
+
+            # if the is already created, sum the entry to the dict, else create the entry
+            if position_angles in probabilities_matrix.keys():
+                probabilities_matrix[position_angles] += (1/self.n_iterations) 
+            else:
+                probabilities_matrix[position_angles] = (1/self.n_iterations)
+
+        return probabilities_matrix
+
+    def calculate_metropolis_result(self, nW):
 
         #Final structure calculated with metropolis. This variable will be returned to angle calculator
 

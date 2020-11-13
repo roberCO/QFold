@@ -3,6 +3,7 @@ import metropolis
 import quantumMetropolis
 import time
 import utils
+import collections, functools, operator 
 
 class AngleCalculator():
 
@@ -10,8 +11,6 @@ class AngleCalculator():
 
         self.tools = tools
         self.initialization_stats = initialization_stats
-
-        self.n_iterations = self.tools.config_variables['number_iterations']
 
         self.n_angles = (len(self.tools.args.aminoacids) -1)*2
 
@@ -33,7 +32,17 @@ class AngleCalculator():
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
             elif self.tools.args.mode == 'experiment':
-                [experiment_result_matrix, time_statevector, execution_stats] = quantum_metropolis.execute_real_hardware(step, self.n_iterations)
+                [experiment_result_matrix, time_statevector, execution_stats] = quantum_metropolis.execute_real_hardware(step)
+            elif self.tools.args.mode == 'real':
+                n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
+                accum_probabilities = []
+                for _ in range(n_repetitions):
+                    [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(self.tools.config_variables['w_real_mode'])
+                    accum_probabilities.append(probabilities_matrix)
+
+                real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
+                real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
+
             else:
                 print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
@@ -45,29 +54,28 @@ class AngleCalculator():
 
             ###### Classical Metropolis ######
             start_time = time.time()
-            probabilities_matrix = {}
-            for _ in range(self.n_iterations):
 
-                [phi, psi] = classical_metropolis.execute_metropolis(step)
+            if self.tools.args.mode == 'real':
+                n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
+                accum_probabilities = []
+                for _ in range(n_repetitions):
+                    probabilities_matrix = classical_metropolis.execute_metropolis(self.tools.config_variables['w_real_mode'])
+                    accum_probabilities.append(probabilities_matrix)
+    
+                real_c_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
+                real_c_counts = {k:v/n_repetitions for k,v in real_c_counts.items()}
 
-                # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
-                # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
-                position_angles = ''
-                for index in range(len(phi)): position_angles += str(phi[index]) + str(psi[index])
-
-                # if the is already created, sum the entry to the dict, else create the entry
-                if position_angles in probabilities_matrix.keys():
-                    probabilities_matrix[position_angles] += (1/self.n_iterations) 
-                else:
-                    probabilities_matrix[position_angles] = (1/self.n_iterations)
+            else:
+                probabilities_matrix = classical_metropolis.execute_metropolis(step)
 
             print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
-
-            if self.tools.args.mode == 'simulation':
+            if self.tools.args.mode == 'simulation' or self.tools.args.mode == 'simulation':
                 c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
 
+            #### create json files ####
             if self.tools.args.mode == 'simulation':
+                
                 ###### Accumulated values Quantum Metropolis ######
                 q_accumulated_tts.append(q_tts)     
                 if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
@@ -76,7 +84,6 @@ class AngleCalculator():
                 c_accumulated_tts.append(c_tts)
                 if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
                 
-
                 # plot data
                 self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
 
@@ -86,33 +93,25 @@ class AngleCalculator():
 
             elif self.tools.args.mode == 'experiment':
 
-                final_stats = {}
+                p_t = experiment_result_matrix['betas=betas']['raw']['00']/self.tools.config_variables['ibmq_shots']
+                q_tts = self.tools.calculateTTS(self.tools.config_variables['precision_solution'], step, p_t)
+                
+                ###### Accumulated values Quantum Metropolis ######
+                q_accumulated_tts.append(q_tts)     
+                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
+            
+                ###### Accumulated values Classical Metropolis ######
+                c_accumulated_tts.append(c_tts)
+                if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
 
-                for experiment_beta_key in experiment_result_matrix.keys():
+                self.tools.write_experiment_results(self.initialization_stats, experiment_result_matrix, execution_stats)
 
-                        if experiment_beta_key == 'betas=betas':
-                        
-                            stats = {}
-                            for result_key in experiment_result_matrix[experiment_beta_key].keys():
-
-                                # the experiment counts are not in percentages but in number of executions
-                                # it is necessary to convert number of executions to percentage
-                                if result_key == 'experiment':
-
-                                    total_number_counts = 0
-                                    for position in experiment_result_matrix[experiment_beta_key][result_key].keys():
-                                        total_number_counts += experiment_result_matrix[experiment_beta_key][result_key][position]
-
-                                    stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]/total_number_counts
-
-                                else:
-
-                                    stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]
-
-                            final_stats += stats
-
-                self.tools.write_experiment_results(self.initialization_stats, final_stats, execution_stats)
-
+            # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
+            if self.tools.args.mode == 'real':
+                
+                self.tools.write_real_results(self.initialization_stats, real_q_counts, real_c_counts)
+                break
+        
         return [min_q_tts, min_c_tts]
 
     def calculate_tts_from_probability_matrix(self, probabilities_matrix, index_min_energy, step, precision_solution):

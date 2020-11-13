@@ -23,17 +23,17 @@ class AngleCalculator():
         min_q_tts = {'step': 0, 'value': -1}
         min_c_tts = {'step': 0, 'value': -1}
 
+        quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
+        classical_metropolis = metropolis.Metropolis(self.n_angles, deltas_dict, self.tools)
         for step in range(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step']):
 
             ###### Quantum Metropolis ######
-            qMetropolis = quantumMetropolis.QuantumMetropolis(step, self.n_angles, deltas_dict, self.tools)
-        
             start_time = time.time()
 
             if self.tools.args.mode == 'simulation':
-                [probabilities_matrix, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
+                [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
             elif self.tools.args.mode == 'experiment':
-                [experiment_result_matrix, time_statevector] = qMetropolis.execute_real_hardware(step, self.n_iterations)
+                [experiment_result_matrix, time_statevector, execution_stats] = quantum_metropolis.execute_real_hardware(step, self.n_iterations)
             else:
                 print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
@@ -44,13 +44,11 @@ class AngleCalculator():
                 q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
             ###### Classical Metropolis ######
-            classical_metropolis = metropolis.Metropolis(step, self.n_angles, deltas_dict, self.tools)
-            
             start_time = time.time()
             probabilities_matrix = {}
             for _ in range(self.n_iterations):
 
-                [phi, psi] = classical_metropolis.execute_metropolis()
+                [phi, psi] = classical_metropolis.execute_metropolis(step)
 
                 # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
                 # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
@@ -84,20 +82,36 @@ class AngleCalculator():
 
                 # generate json data
                 final_stats = {'q': min_q_tts, 'c': min_c_tts}
-                self.tools.write_tts(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+                self.tools.write_tts(q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
 
             elif self.tools.args.mode == 'experiment':
 
                 final_stats = {}
 
-                for experiment_result in experiment_result_matrix.keys():
-                        stats = {}
-                        for result in experiment_result_matrix[experiment_result].keys():
-                            stats[result] = experiment_result_matrix[experiment_result][result]
+                for experiment_beta_key in experiment_result_matrix.keys():
 
-                        final_stats += stats
+                        if experiment_beta_key == 'betas=betas':
+                        
+                            stats = {}
+                            for result_key in experiment_result_matrix[experiment_beta_key].keys():
 
-                self.tools.write_experiment_results(self.tools.config_variables['initial_step'], self.tools.config_variables['final_step'], q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+                                # the experiment counts are not in percentages but in number of executions
+                                # it is necessary to convert number of executions to percentage
+                                if result_key == 'experiment':
+
+                                    total_number_counts = 0
+                                    for position in experiment_result_matrix[experiment_beta_key][result_key].keys():
+                                        total_number_counts += experiment_result_matrix[experiment_beta_key][result_key][position]
+
+                                    stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]/total_number_counts
+
+                                else:
+
+                                    stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]
+
+                            final_stats += stats
+
+                self.tools.write_experiment_results(self.initialization_stats, final_stats, execution_stats)
 
         return [min_q_tts, min_c_tts]
 

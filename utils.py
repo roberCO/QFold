@@ -471,15 +471,15 @@ class Utils():
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, inizialitation_stats, final_stats):
+    def write_tts(self, quantum_tts, classical_tts, initialization_stats, final_stats):
 
         tts_json = {}
 
-        tts_json['initial_step'] = initial_step
-        tts_json['final_step'] = final_step
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
-        tts_json['initialization_stats'] = inizialitation_stats
+        tts_json['initialization_stats'] = initialization_stats
         tts_json['final_stats'] = final_stats
 
         json_name = ''
@@ -488,6 +488,20 @@ class Utils():
         elif self.config_variables['beta_type'] == 'variable':
             json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         
+        with open(json_name, 'w') as outfile:
+            json.dump(tts_json, outfile)
+
+    def write_experiment_results(self, initialization_stats, final_stats, execution_stats):
+
+        tts_json = {}
+
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
+        tts_json['initialization_stats'] = initialization_stats
+        tts_json['execution_stats'] = execution_stats
+        tts_json['final_stats'] = final_stats
+
+        json_name = self.config_variables['path_tts_plot']+'tts_results_experiment_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 

@@ -4,6 +4,7 @@ import time
 import math
 import json
 from math import pi
+import collections, functools, operator 
 
 # Importing standard Qiskit libraries and configuring account
 import qiskit
@@ -11,14 +12,10 @@ from qiskit import QuantumCircuit, execute, Aer, IBMQ
 from qiskit.circuit import QuantumRegister, ClassicalRegister, Qubit, Gate
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit.quantum_info import Statevector
+from qiskit.compiler import transpile
+from qiskit.providers.aer import noise
 
 import beta_precalc_TruthTableOracle
-
-from qiskit.compiler import transpile
-
-#import utils
-from collections import OrderedDict
-from qiskit.providers.aer import noise
 
 # Import measurement calibration functions
 import mitiq
@@ -26,14 +23,11 @@ import scipy
 
 class QuantumMetropolis():
 
-    def __init__(self, n_steps, n_angles, input_oracle, tools):
+    def __init__(self, n_angles, input_oracle, tools):
 
         #Global variables
 
         self.tools = tools
-
-        # Number steps
-        self.steps = n_steps
 
         self.n_angles = n_angles
 
@@ -432,7 +426,7 @@ class QuantumMetropolis():
         
         return U_gate
 
-    def execute_quantum_metropolis_n(self):
+    def execute_quantum_metropolis_n(self, nW):
 
         # State definition. All angles range from 0 to 2pi
         # State definition. All angles range from 0 to 2pi
@@ -469,10 +463,10 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
 
-        for i in range(self.steps):
+        for i in range(nW):
 
             if self.beta_type == 'variable':
-                beta_value =  i* (self.beta / self.steps)
+                beta_value =  i* (self.beta / nW)
                 #It creates one different oracle for each beta
                 oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
             
@@ -532,51 +526,65 @@ class QuantumMetropolis():
 
         return key_str
 
-    def execute_real_hardware(self, steps, n_iterations):
+    def execute_real_hardware(self, nW, n_iterations):
 
         start_time = time.time()
         shots = self.tools.config_variables['ibmq_shots']
+        n_repetitions = self.tools.config_variables['number_repetitions_ibmq']
 
         # prepare dictionary with deltas
-        deltas_dictionary = OrderedDict(sorted(self.input_oracle.items()))
+        deltas_dictionary = collections.OrderedDict(sorted(self.input_oracle.items()))
         deltas = {}
         for (key,value) in deltas_dictionary.items():
             deltas[key[:3]] = value
         
-        raw_counts = {'betas=0': [], 'betas=betas': []}
-        noiseless_counts = {'betas=0': [], 'betas=betas': []}
+        counts = {}
 
-        # Let us first analyse the noise of the circuit for the ideal case of betas = 0, which should imply .25 chance of success
-        qc = self.generate_circ(steps, deltas, betas = [1e-10,1e-10])
-        for i in range(n_iterations):
-            print("<i> Waiting to get access to IBMQ processor. Betas = [1e-10,1e-10]. Iteration = ",i)
-            counts= execute(qc, self.backend, shots=shots).result().get_counts()
-            print("<i> Circuit in IBMQ executed")
-            raw_counts['betas=0'].append(counts['00'])
-        noiseless_counts['betas=0'] = self.exe_noiseless(qc)
-        print("<i> Circuit in simulator executed")
+        # calculate all counts for beta = 0 and the selected betas by configuration file
+        for index in range(2):
 
-        # Let us now analyse the actual circuit with the correct betas
-        qc = self.generate_circ(steps, deltas, betas = self.tools.config_variables['betas'])
-        for i in range(n_iterations):
-            print("<i> Waiting to get access to IBMQ processor. Betas =",self.tools.config_variables['betas'],". Iteration = ",i)
-            counts= execute(qc, self.backend, shots=shots).result().get_counts()
-            print("<i> Circuit in IBMQ executed")
-            raw_counts['betas=betas'].append(counts['00'])
-        noiseless_counts['betas=betas'] = self.exe_noiseless(qc)
-        print("<i> Circuit in simulator executed")
+            # in the first iteration (index=0) it uses the betas = 0. In the second iteration, it uses the betas of the config file
+            if index == 0:
+                betas = [1e-10,1e-10]
+                key_name_counts = 'betas=0'    
+            
+            else:
+                betas = self.tools.config_variables['betas']
+                key_name_counts = 'betas=betas'
+
+            counts[key_name_counts] = {}
+            # Let us first analyse the noise of the circuit for the ideal case of betas = 0, which should imply .25 chance of success
+            qc = self.generate_circ(nW, deltas, betas)
+            
+
+            # get the NOISELESS counts
+            counts[key_name_counts]['noiseless'] = self.exe_noiseless(qc)
+
+            # get the RAW counts
+            raw_counts = []
+            for i in range(n_repetitions):
+                print("<i> Waiting to get access to IBMQ processor. Betas = ", betas, ". Iteration = ",i)
+                raw_counts.append(execute(qc, self.backend, shots=shots).result().get_counts())
+                print("<i> Circuit in IBMQ executed")
+
+            # sum all values of the same position and get the mean of each position to store in counts
+            raw_counts = dict(functools.reduce(operator.add, map(collections.Counter, raw_counts)))
+            raw_counts = {k:v/n_repetitions for k,v in raw_counts.items()}
+            print('raw_counts:', raw_counts)
+            counts[key_name_counts]['raw']=raw_counts
 
         # In order to see if there is some statistical difference between the two noise circuit (due to the value of beta and the angles)
         # we generate bernouilli distribuitions that follow the same statistics as those that we have measured
-        beta0_bernouilli = self.generate_bernouilli(np.sum(raw_counts['betas=0']), shots*n_iterations)
-        beta1_bernouilli = self.generate_bernouilli(np.sum(raw_counts['betas=betas']), shots*n_iterations)
-        statistic, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
+        print('counts:', counts)
+        beta0_bernouilli = self.generate_bernouilli(np.sum(counts['betas=0']['raw']['00']), shots*n_repetitions)
+        beta1_bernouilli = self.generate_bernouilli(np.sum(counts['betas=betas']['raw']['00']), shots*n_repetitions)
+        execution_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
-        print('The statistic value is', statistic, 'and the corresponding pvalue is', pvalue)
+        print('The statistic value is', execution_stats, 'and the corresponding pvalue is', pvalue)
 
         time_statevector = time.time() - start_time
 
-        return [np.average(raw_counts['betas=betas']), time_statevector]
+        return [counts, time_statevector, execution_stats]
 
     def calculate_angles(self, deltas_dictionary, beta):
     
@@ -596,7 +604,7 @@ class QuantumMetropolis():
             exact_angles[key] = math.pi - 2 * math.asin(math.sqrt(probability))
 
         # Order angles by key
-        exact_angles = OrderedDict(sorted(exact_angles.items()))
+        exact_angles = collections.OrderedDict(sorted(exact_angles.items()))
 
         return exact_angles
 

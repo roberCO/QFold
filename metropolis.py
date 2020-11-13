@@ -8,23 +8,22 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, n_steps, number_angles, deltas_dict, tools):
+    def __init__(self, number_angles, deltas_dict, tools):
 
         self.tools = tools
-        self.n_steps = n_steps
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles/2)
 
         self.bits_rotation = self.tools.args.bits
         
         self.beta = self.tools.config_variables['beta']
-        self.beta_type = self.tools.config_variables['beta_variable']
+        self.beta_type = self.tools.config_variables['beta_type']
 
         self.rotatition_steps = 2**self.bits_rotation
         self.bits_number_angles = math.ceil(np.log2(number_angles))
 
 
-    def execute_metropolis(self):
+    def execute_metropolis(self, nW):
 
         #Final structure calculated with metropolis. This variable will be returned to angle calculator
 
@@ -40,7 +39,7 @@ class Metropolis():
             anglePsi_old.append(np.random.choice(self.rotatition_steps))
             anglePhi_old.append(np.random.choice(self.rotatition_steps))
 
-        for iteration in range(1, self.n_steps+1):
+        for iteration in range(1, nW+1):
 
             # initially the new angles are equal to the old (then one angle will be randomly modified)
             # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
@@ -82,7 +81,7 @@ class Metropolis():
             if self.beta_type == 'fixed':
                 beta_value = self.beta
             elif self.beta_type == 'variable':
-                beta_value = iteration * (self.beta / self.n_steps)
+                beta_value = iteration * (self.beta / nW)
             else:
                 print('<*> ERROR: Beta type wrong value. Beta type should be variable or fixed but it is', self.beta_type)
 

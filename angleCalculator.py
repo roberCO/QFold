@@ -69,7 +69,9 @@ class AngleCalculator():
                 probabilities_matrix = classical_metropolis.execute_metropolis(step)
 
             print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
-            if self.tools.args.mode == 'simulation' or self.tools.args.mode == 'simulation':
+            print(self.tools.args.mode)
+            if self.tools.args.mode == 'simulation' or self.tools.args.mode == 'experiment':
+                print('inside')
                 c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
 

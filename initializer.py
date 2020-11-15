@@ -278,10 +278,9 @@ class Initializer():
                 #Perform the rotations over a copy
                 copied_atoms = copy.deepcopy(atoms)
                 for at in copied_atoms:
-                    if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2 and aminoacids[0] != 'P':
+                    if at.c_type == 'N_backbone' and ((len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2) or self.tools.is_proline_N(at)):
                         nitro_start = at
-                    elif at.c_type == 'N_backbone' and self.tools.is_proline_N(at) and aminoacids[0] == 'P':
-                        nitro_start = at
+                        break
 
                 copied_backbone = self.tools.main_chain_builder([nitro_start], aminoacids)
 

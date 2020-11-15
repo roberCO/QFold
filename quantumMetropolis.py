@@ -578,7 +578,7 @@ class QuantumMetropolis():
         beta1_bernouilli = self.generate_bernouilli(int(np.sum(counts['betas=betas']['raw']['00'])), shots*n_repetitions)
         exec_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
-        execution_stats = 'The statistic value is ' + execution_stats + ' and the corresponding pvalue is '+ pvalue
+        execution_stats = 'The statistic value is ' + str(exec_stats) + ' and the corresponding pvalue is '+ str(pvalue)
 
         time_statevector = time.time() - start_time
 

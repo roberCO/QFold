@@ -7,7 +7,6 @@ import copy
 import math
 import json
 import argparse
-
 class Utils():
 
     def __init__(self, config_path=''):
@@ -26,6 +25,9 @@ class Utils():
     def get_config_variables(self):
         return self.config_variables
 
+    def set_psi_four_instance(self, psi_instance):
+        self.psi = psi_instance
+
     def parse_arguments(self):
 
         parser = argparse.ArgumentParser(description="Tool that combines AI and QC to solve protein folding problem.\n Example: python main.py glycylglycine GG 5 minifold simulation -c")
@@ -40,6 +42,9 @@ class Utils():
         parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
 
         self.args = parser.parse_args()
+
+        if self.args.id == None: self.args.id = -1
+
         return self.args
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
@@ -583,9 +588,15 @@ class Utils():
         psi_positions = position[int(len(position)/2):]
 
         # get atoms
-        atoms = []
+        atoms = self.psi.getAtomsFromProtein(self.args.protein_name, self.args.id)
+        atoms, backbone = self.calculateAtomConnection(atoms, self.args.aminoacids)
 
-        return [energy, configuration]
+        # rotate atoms to the phi/psi positions
+
+
+        energy = self.calculateEnergyOfRotation(atoms)
+
+        return [energy, atoms]
 
     def read_results_file(self, path_file):
 

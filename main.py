@@ -22,7 +22,6 @@ print('###################################################################\n')
 start_time = time.time()
 
 rotationSteps = 2**(int(args.bits))
-if args.id == None: args.id = -1
 
 config_variables = tools.get_config_variables()
 angleInitializer = initializer.Initializer(
@@ -48,6 +47,8 @@ psi = psiFour.PsiFour(
     config_variables['n_threads_pool'],
     config_variables['basis'])
 
+tools.set_psi_four_instance(psi)
+
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[args.protein_name][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
@@ -70,11 +71,17 @@ angleCalculator = angleCalculator.AngleCalculator(tools, initialization_stats)
 execution_time = time.time() - start_time
 
 print('\n\n********************************************************')
-print('**                       RESULTS                      **')
+print('**      RESULTS for ', args.protein_name,'with', args.bits,'bits      **')
 print('********************************************************')
 print('**                                                    **')
-print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
-print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+
+if args.mode == 'simulation' or args.mode == 'experiment':
+    print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
+    print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+elif args.mode == 'real':
+    print('** Quantum Metropolis   => Result confidence:', '{:.10f}'.format(min_q_tts['confidence']), '% **')
+    print('** Classical Metropolis => Result confidence:', '{:.10f}'.format(min_c_tts['value']), '% **')
+
 print('**                                                    **')
 print('** -------------------------------------------------- **')
 print('**                                                    **')

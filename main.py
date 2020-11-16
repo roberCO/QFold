@@ -83,11 +83,11 @@ if args.mode == 'simulation' or args.mode == 'experiment':
 
 elif args.mode == 'real':
 
-    print('** Quantum Metropolis   => Confidence:', '{:.10f}'.format(min_q_tts['value']), '%  **')
-    print('** Classical Metropolis => Confidence:', '{:.10f}'.format(min_c_tts['value']), '%  **')
+    print('** Quantum Metropolis   => Confidence:', '{:.10f}'.format(min_q_tts['value']*100), '% **')
+    print('** Classical Metropolis => Confidence:', '{:.10f}'.format(min_c_tts['value']*100), '% **')
     print('**                                                    **')
-    print('** Quantum success min energy:', min_q_tts['success'],'  **')
-    print('** Classical success min energy:', min_c_tts['success'],'**')
+    print('**      Quantum success min energy:', min_q_tts['success'],'      **')
+    print('**      Classical success min energy:', min_c_tts['success'],'      **')
 
 
 

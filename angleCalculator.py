@@ -111,12 +111,15 @@ class AngleCalculator():
             # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
             if self.tools.args.mode == 'real':
 
-                quantum_success = True if quantum_selected_position == index_min_energy else quantum_success == False
-                classical_success = True if classical_selected_position == index_min_energy else classical_success == False
+                quantum_success = False
+                classical_success = False
 
                 [quantum_selected_position, quantum_confidence] = self.get_selected_position_and_confidence(real_q_counts)
                 [quantum_energy, quantum_configuration] = self.initializer.get_energy_configuration_from_position(quantum_selected_position, self.tools.args)
+
+                if quantum_selected_position == index_min_energy: quantum_success = True 
                 quantum_stats = {'confidence':quantum_confidence, 'success':quantum_success, 'energy':quantum_energy, 'configuration':quantum_configuration}
+
 
                 [classical_selected_position, classical_confidence] = self.get_selected_position_and_confidence(real_c_counts)
                 
@@ -127,6 +130,7 @@ class AngleCalculator():
                 else:
                     [classical_energy, classical_configuration] = self.initializer.get_energy_configuration_from_position(classical_selected_position, self.tools.args)
                 
+                if classical_selected_position == index_min_energy: classical_success = True 
                 classical_stats = {'confidence':classical_confidence, 'success': classical_success, 'energy':classical_energy, 'configuration':classical_configuration}
 
                 self.tools.write_real_results(self.initialization_stats, quantum_stats, classical_stats)

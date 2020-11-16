@@ -61,7 +61,7 @@ class QuantumMetropolis():
 
         if self.tools.args.mode == 'experiment':
             self.device = self.login_ibmq()
-        elif self.tools.args.mode == 'simulation':
+        elif self.tools.args.mode == 'simulation' or self.tools.args.mode == 'real':
             self.device = Aer.get_backend('statevector_simulator')
             self.backend_options = {"method" : "statevector"}
 

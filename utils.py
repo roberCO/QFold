@@ -41,6 +41,7 @@ class Utils():
         self.args = parser.parse_args()
 
         if self.args.id == None: self.args.id = -1
+        if self.args.cost == None: self.args.cost = -1
 
         return self.args
 

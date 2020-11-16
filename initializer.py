@@ -435,13 +435,15 @@ class Initializer():
         psi_positions = position[int(len(position)/2):]
 
         # get atoms
-        atoms = self.psi.getAtomsFromProtein(initial_args.protein_name, initial_args.protein_id)
+        atoms = self.psi.getAtomsFromProtein(initial_args.protein_name, initial_args.id)
         atoms, backbone = self.tools.calculateAtomConnection(atoms, initial_args.aminoacids)
 
-        atoms = self.calculate_structure(atoms, initial_args.aminoacids, initial_args.method_rotations_generation, initial_args.bits, backbone, phi_positions, psi_positions)
+        atoms = self.calculate_structure(atoms, initial_args.aminoacids, initial_args.initialization, initial_args.bits, backbone, phi_positions, psi_positions)
         energy = self.calculateEnergyOfRotation(atoms)
 
-        return [energy, atoms]
+        configuration = self.convert_atoms_to_configuration(atoms)
+
+        return [energy, configuration]
 
     def calculate_structure(self, atoms, aminoacids, init_method, bits, backbone, phi_positions, psi_positions):
 
@@ -458,22 +460,13 @@ class Initializer():
         
         #random between -π and π
         if init_method == 'random':
-
-            print('\n## RANDOM initialization for protein structure ##\n')
-
-            # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
-            print('len_angles_phi',len(phi_angles_psi4))
             for _ in range(len(phi_angles_psi4)):
 
                 phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
                 psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
 
-                print('Angles', phis_initial_rotation,psis_initial_rotation)
-
         #minifold
         elif init_method == 'minifold':
-
-            print('\n## MINIFOLD initialization for protein structure ##\n')
 
             mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
             angles = mfold.predictAngles(aminoacids)
@@ -497,6 +490,13 @@ class Initializer():
             self.tools.rotate(angle_type = 'phi', angle = (phis_initial_rotation[index]/rotation_steps) * 2*math.pi, starting_atom = backbone[3*index+4], backbone = backbone)
 
         return atoms
+
+    def convert_atoms_to_configuration(self, atoms):
+
+        configuration = {}
+        for at in atoms: configuration[at.atomId] = dict(element=at.element, c_type=at.c_type, x=at.x, y=at.y, z=at.z)
+
+        return configuration
 
     def write_json(self, json_data, file_name, proteinName, numberBitsRotation, method_rotations_generation):
 

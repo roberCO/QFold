@@ -71,9 +71,7 @@ class AngleCalculator():
                 probabilities_matrix = classical_metropolis.execute_metropolis(step)
 
             print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
-            print(self.tools.args.mode)
             if self.tools.args.mode == 'simulation' or self.tools.args.mode == 'experiment':
-                print('inside')
                 c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.tools.config_variables['precision_solution'])
 
 
@@ -113,15 +111,30 @@ class AngleCalculator():
             # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
             if self.tools.args.mode == 'real':
 
+                quantum_success = True if quantum_selected_position == index_min_energy else quantum_success == False
+                classical_success = True if classical_selected_position == index_min_energy else classical_success == False
+
                 [quantum_selected_position, quantum_confidence] = self.get_selected_position_and_confidence(real_q_counts)
-                [quantum_configuration, quantum_energy] = self.initializer.get_energy_configuration_from_position(quantum_selected_position, self.tools.args)
-                quantum_stats = {'confidence':quantum_confidence, 'energy':quantum_energy, 'configuration':quantum_configuration}
+                [quantum_energy, quantum_configuration] = self.initializer.get_energy_configuration_from_position(quantum_selected_position, self.tools.args)
+                quantum_stats = {'confidence':quantum_confidence, 'success':quantum_success, 'energy':quantum_energy, 'configuration':quantum_configuration}
 
                 [classical_selected_position, classical_confidence] = self.get_selected_position_and_confidence(real_c_counts)
-                [classical_configuration, classical_energy] = self.initializer.get_energy_configuration_from_position(classical_selected_position)
-                classical_stats = {'confidence':classical_confidence, 'energy':classical_energy, 'configuration':classical_configuration}
+                
+                # if the classical position than the quantum, it is not necessary to recalculate the configuration and energy, it is the same
+                if classical_selected_position == quantum_selected_position:
+                    classical_energy = quantum_energy
+                    classical_configuration = quantum_configuration
+                else:
+                    [classical_energy, classical_configuration] = self.initializer.get_energy_configuration_from_position(classical_selected_position, self.tools.args)
+                
+                classical_stats = {'confidence':classical_confidence, 'success': classical_success, 'energy':classical_energy, 'configuration':classical_configuration}
 
                 self.tools.write_real_results(self.initialization_stats, quantum_stats, classical_stats)
+
+                min_q_tts['value'] = quantum_confidence
+                min_q_tts['success'] = quantum_success
+                min_c_tts['value'] = classical_confidence
+                min_c_tts['success'] = classical_success
 
                 break
         

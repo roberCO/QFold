@@ -47,8 +47,6 @@ psi = psiFour.PsiFour(
     config_variables['n_threads_pool'],
     config_variables['basis'])
 
-tools.set_psi_four_instance(psi)
-
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
 #The format should be energies[args.protein_name][numberBitsForRotation] ex: energiesGlycylglycine2.json
 try:
@@ -65,7 +63,7 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(tools, initialization_stats)
+angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
 [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(deltas_dict, index_min_energy)
 
 execution_time = time.time() - start_time

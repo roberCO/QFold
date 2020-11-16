@@ -3,16 +3,18 @@ import metropolis
 import quantumMetropolis
 import time
 import utils
-import collections, functools, operator 
+import collections, functools, operator
+import initializer
 
 class AngleCalculator():
 
-    def __init__(self, tools, initialization_stats):
+    def __init__(self, tools, angle_initializer, initialization_stats):
 
         self.tools = tools
         self.initialization_stats = initialization_stats
 
         self.n_angles = (len(self.tools.args.aminoacids) -1)*2
+        self.initializer = angle_initializer
 
     def calculate3DStructure(self, deltas_dict, index_min_energy):
 
@@ -110,11 +112,35 @@ class AngleCalculator():
 
             # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
             if self.tools.args.mode == 'real':
-                
-                self.tools.write_real_results(self.initialization_stats, real_q_counts, real_c_counts)
+
+                [quantum_selected_position, quantum_confidence] = self.get_selected_position_and_confidence(real_q_counts)
+                [quantum_configuration, quantum_energy] = self.initializer.get_energy_configuration_from_position(quantum_selected_position, self.tools.args)
+                quantum_stats = {'confidence':quantum_confidence, 'energy':quantum_energy, 'configuration':quantum_configuration}
+
+                [classical_selected_position, classical_confidence] = self.get_selected_position_and_confidence(real_c_counts)
+                [classical_configuration, classical_energy] = self.initializer.get_energy_configuration_from_position(classical_selected_position)
+                classical_stats = {'confidence':classical_confidence, 'energy':classical_energy, 'configuration':classical_configuration}
+
+                self.tools.write_real_results(self.initialization_stats, quantum_stats, classical_stats)
+
                 break
         
         return [min_q_tts, min_c_tts]
+
+    def get_selected_position_and_confidence(self, real_counts):
+
+        max_value = 0
+        position = 0
+        confidence = 0
+
+        for key in real_counts.keys():
+            if real_counts[key] > max_value:
+                max_value = real_counts[key]
+                position = key
+                confidence = real_counts[key]
+
+        return [position, confidence]
+
 
     def calculate_tts_from_probability_matrix(self, probabilities_matrix, index_min_energy, step, precision_solution):
 

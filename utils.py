@@ -25,9 +25,6 @@ class Utils():
     def get_config_variables(self):
         return self.config_variables
 
-    def set_psi_four_instance(self, psi_instance):
-        self.psi = psi_instance
-
     def parse_arguments(self):
 
         parser = argparse.ArgumentParser(description="Tool that combines AI and QC to solve protein folding problem.\n Example: python main.py glycylglycine GG 5 minifold simulation -c")
@@ -522,48 +519,15 @@ class Utils():
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
-    def write_real_results(self, initialization_stats, real_q_counts, real_c_counts):
+    def write_real_results(self, initialization_stats, quantum_stats, classical_stats):
 
         init_stats = {}
-        quantum_stats = {}
-        classical_stats = {}
 
         # initial stats of the execution configuration
         init_stats['phis_initial_rotation'] = initialization_stats['phis_initial_rotation']
         init_stats['psis_initial_rotation'] = initialization_stats['psis_initial_rotation']
         init_stats['w_steps'] = self.config_variables['w_real_mode']
         init_stats['repetitions'] = self.config_variables['number_repetitions_real_mode']
-
-        max_value = 0
-        position = 0
-        confidence = 0
-
-        for key in real_q_counts.keys():
-            if real_q_counts[key] > max_value:
-                max_value = real_q_counts[key]
-                position = key
-                confidence = real_q_counts[key]
-
-        # get energy and configuration from position for quantum results
-        [energy, configuration] = self.get_energy_configuration_from_position(position)
-
-        quantum_stats['confidence'] = confidence
-        quantum_stats['energy'] = energy
-        quantum_stats['configuration'] = configuration
-
-        max_value = 0
-        for key in real_c_counts.keys():
-            if real_c_counts[key] > max_value:
-                max_value = real_c_counts[key]
-                position = key
-                confidence = real_c_counts[key]
-
-        # get energy and configuration from position for classical results
-        [energy, configuration] = self.get_energy_configuration_from_position(position)
-        
-        classical_stats['confidence'] = confidence
-        classical_stats['energy'] = energy
-        classical_stats['configuration'] = configuration
 
         tts_json = {}
 
@@ -574,29 +538,6 @@ class Utils():
         json_name = self.config_variables['path_tts_plot']+'qfold_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
-
-    def get_energy_configuration_from_position(self, position):
-
-        energy = {}
-        configuration = {}
-
-        # calculate the structure (energy and configuration) of the protein from the position calculated by metropolis algorithms
-        # it is possible to know the protein structure because it has the initial position and how many degrees was rotated (position * number of rotation bits)
-
-        # first half of position string is phi positions and the other half is psi positions
-        phi_positions = position[:int(len(position)/2)]
-        psi_positions = position[int(len(position)/2):]
-
-        # get atoms
-        atoms = self.psi.getAtomsFromProtein(self.args.protein_name, self.args.id)
-        atoms, backbone = self.calculateAtomConnection(atoms, self.args.aminoacids)
-
-        # rotate atoms to the phi/psi positions
-
-
-        energy = self.calculateEnergyOfRotation(atoms)
-
-        return [energy, atoms]
 
     def read_results_file(self, path_file):
 

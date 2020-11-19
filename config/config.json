@@ -1,43 +1,45 @@
 {
-
-    "maximum_aminoacid_length": 200,
-    "window_size": 5,
-    "model_path": "./models/",
-    "initialization_option": "minifold",
-    "epochs": 3,
-    "batch_size": 16,
-    
-    "psi4_path": "/home/roberto/installations/psi4conda/bin/psi4",
-    "energy_method": "mp2",
-    "basis": "6-31g",
-    "input_filename_energy_psi4": "inputRotations",
-    "output_filename_energy_psi4": "outputRotations",
-    "precalculated_energies_path": "./precalculated_energies/",
-    "methods_initialization": ["minifold", "random", "original"],
-    "path_qiskit_token":"./config/qiskit_API_token.json",
-    "device_ibm_q": "ibmqx2",
-    "ibmq_shots": 8192,
-    "betas":[0.1, 1],
-
-    "color_quantum_minifold": "red",
-    "color_classical_minifold": "blue",
-    "color_quantum_random": "yellow",
-    "color_classical_random": "cyan",
-
-    "initial_step": 2,
-    "final_step": 3,
-    "path_tts_plot": "./results/",
-    "ancilla_bits": 4,
-    "number_iterations": 10000,
-    "beta": 10000,
-    "beta_type": "variable",
-    
-    "precision_solution": 0.9,
-
-    "n_threads_pool": 12
+  "maximum_aminoacid_length": 200,
+  "window_size": 5,
+  "model_path": "./models/",
+  "initialization_option": "minifold",
+  "epochs": 3,
+  "batch_size": 16,
+  "psi4_path": "/home/roberto/installations/psi4conda/bin/psi4",
+  "energy_method": "mp2",
+  "basis": "6-31g",
+  "input_filename_energy_psi4": "inputRotations",
+  "output_filename_energy_psi4": "outputRotations",
+  "precalculated_energies_path": "./precalculated_energies/",
+  "methods_initialization": [
+    "minifold",
+    "random",
+    "original"
+  ],
+  "path_qiskit_token": "./config/qiskit_API_token.json",
+  "device_ibm_q": "ibmqx2",
+  "hub": "ibm-q",
+  "group": "open",
+  "project": "main",
+  "ibmq_shots": 8192,
+  "betas": [
+    0.1,
+    1
+  ],
+  "color_quantum_minifold": "red",
+  "color_classical_minifold": "blue",
+  "color_quantum_random": "yellow",
+  "color_classical_random": "cyan",
+  "initial_step": 2,
+  "final_step": 3,
+  "w_real_mode": 20,
+  "number_repetitions_real_mode": 5,
+  "path_tts_plot": "./results/",
+  "ancilla_bits": 4,
+  "number_iterations": 10000,
+  "number_repetitions_ibmq": 4,
+  "beta": 9,
+  "beta_type": "variable",
+  "precision_solution": 0.9,
+  "n_threads_pool": 12
 }
-
-
-
-
-

@@ -7,7 +7,6 @@ import copy
 import math
 import json
 import argparse
-
 class Utils():
 
     def __init__(self, config_path=''):
@@ -40,6 +39,10 @@ class Utils():
         parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
 
         self.args = parser.parse_args()
+
+        if self.args.id == None: self.args.id = -1
+        if self.args.cost == None: self.args.cost = -1
+
         return self.args
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
@@ -471,15 +474,15 @@ class Utils():
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, inizialitation_stats, final_stats):
+    def write_tts(self, quantum_tts, classical_tts, initialization_stats, final_stats):
 
         tts_json = {}
 
-        tts_json['initial_step'] = initial_step
-        tts_json['final_step'] = final_step
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
-        tts_json['initialization_stats'] = inizialitation_stats
+        tts_json['initialization_stats'] = initialization_stats
         tts_json['final_stats'] = final_stats
 
         json_name = ''
@@ -488,6 +491,52 @@ class Utils():
         elif self.config_variables['beta_type'] == 'variable':
             json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         
+        with open(json_name, 'w') as outfile:
+            json.dump(tts_json, outfile)
+
+    def write_experiment_results(self, initialization_stats, experiment_result_matrix, execution_stats):
+
+        final_stats = {}
+        for experiment_beta_key in experiment_result_matrix.keys():
+            if experiment_beta_key == 'betas=betas':
+                for result_key in experiment_result_matrix[experiment_beta_key].keys():
+
+                    # the experiment counts are not in percentages but in number of executions
+                    # it is necessary to convert number of executions to percentage
+                    if result_key == 'raw':
+                        final_stats = {k:v/self.config_variables['ibmq_shots'] for k,v in experiment_result_matrix[experiment_beta_key][result_key].items()}
+                    else:
+                        final_stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]
+
+        tts_json = {}
+
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
+        tts_json['initialization_stats'] = initialization_stats
+        tts_json['execution_stats'] = execution_stats
+        tts_json['final_stats'] = final_stats
+
+        json_name = self.config_variables['path_tts_plot']+'tts_results_experiment_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
+        with open(json_name, 'w') as outfile:
+            json.dump(tts_json, outfile)
+
+    def write_real_results(self, initialization_stats, quantum_stats, classical_stats):
+
+        init_stats = {}
+
+        # initial stats of the execution configuration
+        init_stats['phis_initial_rotation'] = initialization_stats['phis_initial_rotation']
+        init_stats['psis_initial_rotation'] = initialization_stats['psis_initial_rotation']
+        init_stats['w_steps'] = self.config_variables['w_real_mode']
+        init_stats['repetitions'] = self.config_variables['number_repetitions_real_mode']
+
+        tts_json = {}
+
+        tts_json['initialization_stats'] = init_stats
+        tts_json['quantum_results'] = quantum_stats
+        tts_json['classical_results'] = classical_stats
+
+        json_name = self.config_variables['path_tts_plot']+'qfold_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 

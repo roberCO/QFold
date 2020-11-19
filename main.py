@@ -3,6 +3,7 @@ import initializer
 import angleCalculator
 import psiFour
 import utils
+import openFermion
 
 import time
 import datetime
@@ -22,7 +23,6 @@ print('###################################################################\n')
 start_time = time.time()
 
 rotationSteps = 2**(int(args.bits))
-if args.id == None: args.id = -1
 
 config_variables = tools.get_config_variables()
 angleInitializer = initializer.Initializer(
@@ -64,17 +64,33 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(tools, initialization_stats)
+angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
 [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(deltas_dict, index_min_energy)
+
+if args.cost != -1:
+    open_fermion = openFermion.OpenFermion()
 
 execution_time = time.time() - start_time
 
 print('\n\n********************************************************')
-print('**                       RESULTS                      **')
+print('**       RESULTS for ', args.protein_name,'with', args.bits,'bits       **')
 print('********************************************************')
 print('**                                                    **')
-print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
-print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+
+if args.mode == 'simulation' or args.mode == 'experiment':
+    print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
+    print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+
+elif args.mode == 'real':
+
+    print('** Quantum Metropolis   => Confidence:', '{:.10f}'.format(min_q_tts['value']*100), '% **')
+    print('** Classical Metropolis => Confidence:', '{:.10f}'.format(min_c_tts['value']*100), '% **')
+    print('**                                                    **')
+    print('**      Quantum success min energy:', min_q_tts['success'],'      **')
+    print('**      Classical success min energy:', min_c_tts['success'],'      **')
+
+
+
 print('**                                                    **')
 print('** -------------------------------------------------- **')
 print('**                                                    **')

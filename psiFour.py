@@ -24,7 +24,6 @@ class PsiFour():
 
         #execute psi4
         self.executePsiCommand()
-        print('Psi4 file is ready')
 
         #read/parse outputfile
         [atoms, protein_id] = self.parsePsiOutputFile(protein)

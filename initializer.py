@@ -152,6 +152,14 @@ class Initializer():
                 phis_initial_rotation.append(angle[0])
                 psis_initial_rotation.append(angle[1])
 
+        #Rotate all angles to get the initial protein structure
+        if method_rotations_generation != 'original':
+
+            for index in range(len(phis_initial_rotation)):
+
+                self.tools.rotate(angle_type = 'psi', angle = psis_initial_rotation[index], starting_atom = backbone[3*index+2], backbone = backbone)
+                self.tools.rotate(angle_type = 'phi', angle = phis_initial_rotation[index], starting_atom = backbone[3*index+4], backbone = backbone) 
+
         #Calculate the precision in constrast of the real value calculated by psi4
         [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
 
@@ -278,10 +286,9 @@ class Initializer():
                 #Perform the rotations over a copy
                 copied_atoms = copy.deepcopy(atoms)
                 for at in copied_atoms:
-                    if at.c_type == 'N_backbone' and len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2 and aminoacids[0] != 'P':
+                    if at.c_type == 'N_backbone' and ((len(at.linked_to_dict['C']) == 1 and len(at.linked_to_dict['H']) == 2) or self.tools.is_proline_N(at)):
                         nitro_start = at
-                    elif at.c_type == 'N_backbone' and self.tools.is_proline_N(at) and aminoacids[0] == 'P':
-                        nitro_start = at
+                        break
 
                 copied_backbone = self.tools.main_chain_builder([nitro_start], aminoacids)
 
@@ -414,6 +421,82 @@ class Initializer():
             all_angle_planes.append(all_angle_atoms)
 
         return all_angle_planes
+    
+    def get_energy_configuration_from_position(self, position, initial_args):
+
+        energy = 0
+
+        # calculate the structure (energy and configuration) of the protein from the position calculated by metropolis algorithms
+        # it is possible to know the protein structure because it has the initial position and how many degrees was rotated (position * number of rotation bits)
+        # First we calculate all the angles. Psi uses the first atom from the next aminoacid, whereas phi uses the last from the previous        
+
+        # first half of position string is phi positions and the other half is psi positions
+        phi_positions = position[:int(len(position)/2)]
+        psi_positions = position[int(len(position)/2):]
+
+        # get atoms
+        atoms = self.psi.getAtomsFromProtein(initial_args.protein_name, initial_args.id)
+        atoms, backbone = self.tools.calculateAtomConnection(atoms, initial_args.aminoacids)
+
+        atoms = self.calculate_structure(atoms, initial_args.aminoacids, initial_args.initialization, initial_args.bits, backbone, phi_positions, psi_positions)
+        energy = self.calculateEnergyOfRotation(atoms)
+
+        configuration = self.convert_atoms_to_configuration(atoms)
+
+        return [energy, configuration]
+
+    def calculate_structure(self, atoms, aminoacids, init_method, bits, backbone, phi_positions, psi_positions):
+
+        phis_initial_rotation = []
+        psis_initial_rotation = []
+        rotation_steps = pow(2, int(bits))
+
+        psi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j:3*j+4],'psi') for j in range(len(backbone)//3 - 1)]
+        phi_angles_psi4 = [self.tools.calculateAngle(backbone[3*j-1:3*j+3],'phi') for j in range(1, len(backbone)//3)]
+
+        
+        #Set angles to 0. PSI4 returns the optimal angles for the protein, so it is necessary to set these angles to 0
+        atoms = self.flat_protein(atoms, backbone, phi_angles_psi4, psi_angles_psi4)
+        
+        #random between -π and π
+        if init_method == 'random':
+            for _ in range(len(phi_angles_psi4)):
+
+                phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
+                psis_initial_rotation.append(random.uniform(-math.pi, math.pi))
+
+        #minifold
+        elif init_method == 'minifold':
+
+            mfold = minifold.Minifold(self.model_path, self.window_size, self.max_aa_length)
+            angles = mfold.predictAngles(aminoacids)
+
+            for angle in angles:
+
+                phis_initial_rotation.append(angle[0])
+                psis_initial_rotation.append(angle[1])
+
+
+        # rotate to the initial position
+        for index in range(len(phis_initial_rotation)):
+
+            self.tools.rotate(angle_type = 'psi', angle = psis_initial_rotation[index], starting_atom = backbone[3*index+2], backbone = backbone)
+            self.tools.rotate(angle_type = 'phi', angle = phis_initial_rotation[index], starting_atom = backbone[3*index+4], backbone = backbone)
+
+        # rotate to the selected position
+        for index in range(len(phi_positions)):
+
+            self.tools.rotate(angle_type = 'psi', angle = (psis_initial_rotation[index]/rotation_steps) * 2*math.pi, starting_atom = backbone[3*index+2], backbone = backbone)
+            self.tools.rotate(angle_type = 'phi', angle = (phis_initial_rotation[index]/rotation_steps) * 2*math.pi, starting_atom = backbone[3*index+4], backbone = backbone)
+
+        return atoms
+
+    def convert_atoms_to_configuration(self, atoms):
+
+        configuration = {}
+        for at in atoms: configuration[at.atomId] = dict(element=at.element, c_type=at.c_type, x=at.x, y=at.y, z=at.z)
+
+        return configuration
 
     def write_json(self, json_data, file_name, proteinName, numberBitsRotation, method_rotations_generation):
 

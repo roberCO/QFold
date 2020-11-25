@@ -112,6 +112,7 @@ def plot_q_vs_c_slope(data):
 
     # the function, which is y = x^2 here
     y_fit = b*x_fit**a
+    print('a,b',a,b)
 
     source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend))
         #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')
@@ -124,7 +125,9 @@ def plot_q_vs_c_slope(data):
     x_diag = [1, 10**6]
     y_diag = [1, 10**6]
     plot_q_c_slop.line(x_diag, y_diag, line_width=2, line_color='red', line_dash="dashed")
-    plot_q_c_slop.line(x_fit, y_fit, line_width=2, line_color='green', line_dash="dashed")
+
+    fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
+    plot_q_c_slop.line(x="x", y="y", line_color="line_color", legend_group='legend', source=fit_source)
 
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None

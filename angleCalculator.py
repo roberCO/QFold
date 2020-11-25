@@ -33,8 +33,8 @@ class AngleCalculator():
 
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
-            elif self.tools.args.mode == 'experiment':
-                [experiment_result_matrix, time_statevector, execution_stats] = quantum_metropolis.execute_real_hardware(step)
+            elif self.tools.args.mode == 'experiment': # This has to be changed
+                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(step)
             elif self.tools.args.mode == 'real':
                 n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
                 accum_probabilities = []
@@ -106,7 +106,7 @@ class AngleCalculator():
                 c_accumulated_tts.append(c_tts)
                 if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
 
-                self.tools.write_experiment_results(self.initialization_stats, experiment_result_matrix, execution_stats)
+                self.tools.write_experiment_results(self.initialization_stats, experiment_result_matrix, execution_stats, measures_dict)
 
             # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
             if self.tools.args.mode == 'real':

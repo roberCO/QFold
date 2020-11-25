@@ -7,6 +7,7 @@ import copy
 import math
 import json
 import argparse
+import itertools
 class Utils():
 
     def __init__(self, config_path=''):
@@ -494,9 +495,10 @@ class Utils():
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
-    def write_experiment_results(self, initialization_stats, experiment_result_matrix, execution_stats):
+    def write_experiment_results(self, initialization_stats, experiment_result_matrix, execution_stats, measures_dict):
 
         final_stats = {}
+        print('experiment_result_matrix',experiment_result_matrix)
         for experiment_beta_key in experiment_result_matrix.keys():
             if experiment_beta_key == 'betas=betas':
                 for result_key in experiment_result_matrix[experiment_beta_key].keys():
@@ -519,6 +521,67 @@ class Utils():
         json_name = self.config_variables['path_tts_plot']+'tts_results_experiment_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
+
+        # write the cummulative results
+
+        with open('./results/measurements.json', 'r') as outfile2: 
+            dictionary = json.load(outfile2)
+        try:
+            print('\n tried')
+
+            _ = dictionary[self.args.aminoacids] # If we didn't have data on this peptide, we will get an error.
+            dictionary = self.mergeDict(dictionary,measures_dict)
+        except:
+            print('\n raised exception')
+            dictionary[self.args.aminoacids] = {}
+            print('dictionary', dictionary)
+            for beta in measures_dict.keys():
+                dictionary[self.args.aminoacids][float(beta)] = {}
+                print('dictionary', dictionary)
+                dictionary[self.args.aminoacids][float(beta)]['measurements'] = measures_dict[beta]
+                print('dictionary', dictionary)
+        betas = measures_dict.keys() 
+
+        for beta in betas:
+            if float(beta) > 1e-7:
+                dictionary[self.args.aminoacids][float(beta)]['noiseless'] = final_stats
+            else:
+                dictionary[self.args.aminoacids][float(beta)]['noiseless'] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
+
+
+        with open('./results/measurements.json', 'w') as outfile2: 
+            json.dump(dictionary, outfile2)
+
+    def mergeDict(self,dict1,dict2):
+        '''dict1[GG][str(beta)]['measurement'][00] is the older dictionary, and dict2[float(beta)][00] is the new measurements'''
+        dict4 = {}
+        dict4[self.args.aminoacids] = {}
+        for key in dict1:
+            if key != self.args.aminoacids:
+                dict4[key] = dict1[key]
+
+        print('dict4', dict4)
+        for beta in dict2.keys():
+            dict4[self.args.aminoacids][beta] = {'measurements': {}, 'noiseless': {}}
+
+        for beta, meas in itertools.product(dict2.keys(), ['00','01','10','11']):
+            dict4[self.args.aminoacids][float(beta)]['measurements'][meas] = dict2[beta][meas] + dict1[self.args.aminoacids][str(beta)]['measurements'][meas]
+            dict4[self.args.aminoacids][float(beta)]['noiseless'][meas] = dict1[self.args.aminoacids][str(beta)]['noiseless'][meas]
+        return dict4
+
+
+    def list_of_dict_2_dict_of_lists(self, lista):
+        list00 = []
+        list01 = []
+        list10 = []
+        list11 = []
+        for dic in lista:
+            print('dic',dic)
+            list00.append(dic['00'])
+            list01.append(dic['01'])
+            list10.append(dic['10'])
+            list11.append(dic['11'])
+        return {'00':list00, '01':list01, '10': list10, '11': list11}
 
     def write_real_results(self, initialization_stats, quantum_stats, classical_stats):
 

@@ -18,7 +18,6 @@ from qiskit.providers.aer import noise
 import beta_precalc_TruthTableOracle
 
 # Import measurement calibration functions
-import mitiq
 import scipy
 
 class QuantumMetropolis():
@@ -531,6 +530,7 @@ class QuantumMetropolis():
         start_time = time.time()
         shots = self.tools.config_variables['ibmq_shots']
         n_repetitions = self.tools.config_variables['number_repetitions_ibmq']
+        n_repetitions_zero_beta = self.tools.config_variables['number_repetitions_ibmq_zero_beta']
 
         # prepare dictionary with deltas
         deltas_dictionary = collections.OrderedDict(sorted(self.input_oracle.items()))
@@ -539,18 +539,43 @@ class QuantumMetropolis():
             deltas[key[:3]] = value
         
         counts = {}
+        measures_dict = {}
 
-        # calculate all counts for beta = 0 and the selected betas by configuration file
-        for index in range(2):
+        # First we load all the previous results so that for beta = 0 we do not have to recalculate more than necessary
+        with open('./results/measurements.json', 'r') as outfile2: 
+            dictionary = json.load(outfile2)
+
+        try: # the dictionary has the form dictionary['--']['0-0']['measurements'] = {'00': [1329,3213 ...], '01':...}
+            beta0_counts = dictionary['--']['0-0']['measurements'] 
+            len_beta0_counts00  = len(beta0_counts['00'])
+
+            if len_beta0_counts00 >= n_repetitions_zero_beta:
+                measures_dict['0-0'] = beta0_counts
+                runs = [1]
+
+            else:
+                beta0_n_repetitions = n_repetitions_zero_beta - len_beta0_counts00
+                runs = range(2)
+
+        except:
+            beta0_counts = {'00': [], '01':[], '10':[], '11':[]}
+            beta0_n_repetitions = n_repetitions_zero_beta
+            runs = range(2)
+
+        
+        # Then we execute the needed runs
+        for index in runs:
 
             # in the first iteration (index=0) it uses the betas = 0. In the second iteration, it uses the betas of the config file
             if index == 0:
                 betas = [1e-10,1e-10]
-                key_name_counts = 'betas=0'    
+                key_name_counts = 'betas=0'
+                reps = beta0_n_repetitions  
             
             else:
                 betas = self.tools.config_variables['betas']
                 key_name_counts = 'betas=betas'
+                reps = n_repetitions
 
             counts[key_name_counts] = {}
             # Let us first analyse the noise of the circuit for the ideal case of betas = 0, which should imply .25 chance of success
@@ -562,27 +587,36 @@ class QuantumMetropolis():
 
             # get the RAW counts
             raw_counts = []
-            for i in range(n_repetitions):
+            for i in range(reps):
                 print("<i> Waiting to get access to IBMQ processor. Betas = ", betas, ". Iteration = ",i)
-                raw_counts.append(execute(qc, self.backend, shots=shots).result().get_counts())
+                #raw_counts.append(execute(qc, self.backend, shots=shots).result().get_counts())
+                raw_counts.append(execute(qc, Aer.get_backend('qasm_simulator'), shots=shots).result().get_counts())
                 print("<i> Circuit in IBMQ executed")
 
-            # sum all values of the same position and get the mean of each position to store in counts
+            if index == 0: # Notice that we will add here the measurements for beta =0 already saved in results.json
+                measures_dict['0-0']= self.tools.list_of_dict_2_dict_of_lists(raw_counts, beta0_counts = beta0_counts)
+            else:
+                measures_dict[str(betas[0]) + '-' +str(betas[1])]= self.tools.list_of_dict_2_dict_of_lists(raw_counts)
+
+           # sum all values of the same position and get the mean of each position to store in counts
             raw_counts = dict(functools.reduce(operator.add, map(collections.Counter, raw_counts)))
             raw_counts = {k:v/n_repetitions for k,v in raw_counts.items()}
             counts[key_name_counts]['raw'] = raw_counts
 
+
         # In order to see if there is some statistical difference between the two noise circuit (due to the value of beta and the angles)
         # we generate bernouilli distribuitions that follow the same statistics as those that we have measured
-        beta0_bernouilli = self.generate_bernouilli(int(np.sum(counts['betas=0']['raw']['00'])), shots*n_repetitions)
-        beta1_bernouilli = self.generate_bernouilli(int(np.sum(counts['betas=betas']['raw']['00'])), shots*n_repetitions)
+        betas = self.tools.config_variables['betas']
+        beta0_bernouilli = self.generate_bernouilli(int(sum(measures_dict['0-0']['00'])), shots*n_repetitions)
+        beta1_bernouilli = self.generate_bernouilli(int(sum(measures_dict[str(betas[0]) + '-' +str(betas[1])]['00'])), shots*n_repetitions)
         exec_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
-        execution_stats = 'The statistic value is ' + str(exec_stats) + ' and the corresponding pvalue is '+ str(pvalue)
+        execution_stats = 'The t-test statistic value for there being a significat average difference between measured processes with beta zero and non-zero is ' + str(exec_stats) + ' and the corresponding pvalue is '+ str(pvalue)
+        print('<i>', execution_stats)
 
         time_statevector = time.time() - start_time
 
-        return [counts, time_statevector, execution_stats]
+        return [counts, time_statevector, execution_stats, measures_dict]
 
     def calculate_angles(self, deltas_dictionary, beta):
     
@@ -715,7 +749,7 @@ class QuantumMetropolis():
         experiment = execute(aerqc, aerbackend, backend_options=backend_options)
         state_vector = Statevector(experiment.result().get_statevector(aerqc))
 
-        probabilities = state_vector.probabilities([3,2]) # IS this ordering ok?
+        probabilities = state_vector.probabilities([3,2]) # We are reporting the angles as (psi,phi); since qiskit inverts the reporting order
         noiseless_counts = {}
         noiseless_counts['00'] = float(probabilities[0])
         noiseless_counts['01'] = float(probabilities[1])

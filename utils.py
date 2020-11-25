@@ -522,65 +522,87 @@ class Utils():
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 
-        # write the cummulative results
+        ## Write the cummulative results
 
         with open('./results/measurements.json', 'r') as outfile2: 
             dictionary = json.load(outfile2)
+
+
         try:
-            print('\n tried')
 
             _ = dictionary[self.args.aminoacids] # If we didn't have data on this peptide, we will get an error.
             dictionary = self.mergeDict(dictionary,measures_dict)
-        except:
-            print('\n raised exception')
-            dictionary[self.args.aminoacids] = {}
-            print('dictionary', dictionary)
-            for beta in measures_dict.keys():
-                dictionary[self.args.aminoacids][float(beta)] = {}
-                print('dictionary', dictionary)
-                dictionary[self.args.aminoacids][float(beta)]['measurements'] = measures_dict[beta]
-                print('dictionary', dictionary)
-        betas = measures_dict.keys() 
 
-        for beta in betas:
-            if float(beta) > 1e-7:
-                dictionary[self.args.aminoacids][float(beta)]['noiseless'] = final_stats
+        except:
+
+            dictionary[self.args.aminoacids] = {}
+
+            for betas in measures_dict.keys():
+
+                if betas != '0-0':
+                    dictionary[self.args.aminoacids][betas] = {}
+                    dictionary[self.args.aminoacids][betas]['measurements'] = measures_dict[betas]
+
+                else:
+                    dictionary['--'] = {}
+                    dictionary['--']['0-0'] = {}
+                    dictionary['--']['0-0']['measurements'] = measures_dict['0-0']
+  
+
+        for betas in measures_dict.keys():
+            if betas != '0-0':
+                dictionary[self.args.aminoacids][betas]['noiseless'] = final_stats
             else:
-                dictionary[self.args.aminoacids][float(beta)]['noiseless'] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
+                dictionary['--']['0-0']['noiseless'] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
 
 
         with open('./results/measurements.json', 'w') as outfile2: 
             json.dump(dictionary, outfile2)
 
     def mergeDict(self,dict1,dict2):
-        '''dict1[GG][str(beta)]['measurement'][00] is the older dictionary, and dict2[float(beta)][00] is the new measurements'''
+        '''dict1[GG][betas]['measurement'][00] is the older dictionary, and dict2[betas][00] is the new measurements'''
         dict4 = {}
         dict4[self.args.aminoacids] = {}
+        dict4['--'] = {}
+
         for key in dict1:
-            if key != self.args.aminoacids:
+            if key != self.args.aminoacids and key != '--':
                 dict4[key] = dict1[key]
 
-        print('dict4', dict4)
-        for beta in dict2.keys():
-            dict4[self.args.aminoacids][beta] = {'measurements': {}, 'noiseless': {}}
+        for aas in [self.args.aminoacids, '--']:
 
-        for beta, meas in itertools.product(dict2.keys(), ['00','01','10','11']):
-            dict4[self.args.aminoacids][float(beta)]['measurements'][meas] = dict2[beta][meas] + dict1[self.args.aminoacids][str(beta)]['measurements'][meas]
-            dict4[self.args.aminoacids][float(beta)]['noiseless'][meas] = dict1[self.args.aminoacids][str(beta)]['noiseless'][meas]
+            for betas in dict2.keys():
+                if (aas != '--' and betas != '0-0') or (aas == '--' and betas == '0-0'):
+                    dict4[aas][betas] = {'measurements': {}, 'noiseless': {}}
+
+            for betas, meas in itertools.product(dict2.keys(), ['00','01','10','11']):
+
+                if aas != '--' and betas != '0-0':
+                    dict4[aas][betas]['measurements'][meas] = dict2[betas][meas] + dict1[aas][betas]['measurements'][meas]
+                    dict4[aas][betas]['noiseless'][meas] = dict1[self.args.aminoacids][betas]['noiseless'][meas]
+
+                elif aas == '--' and betas == '0-0':
+                    dict4[aas][betas]['measurements'][meas] = dict2[betas][meas]
+                    dict4[aas][betas]['noiseless'][meas] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
+
         return dict4
 
 
-    def list_of_dict_2_dict_of_lists(self, lista):
+    def list_of_dict_2_dict_of_lists(self, lista, beta0_counts = None):
         list00 = []
         list01 = []
         list10 = []
         list11 = []
         for dic in lista:
-            print('dic',dic)
             list00.append(dic['00'])
             list01.append(dic['01'])
             list10.append(dic['10'])
             list11.append(dic['11'])
+        if beta0_counts != None:
+            list00 += beta0_counts['00']
+            list01 += beta0_counts['01']
+            list10 += beta0_counts['10']
+            list11 += beta0_counts['11']
         return {'00':list00, '01':list01, '10': list10, '11': list11}
 
     def write_real_results(self, initialization_stats, quantum_stats, classical_stats):

@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, '/home/roberto/Escritorio/qfold/QFold/')
+sys.path.insert(1, '/Users/pablo/Documents/GitHub/QFold/')
 from os import listdir
 from os.path import isfile, join
 import utils
@@ -7,6 +7,7 @@ import utils
 from plot_minifold_vs_random import plot_m_vs_r
 from plot_tts_evolution import plot_tts_ev, plot_tts_ev_bits
 from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope
+from plot_hardware_probability_difs import plot_hardware_prob_difs
 from stadistics_calculator import calculate_stats
 
 import json
@@ -23,8 +24,8 @@ config_variables = tools.get_config_variables()
 # list elements to read
 input_files = [f for f in listdir(config_variables['path_tts_plot']) if isfile(join(config_variables['path_tts_plot'], f))]
 results = {}
-for input_name in input_files:
-    results.update(tools.read_results_data(input_name))
+#for input_name in input_files:
+#    results.update(tools.read_results_data(input_name))
 
 # generate plot of minifold vs random inizialization mode
 #plot_m_vs_r(results)
@@ -39,9 +40,12 @@ for input_name in input_files:
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)
 
+# generate plot of hardware measurements
+plot_hardware_prob_difs(tools)
+
 [stats, tts_tables] = calculate_stats(results)
 
-for table in tts_tables:
-    print(table, '\n')
+#for table in tts_tables:
+#    print(table, '\n')
 
 print(stats)

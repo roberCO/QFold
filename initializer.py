@@ -248,7 +248,7 @@ class Initializer():
                     deltasJson['deltas'][binary_key] = delta
 
         deltasJson['initial_min_energy'] = min_energy
-        deltasJson['index_min_energy'] = index_min_energy.replace(' ', '')
+        deltasJson['index_min_energy'] = index_min_energy.replace(' ', '-')
 
         return deltasJson
 

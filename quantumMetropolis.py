@@ -10,6 +10,7 @@ from qiskit import QuantumCircuit, execute, Aer
 from qiskit.circuit import QuantumRegister, Qubit, Gate
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from qiskit.quantum_info import Statevector
+from qiskit.compiler import transpile
 
 import beta_precalc_TruthTableOracle
 
@@ -490,6 +491,10 @@ class QuantumMetropolis():
 
             result = int(key_int/denominator)
             key_str += str(result)
+            
+            # if not the last step, include a character to separate the angles
+            if index_angle != n_angles-1:
+                key_str += '-'
 
             # the key_int value is necessary to be updated
             key_int -= result * denominator

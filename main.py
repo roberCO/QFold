@@ -100,7 +100,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
         if p_t >= 1:
             result = 1
         elif p_t == 0:
-            result = 9999, step
+            result = 9999
         else:
             result = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
 

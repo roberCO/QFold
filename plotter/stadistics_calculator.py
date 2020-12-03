@@ -16,14 +16,20 @@ def calculate_mean_precision(data):
     random_tts = []
     random_precision = []
 
+    quantum_tts = []
+    classical_tts = []
+
     for key in data.keys():
+
+        quantum_tts.append(data[key]['min_tts_q'])
+        classical_tts.append(data[key]['min_tts_c'])
 
         if 'minifold' in key:
 
             minifold_tts.append(data[key]['min_tts'])
             minifold_precision.append(data[key]['precision'])
 
-        if 'random' in key:
+        elif 'random' in key:
 
             random_tts.append(data[key]['min_tts'])
             random_precision.append(data[key]['precision'])
@@ -33,6 +39,8 @@ def calculate_mean_precision(data):
     mean_stats['minifold_tts'] = np.mean(minifold_tts)
     mean_stats['random_precision'] = np.mean(random_precision)
     mean_stats['random_tts'] = np.mean(random_tts)
+    mean_stats['quantum_tts'] = np.mean(quantum_tts)
+    mean_stats['classical_tts'] = np.mean(classical_tts)
 
     return mean_stats
     

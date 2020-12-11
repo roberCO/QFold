@@ -14,6 +14,7 @@
     "output_filename_energy_psi4": "outputRotations",
     "precalculated_energies_path": "./precalculated_energies/",
     "methods_initialization": ["minifold", "random"],
+    "oracle_option":"qfold_oracle",
 
     "color_quantum_minifold": "red",
     "color_classical_minifold": "blue",

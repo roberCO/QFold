@@ -68,6 +68,7 @@ angleCalculator = angleCalculator.AngleCalculator(
     args.bits, 
     config_variables['ancilla_bits'], 
     config_variables['number_iterations'],
+    config_variables['oracle_option'],
     len(args.aminoacids)
     )
 

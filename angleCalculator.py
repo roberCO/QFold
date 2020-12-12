@@ -6,12 +6,13 @@ import time
 
 class AngleCalculator():
 
-    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, number_aminoacids):
+    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, oracle_option, number_aminoacids):
 
         self.bits_rotation = bits_rotation
         self.rotation_steps = 2**bits_rotation
         self.n_ancilla_bits = n_ancilla_bits
         self.n_iterations = number_iterations
+        self.oracle_option = oracle_option
         self.number_aminoacids = number_aminoacids
 
         self.qTools = quantumUtils.QuantumUtils()
@@ -22,7 +23,7 @@ class AngleCalculator():
         #Quantum calculation option for 3D structure
         if option == 0: 
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, deltas_dict)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, self.oracle_option, deltas_dict)
             
             start_time = time.time()
             [result, time_statevector] = qMetropolis.execute_quantum_metropolis_n()

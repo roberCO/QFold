@@ -1,7 +1,6 @@
 from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
 from sympy.combinatorics.graycode import GrayCode, gray_to_bin, bin_to_gray
 from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit
-import utils
 from collections import OrderedDict
 
 import math
@@ -9,40 +8,35 @@ import numpy as np
 
 class Beta_precalc_TruthTableOracle():
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
-    def __init__(self, deltas_dictionary, beta, in_bits, out_bits, optimization=False, mct_mode='noancilla'):
+    def __init__(self, deltas_dictionary, out_bits, optimization=False, mct_mode='noancilla'):
 
-        self.tools = utils.Utils()
-
-        self.beta = beta
-        self.in_bits = in_bits
         self.out_bits = out_bits
         self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
 
-        self.angles = self.generate_angles_codification()
 
-    def generate_oracle(self, oracle_option, optimization=False, mct_mode='noancilla'):
+    def generate_oracle(self, oracle_option, beta, in_bits, optimization=False, mct_mode='noancilla'):
+
+        angles = self.generate_angles_codification(beta, in_bits)
 
         if oracle_option == 'qfold_oracle':
-
-            return self.generate_qfold_oracle(self.angles)
+            oracle_circuit = self.generate_qfold_oracle(angles)
 
         elif oracle_option == 'truthtable_oracle':
-
-            truth_table_oracle = self.Precalc_TruthTableOracle(self.angles, optimization, mct_mode, self.out_bits)
+            truth_table_oracle = self.Precalc_TruthTableOracle(angles, optimization, mct_mode, self.out_bits)
 
             # Construct an instruction for the oracle
             truth_table_oracle.construct_circuit()
-            truth_table_oracle_circuit = truth_table_oracle.circuit
+            oracle_circuit = truth_table_oracle.circuit
 
-            #print(oracle_circuit)
-            return truth_table_oracle_circuit.to_instruction()
+        #print(oracle_circuit)
+        return oracle_circuit.to_instruction()
 
-    def generate_angles_codification(self):
+    def generate_angles_codification(self, beta, in_bits):
 
         angles = {}
 
         # If there are only two angles, we need to eliminate the penultimate digit of the keys:
-        if len(list(self.deltas_dictionary.keys())[0]) == self.in_bits + 1:
+        if len(list(self.deltas_dictionary.keys())[0]) == in_bits + 1:
             deltas = {}
             for (key, value) in list(self.deltas_dictionary.items()):
                 deltas[key[:-2]+key[-1]] = value
@@ -52,7 +46,7 @@ class Beta_precalc_TruthTableOracle():
         for key in self.deltas_dictionary.keys():
 
             if self.deltas_dictionary[key] >= 0:
-                probability = math.exp(-self.beta * self.deltas_dictionary[key])
+                probability = math.exp(-beta * self.deltas_dictionary[key])
             else: 
                 probability = 1
             # Instead of encoding the angle corresponding to the probability, we will encode the angle theta such that sin^2(pi/2 - theta) = probability.
@@ -78,17 +72,29 @@ class Beta_precalc_TruthTableOracle():
     def generate_qfold_oracle(self, angles):
 
         # create a quantum circuit with the same length than the key of the deltas energies
-        oracle_circuit = QuantumCircuit()
+        oracle_key = QuantumRegister(len(list(self.deltas_dictionary.keys())[0]))
+        oracle_value = QuantumRegister(len(list(angles.keys())[0]))
+        oracle_circuit = QuantumCircuit(oracle_key, oracle_value)
 
         for key in self.deltas_dictionary.keys():
             
             # apply x gates to the 0s in the key
-            for key_bit in key:
-                if key_bit == '0':
-                    oracle_circuit.x()
+            for key_bit_index in range(len(key)):
+                if key[key_bit_index] == '0':
+                    oracle_circuit.x(oracle_key[key_bit_index])
 
             # apply mcx gates with the 1s in the angles (control the whole key)
+            angle = angles[key]
+            for angle_bit_index in range(len(angle)):
+                if angle[angle_bit_index] == '1':
+                    oracle_circuit.mcx(oracle_key, oracle_value[angle_bit_index])
 
+            # apply x gates to the 0s in the key
+            for key_bit_index in range(len(key)):
+                if key[key_bit_index] == '0':
+                    oracle_circuit.x(oracle_key[key_bit_index])
+
+        return oracle_circuit
 
     class Precalc_TruthTableOracle(TruthTableOracle):
 
@@ -98,7 +104,7 @@ class Beta_precalc_TruthTableOracle():
 
             # Calculate the bitmap using the dictionary of deltas
             self.bitmap = self.calculate_bitmap(angles)
-            super().__init__(self.bitmap, optimization, mct_mode).to_instructions()
+            super().__init__(self.bitmap, optimization, mct_mode)
 
         def calculate_bitmap(self, angles):
             new_bitmap = []

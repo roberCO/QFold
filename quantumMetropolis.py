@@ -17,7 +17,7 @@ import beta_precalc_TruthTableOracle
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, input_oracle):
+    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, oracle_option, input_oracle):
 
         #Global variables
 
@@ -33,6 +33,7 @@ class QuantumMetropolis():
         self.n_angles = n_angles
         self.beta = beta
         self.beta_type = beta_type
+        self.oracle_option = oracle_option
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
@@ -254,7 +255,7 @@ class QuantumMetropolis():
         for i in range(ancilla.size-1,-1,-1): # See how to perform an rx rotation in https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
             circuit.cu3(theta = -math.pi*2**(i-ancilla.size), phi  = 0, lam = 0, control_qubit = ancilla[i], target_qubit = coin)
     
-    def coin_flip_func_n(self, oracle):
+    def coin_flip_func_n(self, oracle_gate):
         
         '''
         Defines de coin_flip_gate using the oracle that is provided on the moment.
@@ -262,13 +263,6 @@ class QuantumMetropolis():
         oracle.variable_register should have size angle_phi.size + angle_psi.size + move_id.size + move_value.size
         oracle.output_register should have size self.probability_bits
         '''
-
-        # Construct an instruction for the oracle
-        oracle.construct_circuit()
-        oracle_circuit = oracle.circuit
-
-        #print(oracle_circuit)
-        oracle_gate = oracle_circuit.to_instruction()
 
         # Let us create a circuit for coin_flip
         cf_angles = []
@@ -424,18 +418,19 @@ class QuantumMetropolis():
         for g_angle in g_angles:
             qc.h(g_angle)
 
+        oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, out_bits = self.probability_bits)
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
         if self.beta_type == 'fixed':
 
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
+            oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1)
 
         for i in range(self.n_repetitions):
 
             if self.beta_type == 'variable':
                 beta_value =  i* (self.beta / self.n_repetitions)
                 #It creates one different oracle for each beta
-                oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
+                oracle = oracle_generator.generate_oracle(self.oracle_option, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1)
             
             W_gate = self.W_func_n(oracle)
             

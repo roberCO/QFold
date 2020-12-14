@@ -47,7 +47,9 @@ class AngleCalculator():
                 # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
                 position_angles = ''
                 for index in range(len(phi)):
-                    position_angles += str(phi[index]) + str(psi[index])
+
+                    if index != 0: position_angles += '-'
+                    position_angles += str(phi[index]) + '-' + str(psi[index])
 
                 if position_angles in probabilities_matrix.keys():
                     probabilities_matrix[position_angles] += (1/self.n_iterations)

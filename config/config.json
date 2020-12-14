@@ -31,7 +31,7 @@
     
     "precision_solution": 0.9,
 
-    "n_threads_pool": 12
+    "n_threads_pool": 1
 }
 
 

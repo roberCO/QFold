@@ -26,8 +26,8 @@
     "path_tts_plot": "./results/",
     "ancilla_bits": 4,
     "number_iterations": 10000,
-    "beta": 10000,
-    "beta_type": "variable",
+    "beta": 1000,
+    "beta_type": "fixed",
     
     "precision_solution": 0.9,
 

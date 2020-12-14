@@ -8,15 +8,23 @@ import numpy as np
 
 class Beta_precalc_TruthTableOracle():
     '''Outputs the binary angle of rotation to get the correct probability. Tested ok'''
-    def __init__(self, deltas_dictionary, out_bits, optimization=False, mct_mode='noancilla'):
+    def __init__(self, deltas_dictionary, in_bits, out_bits, optimization=False, mct_mode='noancilla'):
 
         self.out_bits = out_bits
         self.deltas_dictionary = OrderedDict(sorted(deltas_dictionary.items()))
 
+        # If there are only two angles, we need to eliminate the penultimate digit of the keys:
+        if len(list(self.deltas_dictionary.keys())[0]) == in_bits + 1:
+            deltas = {}
+            for (key, value) in list(self.deltas_dictionary.items()):
+                deltas[key[:-2]+key[-1]] = value
+            self.deltas_dictionary = deltas
+        assert(2**len(list(self.deltas_dictionary.keys())[0]) == len(self.deltas_dictionary))
 
-    def generate_oracle(self, oracle_option, beta, in_bits, optimization=False, mct_mode='noancilla'):
 
-        angles = self.generate_angles_codification(beta, in_bits)
+    def generate_oracle(self, oracle_option, beta, optimization=False, mct_mode='noancilla'):
+
+        angles = self.generate_angles_codification(beta)
 
         if oracle_option == 'qfold_oracle':
             oracle_circuit = self.generate_qfold_oracle(angles)
@@ -31,17 +39,9 @@ class Beta_precalc_TruthTableOracle():
         #print(oracle_circuit)
         return oracle_circuit.to_instruction()
 
-    def generate_angles_codification(self, beta, in_bits):
+    def generate_angles_codification(self, beta):
 
         angles = {}
-
-        # If there are only two angles, we need to eliminate the penultimate digit of the keys:
-        if len(list(self.deltas_dictionary.keys())[0]) == in_bits + 1:
-            deltas = {}
-            for (key, value) in list(self.deltas_dictionary.items()):
-                deltas[key[:-2]+key[-1]] = value
-            self.deltas_dictionary = deltas
-        assert(2**len(list(self.deltas_dictionary.keys())[0]) == len(self.deltas_dictionary))
 
         for key in self.deltas_dictionary.keys():
 
@@ -67,13 +67,16 @@ class Beta_precalc_TruthTableOracle():
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
             angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
 
+            #if key == '1011001001':
+            #    print('<DEBUG> For key:', key, 'angle is:', angles[key])
+
         return angles
 
     def generate_qfold_oracle(self, angles):
 
         # create a quantum circuit with the same length than the key of the deltas energies
         oracle_key = QuantumRegister(len(list(self.deltas_dictionary.keys())[0]))
-        oracle_value = QuantumRegister(len(list(angles.keys())[0]))
+        oracle_value = QuantumRegister(len(list(angles.values())[0]))
         oracle_circuit = QuantumCircuit(oracle_key, oracle_value)
 
         for key in self.deltas_dictionary.keys():

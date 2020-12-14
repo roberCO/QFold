@@ -418,19 +418,19 @@ class QuantumMetropolis():
         for g_angle in g_angles:
             qc.h(g_angle)
 
-        oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, out_bits = self.probability_bits)
+        oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1, out_bits = self.probability_bits)
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
         if self.beta_type == 'fixed':
 
             #It creates one different oracle for each beta
-            oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1)
+            oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
 
         for i in range(self.n_repetitions):
 
             if self.beta_type == 'variable':
                 beta_value =  i* (self.beta / self.n_repetitions)
                 #It creates one different oracle for each beta
-                oracle = oracle_generator.generate_oracle(self.oracle_option, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1)
+                oracle = oracle_generator.generate_oracle(self.oracle_option, beta_value)
             
             W_gate = self.W_func_n(oracle)
             

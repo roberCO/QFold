@@ -18,11 +18,6 @@ def plot_q_vs_c(data):
     # fix xaxis to cross y axis in the point (1,1)
     plot_tts.xaxis.fixed_location = 1
 
-    # it stores data to create the labels
-    x = []
-    y = []
-    point_names = []
-
     for protein_key in data:
 
         min_tts_q = data[protein_key]['min_tts_q']
@@ -31,20 +26,32 @@ def plot_q_vs_c(data):
         relation = min_tts_c / min_tts_q
         min_tts = min(min_tts_q, min_tts_c)
 
-        protein_name = protein_key.split('_')[0]+protein_key.split('_')[1]+protein_key.split('_')[2][0]
+        if 'minifold' in protein_key:
+            color_point = 'red'
+        elif 'random' in protein_key:
+            color_point = 'blue'
+        elif 'original' in protein_key:
+            color_point = 'green'
+        else:
+            color_point = 'black'
 
-        # save data to create the label of each point
-        x.append(min_tts)
-        y.append(relation)
-        point_names.append(protein_name)
+        size_point = int(data[protein_key]['number_bits'])**1.75
 
-        # paint the point in the plot (only the point, the label is plotted out of the loop)
-        plot_tts.square(min_tts, relation, line_width=1, line_color=random.sample(Turbo256,15))
+        # plot dipeptides
+        if data[protein_key]['number_aas'] == 2:
 
-    # add label of each point
-    source = ColumnDataSource(dict(x=x,y=y,point_names=point_names))
-    labels = LabelSet(x='x', y='y', text='point_names', level='glyph', x_offset=5, y_offset=5, text_font_size="6pt", source=source, render_mode='canvas')
-    plot_tts.add_layout(labels)
+            # paint the point in the plot (only the point, the label is plotted out of the loop)
+            plot_tts.square(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
+
+        elif data[protein_key]['number_aas'] == 3:
+
+            plot_tts.circle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
+
+
+        elif data[protein_key]['number_aas'] == 4:
+
+            plot_tts.triangle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
+
 
     # plot the plane for classical and quantum region
     plot_tts.quad(top=[10**10], bottom=[1], left=[1],right=[10**10], color="green", fill_alpha=0.1)

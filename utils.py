@@ -559,6 +559,8 @@ class Utils():
             stats['final_step'] = data[protein_key]['final_step']
             stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
             stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
+            stats['number_bits'] = input_name.split('_')[4]
+            stats['number_aas'] = len(input_name.split('_')[3])
             
             protein_key = protein_key.replace('.json', '')
 

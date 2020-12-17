@@ -3,7 +3,7 @@ import initializer
 import angleCalculator
 import psiFour
 import utils
-import openfermion
+#import openfermion
 
 import time
 import datetime

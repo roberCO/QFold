@@ -551,7 +551,7 @@ class Utils():
 
         for betas in measures_dict.keys():
             if betas != '0-0':
-                dictionary[self.args.aminoacids][betas]['noiseless'] = final_stats
+                dictionary[self.args.aminoacids][betas]['noiseless'] = experiment_result_matrix['betas=betas']['noiseless']
             else:
                 dictionary['--']['0-0']['noiseless'] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
 

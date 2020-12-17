@@ -11,7 +11,7 @@ def plot_hardware_prob_difs(tools):
     '''
 
     # First load the data
-    with open('./results/measurements.json', 'r') as outfile2: 
+    with open('./results/measurements   .json', 'r') as outfile2: 
         dictionary = json.load(outfile2)
 
     '''
@@ -46,32 +46,40 @@ def plot_hardware_prob_difs(tools):
 
             # We already introduce the baselines
 
+            print('Noiseless dictionary[aa][str(betas[0]) + - +str(betas[1])][noiseless][00]', dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['noiseless']['00'])
+
             aas.append(aa)
 
             y_avgs.append((np.average(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00']) - beta_zero_meas_avg)/ibmq_shots)
             y_stds.append((np.std(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00']) + beta_zero_meas_std)/ibmq_shots)
             
-            y_noiseless.append(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['noiseless']['00'] - .25) 
+            y_noiseless.append(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['noiseless']['00'] - .25)
+
+    for i in range(len(aas)): 
+        print('aas',aas[i])
+        print('y_noiseless',y_noiseless[i]) 
+        print('(y_avgs,y_stds',y_avgs[i],y_stds[i])
 
     # Then we plot the results
 
     # Create some mock data
-    fig, ax1 = plt.subplots(2, 1, tight_layout=True)
+    fig, ax1 = plt.subplots(1, 1, tight_layout=True)
 
     color = 'tab:blue'
-    ax1[0].set_xlabel('Dipeptides')
-    ax1[0].set_ylabel('Noiseless probability gap', color=color)
-    print('y_noiseless', y_noiseless)
-    ax1[0].scatter(aas, y_noiseless, color=color)
-    ax1[0].tick_params(axis='y', labelcolor=color)
+    ax1.set_xlabel('Dipeptides')
+    ax1.set_ylabel('Noiseless probability gap', color=color)
 
-    ax2 = ax1[0].twinx()  # instantiate a second axes that shares the same x-axis
+    ax1.scatter(aas, y_noiseless, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
     color = 'tab:red'
     ax2.set_ylabel('Measured probability gap', color=color)  # we already handled the x-label with ax1
     ax2.errorbar(aas, y_avgs, yerr=y_stds, color=color, marker='s', fmt='.')
     ax2.tick_params(axis='y', labelcolor=color)
-
+    
     # Lower part of the figure
 
     model = np.polynomial.polynomial.polyfit(y_noiseless, y_avgs, 1)
@@ -87,8 +95,8 @@ def plot_hardware_prob_difs(tools):
     x_lin_reg = range(0,1)
 
     y_lin_reg = predict(x_lin_reg)
-
-    ax1[1].set_xlim = ([.2,.3])
+    '''
+    ax1[].set_xlim = ([.2,.3])
     ax1[1].set_ylim = ([.15,.35])
 
     ax1[1].set_xlabel('Noiseless probability gap')
@@ -96,8 +104,9 @@ def plot_hardware_prob_difs(tools):
 
     ax1[1].errorbar(y_noiseless, y_avgs, yerr=y_stds)
     ax1[1].plot(x_lin_reg, y_lin_reg, c = 'r')
+    '''
 
-    ax1[1].annotate("r-squared = {:.3f}".format(r2), (0, 1))
+    ax1.annotate("r-squared = {:.3f}".format(r2), (0, 1))
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()

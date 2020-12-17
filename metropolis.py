@@ -89,14 +89,18 @@ class Metropolis():
             elif change_angle == 1:
                 #Change just +1 or -1 step in the energies dictionary
                 anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
-            
-
+            '''
+            print('anglePsi_new',anglePsi_new)
+            print('anglePhi_new',anglePhi_new)
+            '''
             binary_key = ''
             for index in range(len(anglePhi_new)):
 
                 # binary key should contain: phi_1 | psi_1 | phi_2 | psi_2 | ...
                 binary_key += np.binary_repr(anglePhi_new[index], width = self.bits_rotation)
                 binary_key += np.binary_repr(anglePsi_new[index], width = self.bits_rotation)
+
+            #print('binary_key', binary_key)
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
@@ -116,7 +120,11 @@ class Metropolis():
                 probability_threshold = 1
 
             random_number = np.random.random_sample()
-
+            '''
+            print('probability_threshold',probability_threshold)
+            print('random_number',random_number)
+            print('\n')
+            '''
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
             if random_number < min(1,probability_threshold): # Accept the change

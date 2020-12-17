@@ -33,8 +33,8 @@ class AngleCalculator():
 
             if self.tools.args.mode == 'simulation':
                 [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
-            elif self.tools.args.mode == 'experiment': # This has to be changed
-                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(step)
+            elif self.tools.args.mode == 'experiment': 
+                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
             elif self.tools.args.mode == 'real':
                 n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
                 accum_probabilities = []

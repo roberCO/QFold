@@ -38,6 +38,7 @@ class QuantumMetropolis():
         self.beta_type = self.tools.config_variables['beta_type']
         self.qiskit_api_path = self.tools.config_variables['path_qiskit_token']
         self.selected_device = self.tools.config_variables['device_ibm_q']
+        self.oracle_option = self.tools.config_variables['oracle_option']
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
@@ -249,7 +250,7 @@ class QuantumMetropolis():
         self.sum1(circuit,qubit_string,control,start,end)
         
         circuit.x(qubit_string)
-
+        
     def sumsubtract1(self,circuit,qubit_string,control,start,end,move_value):
         '''
         Outputs:
@@ -295,12 +296,7 @@ class QuantumMetropolis():
         oracle.output_register should have size self.probability_bits
         '''
 
-        # Construct an instruction for the oracle
-        oracle.construct_circuit()
-        oracle_circuit = oracle.circuit
-
-        #print(oracle_circuit)
-        oracle_gate = oracle_circuit.to_instruction()
+        oracle_gate = oracle 
 
         # Let us create a circuit for coin_flip
         cf_angles = []
@@ -317,10 +313,17 @@ class QuantumMetropolis():
 
 
         # Main operations
-        cf_circ.append(oracle_gate, [cf_move_value[0]]+[cf_move_id[j] for j in range(cf_move_id.size)] + [cf_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))] + [cf_ancilla[j] for j in range(self.n_ancilla_bits)])
+                
+        cf_circ.append(oracle_gate, [cf_move_value[0]]+[cf_move_id[j] for j in range(cf_move_id.size)] + 
+                                    [cf_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))] + 
+                                    [cf_ancilla[j] for j in range(self.n_ancilla_bits)])
+
         self.coin_flip(cf_circ,cf_ancilla,cf_coin)
-        cf_circ.append(oracle_gate.inverse(), [cf_move_value[0]]+[cf_move_id[j] for j in range(cf_move_id.size)]+[cf_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))]+ [cf_ancilla[j] for j in range(self.n_ancilla_bits)])
-        
+ 
+        cf_circ.append(oracle_gate.inverse(), [cf_move_value[0]]+[cf_move_id[j] for j in range(cf_move_id.size)]+
+                                              [cf_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))]+ 
+                                              [cf_ancilla[j] for j in range(self.n_ancilla_bits)])
+
         coin_flip_gate = cf_circ.to_instruction()
         
         return coin_flip_gate
@@ -428,7 +431,6 @@ class QuantumMetropolis():
     def execute_quantum_metropolis_n(self, nW):
 
         # State definition. All angles range from 0 to 2pi
-        # State definition. All angles range from 0 to 2pi
 
         g_angles = []
         for i in range(self.n_angles):
@@ -450,25 +452,38 @@ class QuantumMetropolis():
             qc = qc + QuantumCircuit(g_angles[i])
 
         # Metropolis algorithm (create one input oracle for each beta)
-        #list_gates = []
+        list_gates = []
 
         # If initialization is totally mixed use
         for g_angle in g_angles:
             qc.h(g_angle)
+        
+        # Preparation of an initial step: Phi is angle 0, and psi is angle 1
+        #qc.x(g_angles[0][0])
+        #qc.x(g_angles[0][1])
+        #qc.x(g_angles[0][2])
+        #qc.x(g_angles[0][3])
+        #qc.x(g_angles[0][4])
+
+        #qc.x(g_angles[1][0])
+        #qc.x(g_angles[1][1])
+        #qc.x(g_angles[1][2])
+
+        oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1, out_bits = self.probability_bits)
 
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls
         if self.beta_type == 'fixed':
 
             #It creates one different oracle for each beta
-            oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, self.beta, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
-
+            oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
+                    
         for i in range(nW):
 
             if self.beta_type == 'variable':
                 beta_value =  i* (self.beta / nW)
                 #It creates one different oracle for each beta
-                oracle = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, beta_value, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1,out_bits = self.probability_bits)
-            
+                oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
+                            
             W_gate = self.W_func_n(oracle)
             
             #list_gates[i].params[0]= beta
@@ -486,6 +501,12 @@ class QuantumMetropolis():
         angle_qubits = [qubit_index for qubit_index in range ((total_bits - number_bits_angles), total_bits)]
 
         probabilities = state_vector.probabilities(angle_qubits)
+        '''
+        state_vec = state_vector.data
+        for i in range(len(state_vec)):
+            if abs(state_vec[i])>1e-7:
+                print(np.binary_repr(i, width = self.angle_precision_bits* self.n_angles + self.move_id_len + 2 + self.n_ancilla_bits),state_vec[i])
+        '''
 
         #state = qi.Statevector.from_instruction(qc)
         time_statevector = time.time() - start_time
@@ -498,7 +519,12 @@ class QuantumMetropolis():
 
             key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
             probs[key] = probabilities[index_probabilites]#.as_integer
-
+        
+        '''        
+        for key, value in probs.items():
+            if value > 1e-10:
+                print(key, value)
+        '''
         return [probs, time_statevector]
 
     # this method converts the index returned by statevector into a string key. 
@@ -525,7 +551,20 @@ class QuantumMetropolis():
 
         return key_str
 
-    def execute_real_hardware(self, nW):
+
+    
+
+
+
+
+
+
+
+
+
+    ####### FOR THE REAL HARDWARE OPTION ###########
+
+    def execute_real_hardware(self, nWs):
 
         start_time = time.time()
         shots = self.tools.config_variables['ibmq_shots']
@@ -579,11 +618,11 @@ class QuantumMetropolis():
 
             counts[key_name_counts] = {}
             # Let us first analyse the noise of the circuit for the ideal case of betas = 0, which should imply .25 chance of success
-            qc = self.generate_circ(nW, deltas, betas)
+            qc = self.generate_circ(nWs, deltas, betas)
             
 
             # get the NOISELESS counts
-            counts[key_name_counts]['noiseless'] = self.exe_noiseless(qc)
+            counts[key_name_counts]['noiseless'] = self.exe_noiseless(nWs)
 
             # get the RAW counts
             raw_counts = []
@@ -607,8 +646,9 @@ class QuantumMetropolis():
         # In order to see if there is some statistical difference between the two noise circuit (due to the value of beta and the angles)
         # we generate bernouilli distribuitions that follow the same statistics as those that we have measured
         betas = self.tools.config_variables['betas']
-        beta0_bernouilli = self.generate_bernouilli(int(sum(measures_dict['0-0']['00'])), shots*n_repetitions)
-        beta1_bernouilli = self.generate_bernouilli(int(sum(measures_dict[str(betas[0]) + '-' +str(betas[1])]['00'])), shots*n_repetitions)
+        print('measures_dict',measures_dict)
+        beta0_bernouilli = self.generate_bernouilli(int(sum(measures_dict['0-0']['00'])), shots*len(measures_dict['0-0']['00']))
+        beta1_bernouilli = self.generate_bernouilli(int(sum(measures_dict[str(betas[0]) + '-' +str(betas[1])]['00'])), shots*len(measures_dict[str(betas[0]) + '-' +str(betas[1])]['00']))
         exec_stats, pvalue = scipy.stats.ttest_ind(beta0_bernouilli, beta1_bernouilli, equal_var=False)
 
         execution_stats = 'The t-test statistic value for there being a significat average difference between measured processes with beta zero and non-zero is ' + str(exec_stats) + ' and the corresponding pvalue is '+ str(pvalue)
@@ -640,9 +680,49 @@ class QuantumMetropolis():
 
         return exact_angles
 
-    def hardware_GG_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inv):
+    def simulated_hardware_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inverse):
+        ''' Applies the controlled rotation to the target coin'''
+        if inverse == 1:
+            circuit.x(coin)
+        
+        if angles['111'] > .01:
+            circuit.mcrx(theta = -inverse * angles['111'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(move_id)
+        
+        if angles['110'] > .01:
+            circuit.mcrx(theta = -inverse * angles['110'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(angle_psi)
+        
+        if angles['100'] > .01:
+            circuit.mcrx(theta = -inverse * angles['100'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(move_id)
+        
+        if angles['101'] > .01:
+            circuit.mcrx(theta = -inverse * angles['101'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(angle_phi)
+        
+        if angles['001'] > .01:
+            circuit.mcrx(theta = -inverse * angles['001'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(move_id)
+        
+        if angles['000'] > .01:
+            circuit.mcrx(theta = -inverse * angles['000'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(angle_psi)
+        
+        if angles['010'] > .01:
+            circuit.mcrx(theta = -inverse * angles['010'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False)
+        circuit.x(move_id)
+        
+        if angles['011'] > .01:
+            circuit.mcrx(theta = -inverse * angles['011'], q_controls = [angle_phi[0],angle_psi[0],move_id[0]], q_target = coin[0], use_basis_gates=False) 
+        circuit.x(angle_phi)
+        
+        if inverse == -1:
+            circuit.x(coin)
 
-        '''Warning! This only works for GG 1 in experiment mode. Do not use elsewhere!'''
+    def hardware_1_coin_flip(self, circuit, coin, move_id, angle_psi, angle_phi, angles, inv):
+
+        '''Warning! This only works for dipeptide 1 in experiment mode. Do not use elsewhere!'''
         # First we have to identify the non-zero angles. For the rest we accept with probability 1
         circuit.x(coin)
         '''
@@ -673,7 +753,7 @@ class QuantumMetropolis():
         qc.h(move_id)
 
         # Prepare the Boltzmann coin ------------------
-        self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = 1)
+        self.hardware_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = 1)
         
         # Perform move ---------------------------------
         # For the second angle
@@ -686,7 +766,41 @@ class QuantumMetropolis():
 
         if nW < nWs-1: # This happens unless we are in the last step, in which case uncomputing is unnecessary.
             # Unprepare the Boltzmann coin--------------------
-            self.hardware_GG_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = -1)
+            self.hardware_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inv = -1)
+
+            # Perform the preparation of possible moves ----
+            qc.h(move_id)
+
+            #Reflection -------------------------------------
+            qc.x(move_id)
+            qc.x(coin)
+
+            # Perform a multicontrolled Z
+            qc.cz(move_id,coin)
+
+            qc.x(move_id)
+            qc.x(coin)
+
+    def simulated_W_step(self, qc,coin,move_id,angle_psi,angle_phi,angles,nW,nWs):
+
+        # Perform the preparation of possible moves----
+        qc.h(move_id)
+
+        # Prepare the Boltzmann coin ------------------
+        self.simulated_hardware_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inverse = 1)
+        
+        # Perform move ---------------------------------
+        # For the second angle
+        qc.ccx(coin,move_id,angle_psi)
+
+        # For the first angle
+        qc.x(move_id)
+        qc.ccx(coin,move_id,angle_phi)
+        qc.x(move_id)
+
+        if nW < nWs-1: # This happens unless we are in the last step, in which case uncomputing is unnecessary.
+            # Unprepare the Boltzmann coin--------------------
+            self.simulated_hardware_1_coin_flip(qc, coin, move_id, angle_psi, angle_phi, angles, inverse = -1)
 
             # Perform the preparation of possible moves ----
             qc.h(move_id)
@@ -737,19 +851,49 @@ class QuantumMetropolis():
         
         return qc
 
-    def exe_noiseless(self, qc):
+    def generate_hardware_simulation_circuit(self,nWs, deltas, betas):
 
-        aerqc = qc.copy('aerqc')
+        assert(len(betas) == nWs)
+    
+        move_id  = QuantumRegister(1)
+        angle_phi = QuantumRegister(1)
+        angle_psi = QuantumRegister(1)
+        coin = QuantumRegister(1)
+        c_reg = ClassicalRegister(2)
+        aerqc = QuantumCircuit(coin,move_id,angle_psi,angle_phi,c_reg)
 
-        # Remove measures from circuit
-        aerqc.remove_final_measurements(True)
+        #Circuit ----------
+        aerqc.h(angle_phi)
+        aerqc.h(angle_psi)
+        for (i,beta) in zip(range(nWs),betas):
+            angles = self.calculate_angles(deltas, beta)
+            print('angles step',i,angles)
+            self.simulated_W_step(aerqc,coin,move_id,angle_psi,angle_phi,angles,nW = i, nWs = nWs)
+        
+        return aerqc
+
+
+    def exe_noiseless(self, nWs):
+
+        betas = self.tools.config_variables['betas']
+
+        # prepare dictionary with deltas
+        deltas_dictionary = collections.OrderedDict(sorted(self.input_oracle.items()))
+        deltas = {}
+        for (key,value) in deltas_dictionary.items():
+            deltas[key[:3]] = value
+
+        print('deltas', deltas)
+
+        aerqc = self.generate_hardware_simulation_circuit(nWs, deltas, betas)
 
         aerbackend = Aer.get_backend('statevector_simulator')
         backend_options = {"method" : "statevector"}
         experiment = execute(aerqc, aerbackend, backend_options=backend_options)
         state_vector = Statevector(experiment.result().get_statevector(aerqc))
 
-        probabilities = state_vector.probabilities([3,2]) # We are reporting the angles as (psi,phi); since qiskit inverts the reporting order
+        probabilities = state_vector.probabilities([2,3]) # We are reporting the angles as (psi,phi); since qiskit inverts the reporting order
+        print('probabilities',probabilities)
         noiseless_counts = {}
         noiseless_counts['00'] = float(probabilities[0])
         noiseless_counts['01'] = float(probabilities[1])

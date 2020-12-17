@@ -11,12 +11,12 @@ class AngleCalculator():
         self.bits_rotation = bits_rotation
         self.rotation_steps = 2**bits_rotation
         self.n_ancilla_bits = n_ancilla_bits
-        self.n_iterations = number_iterations
         self.oracle_option = oracle_option
         self.number_aminoacids = number_aminoacids
 
         self.qTools = quantumUtils.QuantumUtils()
         self.n_angles = (number_aminoacids -1)*2
+        self.n_iterations = number_iterations * self.n_angles * self.rotation_steps
 
     def calculate3DStructure(self, deltas_dict, n_steps, beta, beta_type, option=0):
 

@@ -433,7 +433,7 @@ class QuantumMetropolis():
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
                     beta_value = self.beta * (1/self.alpha) * (1+i) 
                 elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
-                    beta_value = self.beta * (1/self.alpha) * (1+np.log(i))
+                    beta_value = self.beta * (1/self.alpha) * np.log(1+i)
                 elif self.annealing_schedule == 'geometric':
                     beta_value = self.beta * self.alpha**(-i)
                 elif self.annealing_schedule == 'exponential': 

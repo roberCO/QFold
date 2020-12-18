@@ -8,17 +8,19 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
+    def __init__(self, bits_rotation, n_steps, number_angles, beta, beta_type, alpha, schedule, deltas_dict):
 
         self.bits_rotation = bits_rotation
         self.n_steps = n_steps
         self.beta = beta
         self.beta_type = beta_type
+        self.alpha = alpha
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles)
 
         self.rotatition_steps = 2**self.bits_rotation
         self.bits_number_angles = math.ceil(np.log2(number_angles))
+        self.annealing_schedule = schedule
 
         self.tools = utils.Utils()
 
@@ -38,7 +40,7 @@ class Metropolis():
             anglePsi_old.append(np.random.choice(self.rotatition_steps))
             anglePhi_old.append(np.random.choice(self.rotatition_steps))
 
-        for iteration in range(1, self.n_steps+1):
+        for i in range(self.n_steps):
 
             # initially the new angles are equal to the old (then one angle will be randomly modified)
             # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
@@ -80,9 +82,19 @@ class Metropolis():
             if self.beta_type == 'fixed':
                 beta_value = self.beta
             elif self.beta_type == 'variable':
-                beta_value = iteration * (self.beta / self.n_steps)
+                if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
+                    beta_value = self.beta * (1/self.alpha) * (1+i) 
+                elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
+                    beta_value = self.beta * (1/self.alpha) * (1+np.log(i))
+                elif self.annealing_schedule == 'geometric':
+                    beta_value = self.beta * self.alpha**(-i)
+                elif self.annealing_schedule == 'exponential': 
+                    space_dim = self.number_angles
+                    beta_value = self.beta * np.exp( self.alpha * i**(1/space_dim) )
+                else:
+                    raise ValueError('<*> ERROR: Annealing Scheduling wrong value. It should be one of [linear, logarithmic, geometric, exponential] but it is', self.annealing_schedule)
             else:
-                print('<*> ERROR: Beta type wrong value. Beta type should be variable or fixed but it is', self.beta_type)
+                ValueError('<*> ERROR: Beta type wrong value. Beta type should be variable or fixed but it is', self.beta_type)
 
             Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
             if Delta_E >= 0:

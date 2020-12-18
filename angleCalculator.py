@@ -6,7 +6,7 @@ import time
 
 class AngleCalculator():
 
-    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, oracle_option, number_aminoacids):
+    def __init__(self, bits_rotation, n_ancilla_bits, number_iterations, oracle_option, number_aminoacids, schedule):
 
         self.bits_rotation = bits_rotation
         self.rotation_steps = 2**bits_rotation
@@ -17,13 +17,14 @@ class AngleCalculator():
         self.qTools = quantumUtils.QuantumUtils()
         self.n_angles = (number_aminoacids -1)*2
         self.n_iterations = number_iterations * self.n_angles * self.rotation_steps
+        self.schedule = schedule
 
-    def calculate3DStructure(self, deltas_dict, n_steps, beta, beta_type, option=0):
+    def calculate3DStructure(self, deltas_dict, n_steps, beta, beta_type, alpha, option=0):
 
         #Quantum calculation option for 3D structure
         if option == 0: 
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, self.oracle_option, deltas_dict)
+            qMetropolis = quantumMetropolis.QuantumMetropolis(n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, beta, beta_type, alpha, self.schedule, self.oracle_option, deltas_dict)
             
             start_time = time.time()
             [result, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
@@ -36,7 +37,7 @@ class AngleCalculator():
         elif option == 1:
 
             probabilities_matrix = {}
-            classical_metropolis = metropolis.Metropolis(self.bits_rotation, n_steps, self.n_angles/2, beta, beta_type, deltas_dict)
+            classical_metropolis = metropolis.Metropolis(self.bits_rotation, n_steps, self.n_angles/2, beta, beta_type, alpha, self.schedule, deltas_dict)
             
             start_time = time.time()
             for _ in range(self.n_iterations):

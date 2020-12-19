@@ -17,9 +17,10 @@ import beta_precalc_TruthTableOracle
 
 class QuantumMetropolis():
 
-    def __init__(self, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, oracle_option, input_oracle):
+    def __init__(self, initialization, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, oracle_option, input_oracle):
 
         #Global variables
+        self.initialization = initialization
 
         # Number steps
         self.n_repetitions = n_repetitions
@@ -415,8 +416,14 @@ class QuantumMetropolis():
         #list_gates = []
 
         # If initialization is totally mixed use
-        for g_angle in g_angles:
-            qc.h(g_angle)
+        if self.initialization == 'random':
+            for g_angle in g_angles:
+                qc.h(g_angle)
+        elif self.initialization == 'minifold':
+            U_gate = self.U_func_n()
+            for _ in range(3):
+                qc.append(U_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+
 
         oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1, out_bits = self.probability_bits)
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls

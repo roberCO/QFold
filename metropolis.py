@@ -8,8 +8,9 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
+    def __init__(self, initialization, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
 
+        self.initialization = initialization
         self.bits_rotation = bits_rotation
         self.n_steps = n_steps
         self.beta = beta
@@ -32,39 +33,38 @@ class Metropolis():
         anglePhi_old = []
         anglePsi_old = []
 
-        for _ in range(self.number_angles):
+        if self.initialization == 'random':
 
-            # Random initialization of angles
-            anglePsi_old.append(np.random.choice(self.rotatition_steps))
-            anglePhi_old.append(np.random.choice(self.rotatition_steps))
+            for _ in range(self.number_angles):
+
+                # Random initialization of angles
+                anglePsi_old.append(np.random.choice(self.rotatition_steps))
+                anglePhi_old.append(np.random.choice(self.rotatition_steps))
+
+        elif self.initialization == 'minifold':
+
+            for _ in range(self.number_angles):
+
+                # Random initialization of angles
+                anglePsi_old.append(0)
+                anglePhi_old.append(0)
+            
+            # 3 random steps with probability 1/2
+
+            for _ in range(3):
+
+                anglePhi_new, anglePsi_new = self.generate_new_angles(anglePhi_old, anglePsi_old)
+
+                random_number = np.random.random_sample()
+
+                if random_number < 1/2: # Accept the change
+                    anglePhi_old = copy.deepcopy(anglePhi_new)
+                    anglePsi_old = copy.deepcopy(anglePsi_new)
+
 
         for iteration in range(1, self.n_steps+1):
 
-            # initially the new angles are equal to the old (then one angle will be randomly modified)
-            # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
-            anglePhi_new = copy.deepcopy(anglePhi_old)
-            anglePsi_new = copy.deepcopy(anglePsi_old)
-            
-            # Propose a change
-            # 0 = phi | 1 = psi
-            change_angle = np.random.choice((0,1))
-
-            # number of angle (it is possible to have more than one phi/psi)
-            position_angle = np.random.choice(self.number_angles)
-            position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)
-
-            # 0 = 1 | 1 = -1
-            change_plus_minus = np.random.choice((0,1))
-            pm = -2*change_plus_minus + 1
-
-            # Calculate the new angles
-            if change_angle == 0:
-                #Change just +1 or -1 step in the energies dictionary
-                anglePhi_new[position_angle] = (anglePhi_old[position_angle] + pm) % self.rotatition_steps
-            elif change_angle == 1:
-                #Change just +1 or -1 step in the energies dictionary
-                anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
-            
+            anglePhi_new, anglePsi_new = self.generate_new_angles(anglePhi_old, anglePsi_old)            
 
             binary_key = ''
             for index in range(len(anglePhi_new)):
@@ -99,3 +99,31 @@ class Metropolis():
                 anglePsi_old = copy.deepcopy(anglePsi_new)
 
         return [anglePhi_old, anglePsi_old]
+    
+    def generate_new_angles(self, anglePhi_old, anglePsi_old):
+        # initially the new angles are equal to the old (then one angle will be randomly modified)
+        # deep copy is necessary to avoid two pointer to the same data structure (it is necessary only to modify one of the arrays)
+        anglePhi_new = copy.deepcopy(anglePhi_old)
+        anglePsi_new = copy.deepcopy(anglePsi_old)
+        
+        # Propose a change
+        # 0 = phi | 1 = psi
+        change_angle = np.random.choice((0,1))
+
+        # number of angle (it is possible to have more than one phi/psi)
+        position_angle = np.random.choice(self.number_angles)
+        position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)
+
+        # 0 = 1 | 1 = -1
+        change_plus_minus = np.random.choice((0,1))
+        pm = -2*change_plus_minus + 1
+
+        # Calculate the new angles
+        if change_angle == 0:
+            #Change just +1 or -1 step in the energies dictionary
+            anglePhi_new[position_angle] = (anglePhi_old[position_angle] + pm) % self.rotatition_steps
+        elif change_angle == 1:
+            #Change just +1 or -1 step in the energies dictionary
+            anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
+
+        return anglePhi_new, anglePsi_new

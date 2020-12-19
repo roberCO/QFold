@@ -65,6 +65,7 @@ except IOError:
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
 angleCalculator = angleCalculator.AngleCalculator(
+    args.initialization,
     args.bits, 
     config_variables['ancilla_bits'], 
     config_variables['number_iterations'],

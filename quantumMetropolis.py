@@ -419,7 +419,7 @@ class QuantumMetropolis():
         if self.initialization == 'random':
             for g_angle in g_angles:
                 qc.h(g_angle)
-        elif self.initialization == 'minifold':
+        elif self.initialization == 'minifold': # The minifold initialization should start from a probability cloud centered in 0.
             U_gate = self.U_func_n()
             for _ in range(3):
                 qc.append(U_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])

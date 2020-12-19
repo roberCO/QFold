@@ -53,7 +53,7 @@ class Metropolis():
 
             for _ in range(3):
 
-                anglePhi_new, anglePsi_new = self.generate_new_angles(anglePhi_old, anglePsi_old)
+                anglePhi_new, anglePsi_new, _, _, _ = self.generate_new_angles(anglePhi_old, anglePsi_old)
 
                 random_number = np.random.random_sample()
 
@@ -64,7 +64,8 @@ class Metropolis():
 
         for iteration in range(1, self.n_steps+1):
 
-            anglePhi_new, anglePsi_new = self.generate_new_angles(anglePhi_old, anglePsi_old)            
+            anglePhi_new, anglePsi_new, change_angle, position_angle, change_plus_minus = self.generate_new_angles(anglePhi_old, anglePsi_old)
+            position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)            
 
             binary_key = ''
             for index in range(len(anglePhi_new)):
@@ -112,7 +113,6 @@ class Metropolis():
 
         # number of angle (it is possible to have more than one phi/psi)
         position_angle = np.random.choice(self.number_angles)
-        position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)
 
         # 0 = 1 | 1 = -1
         change_plus_minus = np.random.choice((0,1))
@@ -126,4 +126,4 @@ class Metropolis():
             #Change just +1 or -1 step in the energies dictionary
             anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
 
-        return anglePhi_new, anglePsi_new
+        return anglePhi_new, anglePsi_new, change_angle, position_angle, change_plus_minus

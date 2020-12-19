@@ -23,13 +23,14 @@ tools = utils.Utils(config_path)
 config_variables = tools.get_config_variables()
 
 # list elements to read
+'''
 input_files = [f for f in listdir(config_variables['path_tts_plot']) if isfile(join(config_variables['path_tts_plot'], f))]
 results = {}
 for input_name in input_files:
     if input_name[:3] == 'tts':
         print(input_name)
         results.update(tools.read_results_data(input_name))
-
+'''
 # generate plot of minifold vs random inizialization mode
 #plot_m_vs_r(results)
 
@@ -38,13 +39,13 @@ for input_name in input_files:
 
 # generate plot of the comparison between quantum and classical difference of tts
 #plot_q_vs_c(results)
-plot_q_vs_c_slope(results)
+#plot_q_vs_c_slope(results)
 
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)
 
 # generate plot of hardware measurements
-#plot_hardware_prob_difs(tools)
+plot_hardware_prob_difs(tools)
 
 #[stats, tts_tables] = calculate_stats(results)
 

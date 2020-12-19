@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 import json
+#import matplotlib
 
 def plot_hardware_prob_difs(tools):
     '''
@@ -11,7 +12,7 @@ def plot_hardware_prob_difs(tools):
     '''
 
     # First load the data
-    with open('./results/measurements   .json', 'r') as outfile2: 
+    with open('./results/measurements.json', 'r') as outfile2: 
         dictionary = json.load(outfile2)
 
     '''
@@ -30,6 +31,7 @@ def plot_hardware_prob_difs(tools):
     y_avgs = []
     y_stds = []
     y_noiseless = []
+    y_err = []
 
     aas = []
     betas = tools.config_variables['betas']
@@ -37,6 +39,10 @@ def plot_hardware_prob_difs(tools):
 
     beta_zero_meas_avg = np.average(dictionary['--']['0-0']['measurements']['00'])
     beta_zero_meas_std = np.std(dictionary['--']['0-0']['measurements']['00'])
+    beta_zero_runs = len(dictionary['--']['0-0']['measurements']['00'])
+    beta_zero_p = beta_zero_meas_avg / ibmq_shots
+    beta_zero_err = np.sqrt(beta_zero_p*(1-beta_zero_p)/(ibmq_shots*beta_zero_runs))
+
 
     for aa in dictionary.keys():
         if aa != '--':
@@ -50,10 +56,14 @@ def plot_hardware_prob_difs(tools):
 
             aas.append(aa)
 
-            y_avgs.append((np.average(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00']) - beta_zero_meas_avg)/ibmq_shots)
+            avg = np.average(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00'])
+            runs = len(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00'])
+            p = avg / ibmq_shots
+
+            y_avgs.append((avg - beta_zero_meas_avg)/ibmq_shots)
             y_stds.append((np.std(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['measurements']['00']) + beta_zero_meas_std)/ibmq_shots)
-            
-            y_noiseless.append(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['noiseless']['00'] - .25)
+            y_err.append(np.sqrt(p*(1-p)/(ibmq_shots*runs))+ beta_zero_err)
+            y_noiseless.append(dictionary[aa][str(betas[0]) + '-' +str(betas[1])]['noiseless']['00'])
 
     for i in range(len(aas)): 
         print('aas',aas[i])
@@ -65,22 +75,36 @@ def plot_hardware_prob_difs(tools):
     # Create some mock data
     fig, ax1 = plt.subplots(1, 1, tight_layout=True)
 
+    #color = 'tab:blue'
+    ax1.set_xlabel('Dipeptides')
+    ax1.set_ylabel('Noiseless probability gap')#, color=color)
+
     color = 'tab:blue'
     ax1.set_xlabel('Dipeptides')
-    ax1.set_ylabel('Noiseless probability gap', color=color)
+    ax1.hlines(0, xmin = -.2, xmax = len(aas), color = 'red', linestyles = 'dashed')
+    ax1.set_ylabel(r'Measured probability gap: $p(\beta)  - p(\beta = 0)$')  # we already handled the x-label with ax1
+    ax1.errorbar(aas, y_avgs, yerr=y_err, marker='d', fmt='.')
+    #ax1.tick_params(axis='y')
 
-    ax1.scatter(aas, y_noiseless, color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-
+    # this is an inset axes over the main axes
+    a = plt.axes([.55, .3, .4, .2])
     
-    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-    color = 'tab:red'
-    ax2.set_ylabel('Measured probability gap', color=color)  # we already handled the x-label with ax1
-    ax2.errorbar(aas, y_avgs, yerr=y_stds, color=color, marker='s', fmt='.')
-    ax2.tick_params(axis='y', labelcolor=color)
+    xr = np.arange(len(aas))  # the label locations
+    width = 0.35  # the width of the bars
+    a.hlines(.25, xmin = xr[0]-width, xmax = xr[-1], color = 'red', linestyles = 'dashed')
+
+    bars = a.bar(xr - width/2, y_noiseless, width, label='Noiseless probabilities', color = 'green')
+    #a.set_xlabel('Dipeptides')
+    #a.set_ylabel('Noiseless probabilities', color=color)
+    #a.set_xticklabels(aas)
+
+    plt.title('Noiseless probabilities')
+    plt.xticks([])
+    #plt.yticks([])
     
     # Lower part of the figure
+    '''
 
     model = np.polynomial.polynomial.polyfit(y_noiseless, y_avgs, 1)
     (a, b) = model
@@ -95,7 +119,7 @@ def plot_hardware_prob_difs(tools):
     x_lin_reg = range(0,1)
 
     y_lin_reg = predict(x_lin_reg)
-    '''
+    
     ax1[].set_xlim = ([.2,.3])
     ax1[1].set_ylim = ([.15,.35])
 
@@ -104,10 +128,10 @@ def plot_hardware_prob_difs(tools):
 
     ax1[1].errorbar(y_noiseless, y_avgs, yerr=y_stds)
     ax1[1].plot(x_lin_reg, y_lin_reg, c = 'r')
-    '''
+    
 
     ax1.annotate("r-squared = {:.3f}".format(r2), (0, 1))
-
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    '''
+    #fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
     #plt.savefig(fname = './results/hardware_measurements')

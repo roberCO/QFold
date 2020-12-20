@@ -51,7 +51,7 @@ class Metropolis():
             
             # 3 random steps with probability 1/2
 
-            for _ in range(3):
+            for _ in range(10):
 
                 anglePhi_new, anglePsi_new, _, _, _ = self.generate_new_angles(anglePhi_old, anglePsi_old)
 

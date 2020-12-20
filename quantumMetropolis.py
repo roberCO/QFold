@@ -370,13 +370,13 @@ class QuantumMetropolis():
         qc.append(self.move_preparation_gate, [u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)])
         
         # Coin flip: equivalent to rx: https://qiskit.org/documentation/stubs/qiskit.circuit.library.U3Gate.html
-        qc.u3( theta =  math.pi/3, phi = 0, lam = 0, qubit=u_coin)
+        qc.u3( theta =  math.pi/2, phi = 0, lam = 0, qubit=u_coin)
 
         # Conditional move
         qc.append(self.conditional_move_gate_n, [u_ancilla[j] for j in range(self.n_ancilla_bits)]+[u_coin[0],u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)]+[u_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
         # Inverse coin flip
-        qc.u3( theta = math.pi/3, phi = 0, lam = 0, qubit=u_coin).inverse()
+        qc.u3( theta = math.pi/2, phi = 0, lam = 0, qubit=u_coin).inverse()
 
         # Inverse move preparation
         qc.append(self.move_preparation_gate.inverse(), [u_move_value[0]]+ [u_move_id[j] for j in range(self.move_id_len)])
@@ -421,7 +421,7 @@ class QuantumMetropolis():
                 qc.h(g_angle)
         elif self.initialization == 'minifold': # The minifold initialization should start from a probability cloud centered in 0.
             U_gate = self.U_func_n()
-            for _ in range(3):
+            for _ in range(10):
                 qc.append(U_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
 
 

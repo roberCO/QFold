@@ -8,13 +8,14 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, initialization, bits_rotation, n_steps, number_angles, beta, beta_type, deltas_dict):
+    def __init__(self, initialization, bits_rotation, n_steps, number_angles, beta, beta_type, kappa, deltas_dict):
 
         self.initialization = initialization
         self.bits_rotation = bits_rotation
         self.n_steps = n_steps
         self.beta = beta
         self.beta_type = beta_type
+        self.kappa = kappa
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles)
 
@@ -43,6 +44,24 @@ class Metropolis():
 
         elif self.initialization == 'minifold':
 
+            _, accumulated_probs = self.tools.von_mises_amplitudes(n_qubits = self.bits_rotation, kappa = self.kappa)
+
+            for _ in range(self.number_angles):
+
+                # Random initialization of angles
+                r = np.random.random()
+                for i in range(self.rotatition_steps):
+                    if accumulated_probs[i] >= r:
+                        anglePhi_old.append(i)
+                        break
+
+                r = np.random.random()
+                for i in range(self.rotatition_steps):
+                    if accumulated_probs[i] >= r:
+                        anglePsi_old.append(i)
+                        break
+
+            '''
             for _ in range(self.number_angles):
 
                 # Random initialization of angles
@@ -60,6 +79,7 @@ class Metropolis():
                 if random_number < 1/2: # Accept the change
                     anglePhi_old = copy.deepcopy(anglePhi_new)
                     anglePsi_old = copy.deepcopy(anglePsi_new)
+            '''
 
 
         for iteration in range(1, self.n_steps+1):

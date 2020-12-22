@@ -84,10 +84,10 @@ results = []
 for step in range(config_variables['initial_step'], config_variables['final_step']):
 
     # execute for option 0 (quantum) and option 1 (classical)
-    for option in [0,1]:
+    for option in ['quantum', 'classical']:
 
         # calculate the probability matrix of the optimization algorithms
-        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta'], config_variables['beta_type'], option)
+        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta'], config_variables['beta_type'], config_variables['kappa'], option)
 
         p_t = 0
         # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted
@@ -107,7 +107,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
             result = tools.calculateTTS(config_variables['precision_solution'], step, p_t)
 
         
-        if option == 0:
+        if option == 'quantum':
             q_accumulated_tts.append(result)
             
             if result < min_q_tts['value'] or min_q_tts['value'] == -1:

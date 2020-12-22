@@ -7,6 +7,7 @@ import copy
 import math
 import json
 import argparse
+from scipy.stats import vonmises
 
 class Utils():
 
@@ -581,3 +582,31 @@ class Utils():
             results[aas+'_'+bits+'_'+init_mode+'_'+beta+'_'+str(int(beta_padding/2))] = stats
 
         return results
+
+    def von_mises_amplitudes(self, n_qubits, kappa):
+
+        probs = {}
+        probs[0] = vonmises.cdf(np.pi/2**n_qubits, kappa) - vonmises.cdf(-np.pi/2**n_qubits, kappa)
+        probs[2**n_qubits/2] = 2* vonmises.cdf(np.pi/2**n_qubits - np.pi, kappa)
+        
+        for i in range(1, 2**n_qubits//2):
+            p = vonmises.cdf((2*i+1)*np.pi/2**n_qubits, kappa)-vonmises.cdf((2*i-1)*np.pi/2**n_qubits, kappa)
+            probs[i] = p
+            probs[-i + 2**n_qubits ] = p
+
+        pr = []
+        aa = []
+        acc = []
+
+        for i in range(2**n_qubits):
+            pr.append(probs[i])
+
+        for i in range(2**n_qubits):
+            aa.append(np.sqrt(probs[i]))
+            acc.append(np.sum(pr[:i]))
+            
+        acc.append(np.sum(pr)) # This should append 1
+        acc = acc[1:] # We are not interested in the first item, which is 0
+
+        return aa, acc
+

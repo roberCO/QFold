@@ -1,5 +1,6 @@
 import numpy as np
 from itertools import product
+import utils
 import time
 import math
 from math import pi
@@ -17,7 +18,9 @@ import beta_precalc_TruthTableOracle
 
 class QuantumMetropolis():
 
-    def __init__(self, initialization, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, oracle_option, input_oracle):
+    def __init__(self, initialization, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, kappa, oracle_option, input_oracle):
+
+        self.tools = utils.Utils()
 
         #Global variables
         self.initialization = initialization
@@ -34,6 +37,7 @@ class QuantumMetropolis():
         self.n_angles = n_angles
         self.beta = beta
         self.beta_type = beta_type
+        self.kappa = kappa
         self.oracle_option = oracle_option
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
@@ -419,11 +423,17 @@ class QuantumMetropolis():
         if self.initialization == 'random':
             for g_angle in g_angles:
                 qc.h(g_angle)
-        elif self.initialization == 'minifold': # The minifold initialization should start from a probability cloud centered in 0.
+        elif self.initialization == 'minifold': # The minifold initialization initializes each angle from a VonMises distribution.
+            
+            # Notice that this initialization is efficient even in quantum computers if we used the Grover-Rudolph algorithm.
+            initial_angle_amplitudes, _ = self.tools.von_mises_amplitudes(n_qubits = self.angle_precision_bits, kappa = self.kappa)
+            for g_angle in g_angles:
+                qc.initialize(initial_angle_amplitudes, g_angle)
+            '''
             U_gate = self.U_func_n()
             for _ in range(10):
                 qc.append(U_gate,  [g_ancilla[j] for j in range(self.n_ancilla_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
-
+            '''
 
         oracle_generator = beta_precalc_TruthTableOracle.Beta_precalc_TruthTableOracle(self.input_oracle, in_bits = self.n_angles*self.angle_precision_bits + self.move_id_len + 1, out_bits = self.probability_bits)
         #list_gates.append(W_gate) # We deepcopy W_gate to not interfere with other calls

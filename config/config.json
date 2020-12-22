@@ -28,6 +28,7 @@
     "number_iterations": 500,
     "beta": 10,
     "beta_type": "fixed",
+    "kappa": 1,
     
     "precision_solution": 0.9,
 

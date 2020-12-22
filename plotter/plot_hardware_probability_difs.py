@@ -82,7 +82,7 @@ def plot_hardware_prob_difs(tools):
     color = 'tab:blue'
     ax1.set_xlabel('Dipeptides')
     ax1.hlines(0, xmin = -.2, xmax = len(aas), color = 'red', linestyles = 'dashed')
-    ax1.set_ylabel(r'Measured probability gap: $p(\beta)  - p(\beta = 0)$')  # we already handled the x-label with ax1
+    ax1.set_ylabel(r'Measured probability gap: $p(\vec{\beta)}  - p(\vec{\beta} = 0)$')  # we already handled the x-label with ax1
     ax1.errorbar(aas, y_avgs, yerr=y_err, marker='d', fmt='.')
     #ax1.tick_params(axis='y')
 
@@ -98,6 +98,7 @@ def plot_hardware_prob_difs(tools):
     #a.set_xlabel('Dipeptides')
     #a.set_ylabel('Noiseless probabilities', color=color)
     #a.set_xticklabels(aas)
+    a.set_yticklabels([0, 0.25, 0.5])
 
     plt.title('Noiseless probabilities')
     plt.xticks([])
@@ -134,4 +135,4 @@ def plot_hardware_prob_difs(tools):
     '''
     #fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.show()
-    #plt.savefig(fname = './results/hardware_measurements')
+    plt.savefig(fname = './results/hardware_measurements')

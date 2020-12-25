@@ -1,4 +1,5 @@
 import random
+import re
 
 from bokeh.plotting import figure, show, output_file
 from bokeh.palettes import Turbo256
@@ -103,10 +104,20 @@ def plot_q_vs_c_slope(data):
         x_point.append(data[protein_key]['min_tts_c'])
         y_point.append(data[protein_key]['min_tts_q'])
         line_color.append('red' if 'minifold' in protein_key else 'blue')
-        marker.append('triangle' if 'minifold' in protein_key else 'circle')
-        legend.append('minifold' if 'minifold' in protein_key else 'random')
 
-    source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend))
+        if re.search("[A-Z]{4}", protein_key):
+            marker.append('square')
+        elif re.search("[A-Z]{3}", protein_key):
+            marker.append('triangle')
+        elif re.search("[A-Z]{2}", protein_key):
+            marker.append('circle')
+        else:
+            raise ValueError('The string {} does not fit the dipeptide, tripeptide or tetrapeptide description.'.format(protein_key))
+    
+        legend.append('minifold' if 'minifold' in protein_key else 'random')
+        size.append(re.findall('_[0-9]_', protein_key)[0][1])
+
+    source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend, size=size))
         #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')
             
         #plot_q_c_slop.circle(min_tts_c, min_tts_q, size=10, line_color='blue', color='transparent')
@@ -116,7 +127,7 @@ def plot_q_vs_c_slope(data):
     
     x_line = [1, 10**6]
     y_line = [1, 10**6]
-    plot_q_c_slop.line(x_line, y_line, line_width=2, line_color='red', line_dash="dashed")
+    plot_q_c_slop.line(x_line, y_line, line_width=2, line_color='gray', line_dash="dashed")
 
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None

@@ -25,8 +25,8 @@
     "final_step": 50,
     "path_tts_plot": "./results/",
     "ancilla_bits": 7,
-    "number_iterations": 500,
-    "beta": 100,
+    "number_iterations": 250,
+    "beta": 1000,
     "beta_type": "fixed",
     "kappa": 1,
     

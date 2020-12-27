@@ -17,7 +17,7 @@ class AngleCalculator():
 
         self.qTools = quantumUtils.QuantumUtils()
         self.n_angles = (number_aminoacids -1)*2
-        self.n_iterations = number_iterations * self.n_angles * self.rotation_steps
+        self.n_iterations = number_iterations * (self.rotation_steps ** self.n_angles)
 
     def calculate3DStructure(self, deltas_dict, n_steps, beta, beta_type, kappa, option):
 

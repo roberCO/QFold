@@ -4,6 +4,8 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
 
+import numpy as np
+
 def plot_q_vs_c(data):
     
     output_file("TTS comparison quantum vs random.html")
@@ -83,6 +85,8 @@ def plot_q_vs_c(data):
 
 def plot_q_vs_c_slope(data):
 
+    output_file("TTS slope quantum vs random.html")
+
     plot_q_c_slop = figure(
         title='Evolution of tts with different steps', 
         x_axis_label='Classical min(TTS)', 
@@ -106,6 +110,20 @@ def plot_q_vs_c_slope(data):
         marker.append('triangle' if 'minifold' in protein_key else 'circle')
         legend.append('minifold' if 'minifold' in protein_key else 'random')
 
+    logcx = np.log(x_point)
+    logqy = np.log(y_point)
+
+    model = np.polynomial.polynomial.polyfit(logcx, logqy, 1)
+    logb, a = model
+    b = np.exp(logb)
+
+    # 100 linearly spaced numbers
+    x_fit = np.linspace(1e2, 1e4)
+
+    # the function, which is y = x^2 here
+    y_fit = b*x_fit**a
+    print('a,b',a,b)
+
     source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend))
         #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')
             
@@ -114,9 +132,13 @@ def plot_q_vs_c_slope(data):
 
     plot_q_c_slop.scatter(x="x", y="y", size=10, line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source)
     
-    x_line = [1, 10**6]
-    y_line = [1, 10**6]
-    plot_q_c_slop.line(x_line, y_line, line_width=2, line_color='red', line_dash="dashed")
+    x_diag = [1, 10**6]
+    y_diag = [1, 10**6]
+    plot_q_c_slop.line(x_diag, y_diag, line_width=2, line_color='red', line_dash="dashed")
+
+    x_fit = list(x_fit)
+    #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
+    plot_q_c_slop.line(x_fit, y_fit, line_color="green", legend_label='y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
 
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None

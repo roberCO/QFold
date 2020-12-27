@@ -1,4 +1,5 @@
 import random
+import re
 
 from bokeh.plotting import figure, show, output_file
 from bokeh.palettes import Turbo256
@@ -84,8 +85,6 @@ def plot_q_vs_c(data):
     show(plot_tts)
 
 def plot_q_vs_c_slope(data):
-
-    output_file("TTS slope quantum vs random.html")
 
     plot_q_c_slop = figure(
         title='Evolution of tts with different steps', 

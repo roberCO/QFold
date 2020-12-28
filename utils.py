@@ -37,7 +37,7 @@ class Utils():
         parser.add_argument("initialization", help="initialization mode of protein structure [original | minifold | random]", type=str)
         parser.add_argument("mode", help="execution mode [simulation - return TTS | experiment - return TTS in IBMQ | real - return protein structure]", type=str)
 
-        parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=int)
+        parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=str)
         parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
 
         return parser.parse_args()

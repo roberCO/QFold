@@ -26,11 +26,11 @@ while read p; do
     do
     
 	if [[ $id == *"#"* ]]; then
-  		python main.py $protein $aa $index minifold
-		python main.py $protein $aa $index random
+  		python main.py $protein $aa $index minifold simulation
+		python main.py $protein $aa $index random simulation
 	else
-		python main.py $protein $aa $index minifold $id
-                python main.py $protein $aa $index random $id
+		python main.py $protein $aa $index minifold simulation -i $id
+        python main.py $protein $aa $index random simulation -i $id
 	fi
         
     done

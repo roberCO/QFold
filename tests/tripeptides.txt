@@ -3,8 +3,8 @@ glycylglycylalanine    GGA #https://pubchem.ncbi.nlm.nih.gov/compound/6992378
 alanylalanylalanine    AAA #https://pubchem.ncbi.nlm.nih.gov/compound/5478845
 alanylglutaminyllysine AQK #https://pubchem.ncbi.nlm.nih.gov/compound/131801085
 melanostatin           PLG #https://pubchem.ncbi.nlm.nih.gov/compound/92910
-alaynylglycylglycine   AGG #https://pubchem.ncbi.nlm.nih.gov/compound/96798
 tyrosylglycylglycine   YGG #https://pubchem.ncbi.nlm.nih.gov/compound/123715
 Glycylhistidyllysine   GHK #https://pubchem.ncbi.nlm.nih.gov/compound/73587
 glycyltyrosyllysine    GYK #https://pubchem.ncbi.nlm.nih.gov/compound/192230
+alaynylglycylglycine   AGG (96798) #https://pubchem.ncbi.nlm.nih.gov/compound/96798
 Leucylglycylaspartic   LGD (10193131) #https://pubchem.ncbi.nlm.nih.gov/compound/10193131

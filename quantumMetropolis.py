@@ -18,7 +18,7 @@ import beta_precalc_TruthTableOracle
 
 class QuantumMetropolis():
 
-    def __init__(self, initialization, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, kappa, oracle_option, input_oracle):
+    def __init__(self, initialization, n_repetitions, angle_precision_bits, probability_bits, n_angles, beta, beta_type, kappa, alpha, schedule, oracle_option, input_oracle):
 
         self.tools = utils.Utils()
 
@@ -38,10 +38,12 @@ class QuantumMetropolis():
         self.beta = beta
         self.beta_type = beta_type
         self.kappa = kappa
+        self.alpha = alpha
         self.oracle_option = oracle_option
 
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.n_ancilla_bits = self.probability_bits
+        self.annealing_schedule = schedule
 
         if self.n_ancilla_bits < 3:
             raise ValueError('The minimum number of ancilla qubits needed for this algorithm is 3! Currently there are only', self.n_ancilla_bits) 
@@ -445,7 +447,18 @@ class QuantumMetropolis():
         for i in range(self.n_repetitions):
 
             if self.beta_type == 'variable':
-                beta_value =  i* (self.beta / self.n_repetitions)
+                if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
+                    beta_value = self.beta * (1/self.alpha) * (1+i) 
+                elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
+                    beta_value = self.beta * (1/self.alpha) * np.log(1+i)
+                elif self.annealing_schedule == 'geometric':
+                    beta_value = self.beta * self.alpha**(-i)
+                elif self.annealing_schedule == 'exponential': 
+                    space_dim = self.n_angles
+                    beta_value = self.beta * np.exp( self.alpha * i**(1/space_dim) )
+                else:
+                    raise ValueError('<*> ERROR: Annealing Scheduling wrong value. It should be one of [linear, logarithmic, geometric, exponential] but it is', self.annealing_schedule)
+
                 #It creates one different oracle for each beta
                 oracle = oracle_generator.generate_oracle(self.oracle_option, beta_value)
             

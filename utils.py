@@ -40,6 +40,8 @@ class Utils():
         parser.add_argument("-i", "--id", help="id number of the protein in pubchem database", type=str)
         parser.add_argument("-c", "--cost", help="print the cost of the quantum calculation of the energy of each possible protein structure during the optimization", action='count')
 
+        self.args = parser.parse_args()
+
         return parser.parse_args()
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):

@@ -64,14 +64,7 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(
-    args.initialization,
-    args.bits, 
-    config_variables['ancilla_bits'], 
-    config_variables['number_iterations'],
-    config_variables['oracle_option'],
-    len(args.aminoacids)
-    )
+angleCalculator = angleCalculator.AngleCalculator(tools, len(args.aminoacids))
 
 q_accumulated_tts = []
 c_accumulated_tts = []
@@ -87,7 +80,7 @@ for step in range(config_variables['initial_step'], config_variables['final_step
     for option in ['quantum', 'classical']:
 
         # calculate the probability matrix of the optimization algorithms
-        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, config_variables['beta'], config_variables['beta_type'], config_variables['kappa'], option)
+        probabilities_matrix = angleCalculator.calculate3DStructure(deltas_dict, step, option)
 
         p_t = 0
         # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted

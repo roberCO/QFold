@@ -9,6 +9,7 @@ import json
 import argparse
 from scipy.stats import vonmises
 
+import itertools
 class Utils():
 
     def __init__(self, config_path=''):
@@ -42,7 +43,10 @@ class Utils():
 
         self.args = parser.parse_args()
 
-        return parser.parse_args()
+        if self.args.id == None: self.args.id = -1
+        if self.args.cost == None: self.args.cost = -1
+
+        return self.args
 
     def get_dihedral(self, coords1, coords2, coords3, coords4):
         """Returns the dihedral angle in degrees."""
@@ -444,7 +448,7 @@ class Utils():
         return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
 
 
-    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, initial_step):
+    def plot_tts(self, q_accumulated_tts, c_accumulated_tts, initial_step):
 
         x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]
 
@@ -458,7 +462,7 @@ class Utils():
 
         ax.plot(x_axis, q_accumulated_tts, marker='o', markersize=3, color="red", label = 'q_tts')
         ax.plot(x_axis, c_accumulated_tts, marker='o', markersize=3, color="blue", label = 'c_tts')
-            
+
         ax.set_ylabel('TTS')
         ax.set_xlabel('Steps')
         plt.tight_layout()
@@ -466,30 +470,160 @@ class Utils():
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
 
         if self.config_variables['beta_type'] == 'fixed':
-            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
         elif self.config_variables['beta_type'] == 'variable':
-            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.png'
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
 
-    def write_tts(self, initial_step, final_step, quantum_tts, classical_tts, protein_name, aminoacids, number_bits_rotation, method_rotations_generation, inizialitation_stats, final_stats):
+    def write_tts(self, quantum_tts, classical_tts, initialization_stats, final_stats):
 
         tts_json = {}
 
-        tts_json['initial_step'] = initial_step
-        tts_json['final_step'] = final_step
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
         tts_json['quantum_tts'] = quantum_tts
         tts_json['classical_tts'] = classical_tts
-        tts_json['initialization_stats'] = inizialitation_stats
+        tts_json['initialization_stats'] = initialization_stats
         tts_json['final_stats'] = final_stats
 
         json_name = ''
         if self.config_variables['beta_type'] == 'fixed':
-            json_name = self.config_variables['path_tts_plot']+'tts_results_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+            json_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         elif self.config_variables['beta_type'] == 'variable':
-            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+protein_name+'_'+aminoacids+'_'+str(number_bits_rotation)+'_'+method_rotations_generation+'_'+str(self.config_variables['beta'])+'.json'
+            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         
+        with open(json_name, 'w') as outfile:
+            json.dump(tts_json, outfile)
+
+    def write_experiment_results(self, initialization_stats, experiment_result_matrix, execution_stats, measures_dict):
+
+        final_stats = {}
+        print('experiment_result_matrix',experiment_result_matrix)
+        for experiment_beta_key in experiment_result_matrix.keys():
+            if experiment_beta_key == 'betas=betas':
+                for result_key in experiment_result_matrix[experiment_beta_key].keys():
+
+                    # the experiment counts are not in percentages but in number of executions
+                    # it is necessary to convert number of executions to percentage
+                    if result_key == 'raw':
+                        final_stats = {k:v/self.config_variables['ibmq_shots'] for k,v in experiment_result_matrix[experiment_beta_key][result_key].items()}
+                    else:
+                        final_stats[result_key] = experiment_result_matrix[experiment_beta_key][result_key]
+
+        tts_json = {}
+
+        tts_json['initial_step'] = self.config_variables['initial_step']
+        tts_json['final_step'] = self.config_variables['final_step']
+        tts_json['initialization_stats'] = initialization_stats
+        tts_json['execution_stats'] = execution_stats
+        tts_json['final_stats'] = final_stats
+
+        json_name = self.config_variables['path_tts_plot']+'tts_results_experiment_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
+        with open(json_name, 'w') as outfile:
+            json.dump(tts_json, outfile)
+
+        ## Write the cummulative results
+
+        with open('./results/measurements.json', 'r') as outfile2: 
+            dictionary = json.load(outfile2)
+
+
+        try:
+
+            _ = dictionary[self.args.aminoacids] # If we didn't have data on this peptide, we will get an error.
+            dictionary = self.mergeDict(dictionary,measures_dict)
+
+        except:
+
+            dictionary[self.args.aminoacids] = {}
+
+            for betas in measures_dict.keys():
+
+                if betas != '0-0':
+                    dictionary[self.args.aminoacids][betas] = {}
+                    dictionary[self.args.aminoacids][betas]['measurements'] = measures_dict[betas]
+
+                else:
+                    dictionary['--'] = {}
+                    dictionary['--']['0-0'] = {}
+                    dictionary['--']['0-0']['measurements'] = measures_dict['0-0']
+  
+
+        for betas in measures_dict.keys():
+            if betas != '0-0':
+                dictionary[self.args.aminoacids][betas]['noiseless'] = experiment_result_matrix['betas=betas']['noiseless']
+            else:
+                dictionary['--']['0-0']['noiseless'] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
+
+
+        with open('./results/measurements.json', 'w') as outfile2: 
+            json.dump(dictionary, outfile2)
+
+    def mergeDict(self,dict1,dict2):
+        '''dict1[GG][betas]['measurement'][00] is the older dictionary, and dict2[betas][00] is the new measurements'''
+        dict4 = {}
+        dict4[self.args.aminoacids] = {}
+        dict4['--'] = {}
+
+        for key in dict1:
+            if key != self.args.aminoacids and key != '--':
+                dict4[key] = dict1[key]
+
+        for aas in [self.args.aminoacids, '--']:
+
+            for betas in dict2.keys():
+                if (aas != '--' and betas != '0-0') or (aas == '--' and betas == '0-0'):
+                    dict4[aas][betas] = {'measurements': {}, 'noiseless': {}}
+
+            for betas, meas in itertools.product(dict2.keys(), ['00','01','10','11']):
+
+                if aas != '--' and betas != '0-0':
+                    dict4[aas][betas]['measurements'][meas] = dict2[betas][meas] + dict1[aas][betas]['measurements'][meas]
+                    dict4[aas][betas]['noiseless'][meas] = dict1[self.args.aminoacids][betas]['noiseless'][meas]
+
+                elif aas == '--' and betas == '0-0':
+                    dict4[aas][betas]['measurements'][meas] = dict2[betas][meas]
+                    dict4[aas][betas]['noiseless'][meas] = {'00': 0.25, '01': 0.25, '10': 0.25, '11': 0.25}
+
+        return dict4
+
+
+    def list_of_dict_2_dict_of_lists(self, lista, beta0_counts = None):
+        list00 = []
+        list01 = []
+        list10 = []
+        list11 = []
+        for dic in lista:
+            list00.append(dic['00'])
+            list01.append(dic['01'])
+            list10.append(dic['10'])
+            list11.append(dic['11'])
+        if beta0_counts != None:
+            list00 += beta0_counts['00']
+            list01 += beta0_counts['01']
+            list10 += beta0_counts['10']
+            list11 += beta0_counts['11']
+        return {'00':list00, '01':list01, '10': list10, '11': list11}
+
+    def write_real_results(self, initialization_stats, quantum_stats, classical_stats):
+
+        init_stats = {}
+
+        # initial stats of the execution configuration
+        init_stats['phis_initial_rotation'] = initialization_stats['phis_initial_rotation']
+        init_stats['psis_initial_rotation'] = initialization_stats['psis_initial_rotation']
+        init_stats['w_steps'] = self.config_variables['w_real_mode']
+        init_stats['repetitions'] = self.config_variables['number_repetitions_real_mode']
+
+        tts_json = {}
+
+        tts_json['initialization_stats'] = init_stats
+        tts_json['quantum_results'] = quantum_stats
+        tts_json['classical_results'] = classical_stats
+
+        json_name = self.config_variables['path_tts_plot']+'qfold_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)
 

@@ -67,6 +67,11 @@ class Beta_precalc_TruthTableOracle():
             # angle will be between 0 and 1, so we move it to between 0 and 2^out_bits. Then calculate the integer and the binary representation
             angles[key] = np.binary_repr(int(angle*2**self.out_bits), width= self.out_bits)
 
+            #if key[:10] == '1101000101':
+            #    print('<DEBUG> For key:', key, 'angle is:', angles[key])
+
+        self.angles = angles
+
         return angles
 
     def generate_qfold_oracle(self, angles):
@@ -76,10 +81,10 @@ class Beta_precalc_TruthTableOracle():
         oracle_value = QuantumRegister(len(list(angles.values())[0]))
         oracle_circuit = QuantumCircuit(oracle_key, oracle_value)
 
-        for key in self.deltas_dictionary.keys():
+        len_key = len(list(self.angles.keys())[0])
 
-            len_key = len(key)
-
+        for key in self.angles.keys():
+            
             # apply x gates to the 0s in the key
             for key_bit_index in range(len(key)):
                 if key[(len_key-1) - key_bit_index] == '0':
@@ -87,9 +92,8 @@ class Beta_precalc_TruthTableOracle():
 
             # apply mcx gates with the 1s in the angles (control the whole key)
             angle = angles[key]
-            len_angle = len(angle)
-            for angle_bit_index in range(len_angle):
-                if angle[(len_angle-1) - angle_bit_index] == '1':
+            for angle_bit_index in range(len(angle)):
+                if angle[(len(angle)-1) - angle_bit_index] == '1':
                     oracle_circuit.mcx(oracle_key, oracle_value[angle_bit_index])
 
             # apply x gates to the 0s in the key

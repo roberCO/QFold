@@ -8,25 +8,48 @@ class Metropolis():
 
     ## TODO: generalise to more than 2 angles
 
-    def __init__(self, initialization, bits_rotation, n_steps, number_angles, beta, beta_type, kappa, alpha, schedule, deltas_dict):
+    def __init__(self, number_angles, deltas_dict, tools):
 
-        self.initialization = initialization
-        self.bits_rotation = bits_rotation
-        self.n_steps = n_steps
-        self.beta = beta
-        self.beta_type = beta_type
-        self.kappa = kappa
-        self.alpha = alpha
+        self.tools = tools
+
+        self.initialization = tools.args.initialization
+        self.bits_rotation = tools.args.bits
+        self.mode = tools.args.mode
+        self.beta = tools.config_variables['beta']
+        self.beta_type = tools.config_variables['beta_type']
+        self.kappa = tools.config_variables['kappa']
+        self.alpha = tools.config_variables['alpha']
+        self.annealing_schedule = tools.config_variables['annealing_schedule']
+        self.w_real_mode = tools.config_variables['w_real_mode']
+
         self.deltas_dict = deltas_dict
-        self.number_angles = int(number_angles)
-
-        self.rotatition_steps = 2**self.bits_rotation
+        self.number_angles = int(number_angles/2)
+        self.rotation_steps = 2**self.bits_rotation
         self.bits_number_angles = math.ceil(np.log2(number_angles))
-        self.annealing_schedule = schedule
 
-        self.tools = utils.Utils()
+        self.n_iterations = tools.config_variables['number_iterations'] * (self.rotation_steps ** self.number_angles)
 
-    def execute_metropolis(self):
+    def execute_metropolis(self, nW):
+
+        probabilities_matrix = {}
+        for _ in range(self.n_iterations):
+            
+            [phi, psi] = self.calculate_metropolis_result(nW)
+        
+            # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
+            # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
+            position_angles = ''
+            for index in range(len(phi)): position_angles += str(phi[index]) + str(psi[index])
+
+            # if the is already created, sum the entry to the dict, else create the entry
+            if position_angles in probabilities_matrix.keys():
+                probabilities_matrix[position_angles] += (1/self.n_iterations) 
+            else:
+                probabilities_matrix[position_angles] = (1/self.n_iterations)
+
+        return probabilities_matrix
+
+    def calculate_metropolis_result(self, nW):
 
         #Final structure calculated with metropolis. This variable will be returned to angle calculator
 
@@ -41,8 +64,8 @@ class Metropolis():
             for _ in range(self.number_angles):
 
                 # Random initialization of angles
-                anglePsi_old.append(np.random.choice(self.rotatition_steps))
-                anglePhi_old.append(np.random.choice(self.rotatition_steps))
+                anglePsi_old.append(np.random.choice(self.rotation_steps))
+                anglePhi_old.append(np.random.choice(self.rotation_steps))
 
         elif self.initialization == 'minifold':
 
@@ -52,39 +75,18 @@ class Metropolis():
 
                 # Random initialization of angles
                 r = np.random.random()
-                for i in range(self.rotatition_steps):
+                for i in range(self.rotation_steps):
                     if accumulated_probs[i] >= r:
                         anglePhi_old.append(i)
                         break
 
                 r = np.random.random()
-                for i in range(self.rotatition_steps):
+                for i in range(self.rotation_steps):
                     if accumulated_probs[i] >= r:
                         anglePsi_old.append(i)
                         break
 
-            '''
-            for _ in range(self.number_angles):
-
-                # Random initialization of angles
-                anglePsi_old.append(0)
-                anglePhi_old.append(0)
-            
-            # 3 random steps with probability 1/2
-
-            for _ in range(10):
-
-                anglePhi_new, anglePsi_new, _, _, _ = self.generate_new_angles(anglePhi_old, anglePsi_old)
-
-                random_number = np.random.random_sample()
-
-                if random_number < 1/2: # Accept the change
-                    anglePhi_old = copy.deepcopy(anglePhi_new)
-                    anglePsi_old = copy.deepcopy(anglePsi_new)
-            '''
-
-
-        for _ in range(1, self.n_steps+1):
+        for _ in range(1, nW+1):
 
             anglePhi_new, anglePsi_new, change_angle, position_angle, change_plus_minus = self.generate_new_angles(anglePhi_old, anglePsi_old)
             position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)            
@@ -98,7 +100,6 @@ class Metropolis():
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
-
             beta_value = 0
             if self.beta_type == 'fixed':
                 beta_value = self.beta
@@ -124,7 +125,7 @@ class Metropolis():
                 probability_threshold = 1
 
             random_number = np.random.random_sample()
-
+            
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
             if random_number < min(1,probability_threshold): # Accept the change
@@ -153,9 +154,9 @@ class Metropolis():
         # Calculate the new angles
         if change_angle == 0:
             #Change just +1 or -1 step in the energies dictionary
-            anglePhi_new[position_angle] = (anglePhi_old[position_angle] + pm) % self.rotatition_steps
+            anglePhi_new[position_angle] = (anglePhi_old[position_angle] + pm) % self.rotation_steps
         elif change_angle == 1:
             #Change just +1 or -1 step in the energies dictionary
-            anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotatition_steps
+            anglePsi_new[position_angle] = (anglePsi_old[position_angle] + pm) % self.rotation_steps
 
         return anglePhi_new, anglePsi_new, change_angle, position_angle, change_plus_minus

@@ -1,67 +1,178 @@
-import quantumUtils
 import math
 import metropolis
 import quantumMetropolis
 import time
+import utils
+import collections, functools, operator
+import initializer
 
 class AngleCalculator():
 
-    def __init__(self, tools, number_aminoacids):
+    def __init__(self, tools, angle_initializer, initialization_stats):
 
-        self.bits_rotation = tools.args.bits
-        self.rotation_steps = 2**self.bits_rotation
+        self.tools = tools
+        self.initializer = angle_initializer
+        self.initialization_stats = initialization_stats
 
-        self.n_angles = (number_aminoacids -1)*2
-        self.n_iterations = tools.config_variables['number_iterations'] * (self.rotation_steps ** self.n_angles)
-        
-        self.initialization = tools.args.initialization
-        self.n_ancilla_bits = tools.config_variables['ancilla_bits']
-        self.kappa = tools.config_variables['kappa']
-        self.schedule = tools.config_variables['annealing_schedule']
-        self.oracle_option = tools.config_variables['oracle_option']
-        self.beta = tools.config_variables['beta']
-        self.beta_type = tools.config_variables['beta_type']
-        self.alpha = tools.config_variables['alpha']
+        self.mode = tools.args.mode
+        self.initial_step = tools.config_variables['initial_step']
+        self.final_step = tools.config_variables['final_step']
+        self.precision_solution = tools.config_variables['precision_solution']
 
-    def calculate3DStructure(self, deltas_dict, n_steps, option=0):
+        self.n_angles = (len(self.tools.args.aminoacids) -1)*2
 
-        #Quantum calculation option for 3D structure
-        if option == 'quantum': 
+    def calculate3DStructure(self, deltas_dict, index_min_energy):
 
-            qMetropolis = quantumMetropolis.QuantumMetropolis(self.initialization, n_steps, self.bits_rotation, self.n_ancilla_bits, self.n_angles, self.beta, self.beta_type, self.kappa, self.alpha, self.schedule, self.oracle_option, deltas_dict)
-            
+        q_accumulated_tts = []
+        c_accumulated_tts = []
+
+        min_q_tts = {'step': 0, 'value': -1}
+        min_c_tts = {'step': 0, 'value': -1}
+
+        quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
+        classical_metropolis = metropolis.Metropolis(self.n_angles, deltas_dict, self.tools)
+        for step in range(self.initial_step, self.final_step):
+
+            ###### Quantum Metropolis ######
             start_time = time.time()
-            [result, time_statevector] = qMetropolis.execute_quantum_metropolis_n()
+
+            if self.mode == 'simulation':
+                [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
+            elif self.mode == 'experiment': 
+                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
+            elif self.mode == 'real':
+                n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
+                accum_probabilities = []
+                for _ in range(n_repetitions):
+                    [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(self.tools.config_variables['w_real_mode'])
+                    accum_probabilities.append(probabilities_matrix)
+
+                real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
+                real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
+
+            else:
+                print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
+
             q_time = time.time() - start_time
-            print("<i> QUANTUM METROPOLIS: Time for", n_steps,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
+            print("<i> QUANTUM METROPOLIS: Time for", step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
 
-            return result
+            if self.mode == 'simulation':
+                q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.precision_solution)
 
-        #Classical calculation option for 3D structure
-        elif option == 'classical':
-
-            probabilities_matrix = {}
-            classical_metropolis = metropolis.Metropolis(self.initialization, self.bits_rotation, n_steps, self.n_angles/2, self.beta, self.beta_type, self.alpha, self.schedule, self.kappa, deltas_dict)
-            
+            ###### Classical Metropolis ######
             start_time = time.time()
-            for _ in range(self.n_iterations):
 
-                [phi, psi] = classical_metropolis.execute_metropolis()
+            if self.mode == 'real':
+                step = self.tools.config_variables['w_real_mode']
 
-                # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
-                # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
-                position_angles = ''
-                for index in range(len(phi)):
+            probabilities_matrix = classical_metropolis.execute_metropolis(step)
 
-                    if index != 0: position_angles += '-'
-                    position_angles += str(phi[index]) + '-' + str(psi[index])
+            if self.mode == 'real':
+                # get the key of the maximum value in the probability matrix
+                index_min_energy = max(probabilities_matrix.items(), key=operator.itemgetter(1))[0]
+                classical_selected_position = index_min_energy
+                classical_confidence = probabilities_matrix[index_min_energy]
 
-                if position_angles in probabilities_matrix.keys():
-                    probabilities_matrix[position_angles] += (1/self.n_iterations)
-                else:
-                    # create the new entry for this result
-                    probabilities_matrix[position_angles] = (1/self.n_iterations)
+            print("<i> CLASSICAL METROPOLIS: Time for", step, "steps: %s seconds" % (time.time() - start_time))
+            c_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.precision_solution)
 
-            print("<i> CLASSICAL METROPOLIS: Time for", n_steps, "steps: %s seconds" % (time.time() - start_time))
+            #### create json files ####
+            if self.mode == 'simulation':
+                
+                ###### Accumulated values Quantum Metropolis ######
+                q_accumulated_tts.append(q_tts)     
+                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
             
-            return probabilities_matrix        
+                ###### Accumulated values Classical Metropolis ######
+                c_accumulated_tts.append(c_tts)
+                if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
+                
+                # plot data
+                self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
+
+                # generate json data
+                final_stats = {'q': min_q_tts, 'c': min_c_tts}
+                self.tools.write_tts(q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+
+            elif self.mode == 'experiment':
+
+                p_t = experiment_result_matrix['betas=betas']['raw']['00']/self.tools.config_variables['ibmq_shots']
+                q_tts = self.tools.calculateTTS(self.tools.config_variables['precision_solution'], step, p_t)
+                
+                ###### Accumulated values Quantum Metropolis ######
+                q_accumulated_tts.append(q_tts)     
+                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
+            
+                ###### Accumulated values Classical Metropolis ######
+                c_accumulated_tts.append(c_tts)
+                if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
+
+                self.tools.write_experiment_results(self.initialization_stats, experiment_result_matrix, execution_stats, measures_dict)
+
+            # in real mode it is not necessary to execute the loop (there is only one step/w) so it breaks the loop
+            if self.mode == 'real':
+
+                quantum_success = False
+                classical_success = False
+
+                [quantum_selected_position, quantum_confidence] = self.get_selected_position_and_confidence(real_q_counts)
+                [quantum_energy, quantum_configuration] = self.initializer.get_energy_configuration_from_position(quantum_selected_position, self.tools.args)
+
+                if quantum_selected_position == index_min_energy: quantum_success = True 
+                quantum_stats = {'confidence':quantum_confidence, 'success':quantum_success, 'energy':quantum_energy, 'configuration':quantum_configuration}
+                
+                # if the classical position is equal than the quantum, it is not necessary to recalculate the configuration and energy, it is the same
+                if classical_selected_position == quantum_selected_position:
+                    classical_energy = quantum_energy
+                    classical_configuration = quantum_configuration
+                else:
+                    [classical_energy, classical_configuration] = self.initializer.get_energy_configuration_from_position(classical_selected_position, self.tools.args)
+                
+                if classical_selected_position == index_min_energy: classical_success = True 
+                classical_stats = {'confidence':classical_confidence, 'success': classical_success, 'energy':classical_energy, 'configuration':classical_configuration}
+
+                self.tools.write_real_results(self.initialization_stats, quantum_stats, classical_stats)
+
+                min_q_tts['value'] = quantum_confidence
+                min_q_tts['success'] = quantum_success
+                min_c_tts['value'] = classical_confidence
+                min_c_tts['success'] = classical_success
+
+                break
+        
+        return [min_q_tts, min_c_tts]
+
+    def get_selected_position_and_confidence(self, real_counts):
+
+        max_value = 0
+        position = 0
+        confidence = 0
+
+        for key in real_counts.keys():
+            if real_counts[key] > max_value:
+                max_value = real_counts[key]
+                position = key
+                confidence = real_counts[key]
+
+        return [position, confidence]
+
+    def calculate_tts_from_probability_matrix(self, probabilities_matrix, index_min_energy, step, precision_solution):
+
+        p_t = 0
+        # if the index of min energy calculated by psi 4 is in the results of metropolis, p_t is extracted
+        # else, the p_t is set to a very small value close to 0 (not 0 to avoid inf values)
+        if index_min_energy in probabilities_matrix.keys():
+            p_t = probabilities_matrix[index_min_energy]
+        else:
+            p_t = 0
+
+        result = 0
+        # Result is the calculated TTS
+        if p_t >= 1:
+            result = 1
+        elif p_t == 0:
+            result = 9999
+        else:
+            result = self.tools.calculateTTS(precision_solution, step, p_t)
+
+        return result

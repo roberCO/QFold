@@ -46,16 +46,15 @@ def plot_q_vs_c(data):
         if data[protein_key]['number_aas'] == 2:
 
             # paint the point in the plot (only the point, the label is plotted out of the loop)
-            plot_tts.square(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
+            plot_tts.circle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
 
         elif data[protein_key]['number_aas'] == 3:
 
-            plot_tts.circle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
-
+            plot_tts.triangle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
 
         elif data[protein_key]['number_aas'] == 4:
 
-            plot_tts.triangle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
+            plot_tts.square(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
 
 
     # plot the plane for classical and quantum region
@@ -91,7 +90,7 @@ def plot_q_vs_c_slope(data):
     output_file("TTS slope quantum vs random.html")
 
     plot_q_c_slop = figure(
-        title='Evolution of tts with different steps', 
+        #title='Evolution of tts with different steps', # Usually graphs do not have title
         x_axis_label='Classical min(TTS)', 
         y_axis_label='Quantum min(TTS)',
         x_axis_type="log",
@@ -99,49 +98,66 @@ def plot_q_vs_c_slope(data):
         x_range=(10**2, 10**4), 
         y_range=(10**2, 10**4))
 
-    x_point = []
-    y_point = []
-    line_color = []
-    marker = []
-    legend = []
 
-    for protein_key in data:
 
-        x_point.append(data[protein_key]['min_tts_c'])
-        y_point.append(data[protein_key]['min_tts_q'])
-        line_color.append('red' if 'minifold' in protein_key else 'blue')
-        marker.append('triangle' if 'minifold' in protein_key else 'circle')
-        legend.append('minifold' if 'minifold' in protein_key else 'random')
+    for init in ['minifold', 'random']:
 
-    logcx = np.log(x_point)
-    logqy = np.log(y_point)
+        x_point = []
+        y_point = []
+        line_color = []
+        marker = []
+        legend = []
+        size = []
 
-    model = np.polynomial.polynomial.polyfit(logcx, logqy, 1)
-    logb, a = model
-    b = np.exp(logb)
+        for protein_key in data:
 
-    # 100 linearly spaced numbers
-    x_fit = np.linspace(1e2, 1e4)
+            if init in protein_key:
 
-    # the function, which is y = x^2 here
-    y_fit = b*x_fit**a
-    print('a,b',a,b)
+                x_point.append(data[protein_key]['min_tts_c'])
+                y_point.append(data[protein_key]['min_tts_q'])
+                line_color.append('red' if 'minifold' in protein_key else 'blue')
 
-    source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend))
-        #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')
-            
+                if re.search("[A-Z]{4}", protein_key):
+                    marker.append('square')
+                elif re.search("[A-Z]{3}", protein_key):
+                    marker.append('triangle')
+                elif re.search("[A-Z]{2}", protein_key):
+                    marker.append('circle')
+                else:
+                    raise ValueError('The string {} does not fit the dipeptide, tripeptide or tetrapeptide description.'.format(protein_key))
+
+
+                legend.append('minifold' if 'minifold' in protein_key else 'random')
+                size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*2))
+
+        logcx = np.log(x_point)
+        logqy = np.log(y_point)
+
+        model = np.polynomial.polynomial.polyfit(logcx, logqy, 1)
+        logb, a = model
+        b = np.exp(logb)
+
+        # 100 linearly spaced numbers
+        x_fit = np.linspace(1e2, 1e4)
+
+        # the function, which is y = x^2 here
+        y_fit = b*x_fit**a
+        print('a,b',a,b)
+
+        source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend, size = size))
+
+        #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')      
         #plot_q_c_slop.circle(min_tts_c, min_tts_q, size=10, line_color='blue', color='transparent')
-        
 
-    plot_q_c_slop.scatter(x="x", y="y", size=10, line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source)
+        line_color = 'red' if init == 'minifold' else 'blue'    
+        x_fit = list(x_fit)
+        #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
+        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color, legend_label= init + ' y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
+        plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source, size = "size")
     
     x_diag = [1, 10**6]
     y_diag = [1, 10**6]
-    plot_q_c_slop.line(x_diag, y_diag, line_width=2, line_color='red', line_dash="dashed")
-
-    x_fit = list(x_fit)
-    #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
-    plot_q_c_slop.line(x_fit, y_fit, line_color="green", legend_label='y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
+    plot_q_c_slop.line(x_diag, y_diag, line_width=2, line_color='gray', line_dash="dashed")
 
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None

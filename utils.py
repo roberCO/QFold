@@ -14,7 +14,7 @@ class Utils():
 
     def __init__(self, config_path=''):
 
-        if(config_path != ''):
+        if config_path != '':
             try:
                 f = open(config_path)
                 f.close()

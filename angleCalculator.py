@@ -18,6 +18,7 @@ class AngleCalculator():
         self.initial_step = tools.config_variables['initial_step']
         self.final_step = tools.config_variables['final_step']
         self.precision_solution = tools.config_variables['precision_solution']
+        self.default_value_tts = tools.config_variables['default_value_tts']
 
         self.n_angles = (len(self.tools.args.aminoacids) -1)*2
 
@@ -171,7 +172,7 @@ class AngleCalculator():
         if p_t >= 1:
             result = 1
         elif p_t == 0:
-            result = 9999
+            result = self.default_value_tts
         else:
             result = self.tools.calculateTTS(precision_solution, step, p_t)
 

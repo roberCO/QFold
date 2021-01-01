@@ -37,7 +37,7 @@ class QuantumMetropolis():
         #Oracle output ancilla bits
         self.probability_bits = self.tools.config_variables['ancilla_bits']
         self.beta = self.tools.config_variables['beta']
-        self.beta_type = self.tools.config_variables['beta_variable']
+        self.beta_type = self.tools.config_variables['beta_type']
         self.kappa = self.tools.config_variables['kappa']
         self.alpha = self.tools.config_variables['alpha']
         self.oracle_option = self.tools.config_variables['oracle_option']

@@ -39,7 +39,8 @@ class Metropolis():
             # it is necessary to construct the key from the received phi/psi (from the classical metropolis)
             # the idea is to add 1/n_repetitions to the returned value (to get the normalized number of times that this phi/psi was produced)
             position_angles = ''
-            for index in range(len(phi)): position_angles += str(phi[index]) + str(psi[index])
+            for index in range(len(phi)): position_angles += str(phi[index]) + '-' + str(psi[index]) + "-"
+            position_angles = position_angles[:-1]
 
             # if the is already created, sum the entry to the dict, else create the entry
             if position_angles in probabilities_matrix.keys():

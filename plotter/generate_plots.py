@@ -27,7 +27,6 @@ input_files = [f for f in listdir(config_variables['path_tts_plot']) if isfile(j
 results = {}
 for input_name in input_files:
     if input_name[:3] == 'tts':
-        print(input_name)
         results.update(tools.read_results_data(input_name))
 
 # generate plot of minifold vs random inizialization mode

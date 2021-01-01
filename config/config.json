@@ -41,6 +41,7 @@
     "w_real_mode": 20,
 
     "precision_solution": 0.9,
+    "default_value_tts": 99999,
     
     "n_threads_pool": 1,    
     

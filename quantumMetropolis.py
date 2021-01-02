@@ -49,6 +49,9 @@ class QuantumMetropolis():
         self.move_id_len = int(np.ceil(np.log2(n_angles)))
         self.annealing_schedule = self.tools.config_variables['annealing_schedule']
 
+        self.initial_step = self.tools.config_variables['initial_step']
+        self.final_step = self.tools.config_variables['final_step']
+        self.w_real_mode = self.tools.config_variables['w_real_mode']
 
         if self.probability_bits < 3:
             raise ValueError('The minimum number of ancilla qubits needed for this algorithm is 3! Currently there are only', self.probability_bits) 
@@ -322,7 +325,7 @@ class QuantumMetropolis():
                                     [cf_ancilla[j] for j in range(self.probability_bits)])
 
         self.coin_flip(cf_circ,cf_ancilla,cf_coin)
- 
+
         cf_circ.append(oracle_gate.inverse(), [cf_move_value[0]]+[cf_move_id[j] for j in range(cf_move_id.size)]+
                                               [cf_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))]+ 
                                               [cf_ancilla[j] for j in range(self.probability_bits)])
@@ -472,18 +475,18 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
 
-        for i in range(nW):
+        for i in range(1,nW):
 
             if self.beta_type == 'variable':
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
-                    beta_value = self.beta * (1/self.alpha) * (1+i) 
+                    beta_value = self.beta * (1/self.alpha) * (i) 
                 elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
-                    beta_value = self.beta * (1/self.alpha) * np.log(1+i)
+                    beta_value = self.beta * (1/self.alpha) * np.log(i)
                 elif self.annealing_schedule == 'geometric':
-                    beta_value = self.beta * self.alpha**(-i)
+                    beta_value = self.beta * self.alpha**(-i+1)
                 elif self.annealing_schedule == 'exponential': 
                     space_dim = self.n_angles
-                    beta_value = self.beta * np.exp( self.alpha * i**(1/space_dim) )
+                    beta_value = self.beta * np.exp( self.alpha * (i-1)**(1/space_dim) )
                 else:
                     raise ValueError('<*> ERROR: Annealing Scheduling wrong value. It should be one of [linear, logarithmic, geometric, exponential] but it is', self.annealing_schedule)
 
@@ -493,44 +496,46 @@ class QuantumMetropolis():
             W_gate = self.W_func_n(oracle)
             
             #list_gates[i].params[0]= beta
-            qc.append(W_gate,  [g_ancilla[j] for j in range(self.probability_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+            qc.append(W_gate, [g_ancilla[j] for j in range(self.probability_bits)] + [g_coin[0],g_move_value[0]]+ [g_move_id[j] for j in range(self.move_id_len)] +[g_angles[k][j] for (k,j) in product(range(self.n_angles-1,-1,-1), range(self.angle_precision_bits))])
+
+            if i >= self.initial_step:
+                qc.snapshot(label = str(i))
 
         start_time = time.time()
+
+        backend = Aer.get_backend('statevector_simulator')
         
-        experiment = execute(qc, backend=self.device, backend_options=self.backend_options)
-        state_vector = Statevector(experiment.result().get_statevector(qc))
+        #experiment = execute(qc, backend=self.device, backend_options=self.backend_options)
+        #state_vector = Statevector(experiment.result().get_statevector(qc))
 
-        # calculate the indices of the angles
-        # the angles qubits are at the end of the statevector
-        number_bits_angles = self.angle_precision_bits * self.n_angles
-        total_bits = state_vector.num_qubits
-        angle_qubits = [qubit_index for qubit_index in range ((total_bits - number_bits_angles), total_bits)]
+        result = execute(qc, backend).result()
+        snapshots = result.data()['snapshots']['statevector']
 
-        probabilities = state_vector.probabilities(angle_qubits)
-        '''
-        state_vec = state_vector.data
-        for i in range(len(state_vec)):
-            if abs(state_vec[i])>1e-7:
-                print(np.binary_repr(i, width = self.angle_precision_bits* self.n_angles + self.move_id_len + 2 + self.probability_bits),state_vec[i])
-        '''
-
-        #state = qi.Statevector.from_instruction(qc)
         time_statevector = time.time() - start_time
 
         # Extract probabilities in the measurement of the angles phi and psi
         #probabilities = state.probabilities([j+self.probability_bits+2+self.move_id_len for j in range(self.angle_precision_bits * self.n_angles)])
 
         probs = {}
-        for index_probabilites in range(2**(self.angle_precision_bits *self.n_angles)):
+        number_bits_angles = self.angle_precision_bits * self.n_angles
 
-            key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
-            probs[key] = probabilities[index_probabilites]#.as_integer
+        for i, state_vector in snapshots.items():
+            int_i = int(i)
+            probs[int_i] = {}
+
+            state_vector = Statevector(snapshots[i][0])
+
+            total_bits = state_vector.num_qubits
+            angle_qubits = [qubit_index for qubit_index in range ((total_bits - number_bits_angles), total_bits)]
+            probabilities = state_vector.probabilities(angle_qubits)
         
-        '''        
-        for key, value in probs.items():
-            if value > 1e-10:
-                print(key, value)
-        '''
+            for index_probabilites in range(2**(self.angle_precision_bits *self.n_angles)):
+
+                key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
+                probs[int_i][key] = probabilities[index_probabilites]#.as_integer
+
+            probs = collections.OrderedDict(probs)
+
         return [probs, time_statevector]
 
     # this method converts the index returned by statevector into a string key. 

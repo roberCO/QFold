@@ -3,7 +3,7 @@ import initializer
 import angleCalculator
 import psiFour
 import utils
-import openfermion
+#import openfermion
 
 import time
 import datetime
@@ -57,9 +57,6 @@ except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
     angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
-#Create an empty list of enery list
-#HARDCODED for proteins with only two args.aminoacids
-#TODO modify to any number of args.aminoacids (it should a list of list, each position of the list contains a list of phi and psi values of this list position)
 [deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')

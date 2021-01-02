@@ -1,3 +1,4 @@
+from copy import Error
 import subprocess
 import pandas as pd
 import re
@@ -34,6 +35,9 @@ class PsiFour():
             self.createInputFile(protein, protein_id)
             self.executePsiCommand()
             [atoms, protein_id] = self.parsePsiOutputFile(protein)
+
+        if atoms == []:
+            raise Error('No atoms have been found!')
 
         return atoms
 

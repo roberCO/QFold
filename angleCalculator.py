@@ -32,35 +32,43 @@ class AngleCalculator():
 
         quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
         classical_metropolis = metropolis.Metropolis(self.n_angles, deltas_dict, self.tools)
-        for step in range(self.initial_step, self.final_step):
 
-            ###### Quantum Metropolis ######
-            start_time = time.time()
+        ###### Quantum Metropolis ######
+        start_time = time.time()
 
-            if self.mode == 'simulation':
-                [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(step)
-            elif self.mode == 'experiment': 
-                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
-            elif self.mode == 'real':
-                n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
-                accum_probabilities = []
-                for _ in range(n_repetitions):
-                    [probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(self.tools.config_variables['w_real_mode'])
-                    accum_probabilities.append(probabilities_matrix)
+        if self.mode == 'simulation':
+            [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.final_step)
+        elif self.mode == 'experiment': 
+            [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
+        elif self.mode == 'real':
+            n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
+            accum_probabilities = []
+            for _ in range(n_repetitions):
+                [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.tools.config_variables['w_real_mode'] + 1) # The 1 is needed because we implement a range (1, nW)
+                probabilities_matrix = dict_probabilities_matrix[self.tools.config_variables['w_real_mode']]
+                accum_probabilities.append(probabilities_matrix)
 
-                real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
-                real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
+            real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
+            real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
 
-            else:
-                print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
+        else:
+            print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
-            q_time = time.time() - start_time
-            print("<i> QUANTUM METROPOLIS: Time for", step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
+        q_time = time.time() - start_time
+        print("<i> QUANTUM METROPOLIS: Time for", self.initial_step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
 
-            if self.mode == 'simulation':
+        if self.mode == 'simulation':
+
+            for step, probabilities_matrix in dict_probabilities_matrix.items():
+
+                ###### Accumulated values Quantum Metropolis ######
                 q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.precision_solution)
 
-            ###### Classical Metropolis ######
+                q_accumulated_tts.append(q_tts)     
+                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
+
+        ###### Classical Metropolis ######
+        for step in range(self.initial_step, self.final_step):  
             start_time = time.time()
 
             if self.mode == 'real':
@@ -79,21 +87,18 @@ class AngleCalculator():
 
             #### create json files ####
             if self.mode == 'simulation':
-                
-                ###### Accumulated values Quantum Metropolis ######
-                q_accumulated_tts.append(q_tts)     
-                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
             
                 ###### Accumulated values Classical Metropolis ######
                 c_accumulated_tts.append(c_tts)
                 if c_tts < min_c_tts['value'] or min_c_tts['value'] == -1: min_c_tts.update(dict(value=c_tts, step=step))
                 
-                # plot data
-                self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
+                if step == self.final_step - 1: 
+                    # plot data
+                    self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
 
-                # generate json data
-                final_stats = {'q': min_q_tts, 'c': min_c_tts}
-                self.tools.write_tts(q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
+                    # generate json data
+                    final_stats = {'q': min_q_tts, 'c': min_c_tts}
+                    self.tools.write_tts(q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
 
             elif self.mode == 'experiment':
 

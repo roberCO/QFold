@@ -5,7 +5,10 @@ import numpy as np
 from bokeh.plotting import figure, show, output_file
 from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
-
+from collections import OrderedDict
+from bokeh.palettes import Dark2_5 as palette
+import itertools
+from bokeh.models import SingleIntervalTicker, LinearAxis
 import numpy as np
 
 def plot_q_vs_c(data):
@@ -164,3 +167,41 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.ygrid.grid_line_color = None
 
     show(plot_q_c_slop)
+
+def plot_q_opt_step(data):
+
+    output_file("Quantum optimal step.html")
+    quantum_optimal_step = {}
+
+    for protein_key in data:
+
+        protein_name = protein_key.split('_')[0]
+        bits = protein_key.split('_')[1]
+        init_method = protein_key.split('_')[2]
+        step = data[protein_key]['min_tts_q_step']
+
+        if len(protein_name) == 2:
+
+            if protein_name+'-'+init_method in quantum_optimal_step.keys():
+                quantum_optimal_step[protein_name+'-'+init_method][bits] = step
+            else:
+                quantum_optimal_step[protein_name+'-'+init_method] = {bits: step}
+
+    p = figure(plot_width=400, plot_height=400, x_range=(3, 10), x_axis_type=None)
+    ticker = SingleIntervalTicker(interval=1, num_minor_ticks=10)
+    xaxis = LinearAxis(ticker=ticker)
+    p.add_layout(xaxis, 'below')
+    # create a color iterator
+    colors = itertools.cycle(palette)    
+    
+    for protein, color in zip(quantum_optimal_step, colors):
+
+        ordered_quantum_steps = OrderedDict(sorted(quantum_optimal_step[protein].items()))
+
+
+        p.line(list(ordered_quantum_steps.keys()), list(ordered_quantum_steps.values()), line_width=2, color=color, legend=protein)
+
+        #p.circle([1, 2], [3, 4], size=20, color="navy", alpha=0.5)
+
+
+    show(p)

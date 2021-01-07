@@ -6,7 +6,7 @@ import utils
 
 from plot_minifold_vs_random import plot_m_vs_r
 from plot_tts_evolution import plot_tts_ev, plot_tts_ev_bits
-from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope
+from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope, plot_q_opt_step
 
 from plot_hardware_probability_difs import plot_hardware_prob_difs
 from stadistics_calculator import calculate_stats
@@ -26,7 +26,7 @@ config_variables = tools.get_config_variables()
 input_files = [f for f in listdir(config_variables['path_tts_plot']) if isfile(join(config_variables['path_tts_plot'], f))]
 results = {}
 for input_name in input_files:
-    if input_name[:3] == 'tts':
+    if input_name[:3] == 'tts' and input_name.split('.')[1] == 'json':
         results.update(tools.read_results_data(input_name))
 
 # generate plot of minifold vs random inizialization mode
@@ -38,6 +38,7 @@ for input_name in input_files:
 # generate plot of the comparison between quantum and classical difference of tts
 plot_q_vs_c(results)
 plot_q_vs_c_slope(results)
+#plot_q_opt_step(results)
 
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)

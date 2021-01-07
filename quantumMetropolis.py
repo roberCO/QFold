@@ -101,11 +101,18 @@ class QuantumMetropolis():
         Proposes new moves
         '''
         circuit.h(move_value) #Es un único bit que puede ser 0 para + y 1 para -
-        if bin(self.n_angles).count('1') == 1: # if the number of angles is a power of two
+        if bin(self.n_angles).count('1') == 1: # if the number of angles is a power of two: dipeptides and tripeptides
             circuit.h(move_id)
+        elif self.n_angles == 6: # For tetrapeptides
+            circuit.u3(theta = 2* np.arcsin(np.sqrt(1/3)), phi = 0, lam = 0, qubit=move_id[2])
+            circuit.x(move_id[2])
+            circuit.ch(move_id[2], move_id[1])
+            circuit.x(move_id[2])
+            circuit.h(move_id[0])              
         else:
-            vector = ([1]*self.n_angles + [0]*(2**(self.move_id_len) - self.n_angles))/np.sqrt(self.n_angles)
-            circuit.initialize(vector, [move_id[j] for j in range(self.move_id_len)])
+            raise NotImplementedError
+            # vector = ([1]*self.n_angles + [0]*(2**(self.move_id_len) - self.n_angles))/np.sqrt(self.n_angles)
+            # circuit.initialize(vector, [move_id[j] for j in range(self.move_id_len)])
 
     def conditional_move_npeptide(self,circuit,ancilla,coin,move_value,move_id,angles):
         '''
@@ -479,9 +486,9 @@ class QuantumMetropolis():
 
             if self.beta_type == 'variable':
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
-                    beta_value = self.beta * (1/self.alpha) * (i) 
+                    beta_value = self.beta * (i) 
                 elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
-                    beta_value = self.beta * (1/self.alpha) * np.log(i)
+                    beta_value = self.beta * np.log(i)
                 elif self.annealing_schedule == 'geometric':
                     beta_value = self.beta * self.alpha**(-i+1)
                 elif self.annealing_schedule == 'exponential': 

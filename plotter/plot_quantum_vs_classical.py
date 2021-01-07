@@ -129,8 +129,8 @@ def plot_q_vs_c_slope(data):
                 else:
                     raise ValueError('The string {} does not fit the dipeptide, tripeptide or tetrapeptide description.'.format(protein_key))
 
-
-                legend.append('minifold' if 'minifold' in protein_key else 'random')
+                # TODO change this
+                legend.append('minifold' if 'minifold initialization' in protein_key else 'random initialization')
                 size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*2))
 
         logcx = np.log(x_point)
@@ -155,7 +155,7 @@ def plot_q_vs_c_slope(data):
         line_color = 'red' if init == 'minifold' else 'blue'    
         x_fit = list(x_fit)
         #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
-        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color, legend_label= init + ' y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
+        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color, legend_label= init + ' initialization y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
         plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source, size = "size")
     
     x_diag = [1, 10**6]
@@ -165,6 +165,21 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None
     plot_q_c_slop.ygrid.grid_line_color = None
+
+
+    citation = Label(x=350, y=10, x_units='screen', y_units='screen',
+                    text='Quantum advantage', render_mode='css',
+                    border_line_color='white', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
+
+    citation = Label(x=10, y=400, x_units='screen', y_units='screen',
+                    text='Classical advantage', render_mode='css',
+                    border_line_color='white', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
 
     show(plot_q_c_slop)
 

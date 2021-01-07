@@ -75,16 +75,18 @@ def plot_hardware_prob_difs(tools):
     # Create some mock data
     fig, ax1 = plt.subplots(1, 1, tight_layout=True)
 
-    #color = 'tab:blue'
+    '''#color = 'tab:blue'
     ax1.set_xlabel('Dipeptides')
-    ax1.set_ylabel('Noiseless probability gap')#, color=color)
+    ax1.set_ylabel('Noiseless probability gap')#, color=color)'''
 
     color = 'tab:blue'
-    ax1.set_xlabel('Dipeptides')
+    ax1.set_xlabel('Dipeptides', fontsize = 12)
     ax1.hlines(0, xmin = -.2, xmax = len(aas), color = 'red', linestyles = 'dashed')
-    ax1.set_ylabel(r'Measured probability gap: $p(\beta(\vec{t}) = (0.1,1))  - p(\beta(\vec{t}) = (0,0))$')  # we already handled the x-label with ax1
+    ax1.set_ylabel(r'Measured probability gap: $p(\beta(\vec{t}) = (0.1,1))  - p(\beta(\vec{t}) = (0,0))$', fontsize = 10)  # we already handled the x-label with ax1
     ax1.errorbar(aas, y_avgs, yerr=y_err, marker='d', fmt='.')
     #ax1.tick_params(axis='y')
+    plt.yticks(fontsize=12)
+    plt.xticks(fontsize=12)
 
     # this is an inset axes over the main axes
     a = plt.axes([.55, .3, .4, .2])

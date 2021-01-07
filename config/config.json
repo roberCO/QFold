@@ -39,6 +39,7 @@
     "ibmq_shots": 8192,
     "betas": [ 0.1, 1],
     "w_real_mode": 20,
+    "number_repetitions_real_mode": 1,
 
     "precision_solution": 0.9,
     "default_value_tts": 99999,

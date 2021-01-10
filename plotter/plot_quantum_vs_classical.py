@@ -92,14 +92,19 @@ def plot_q_vs_c_slope(data):
 
     output_file("TTS slope quantum vs random.html")
 
+    width = 700
+    height = 450
+
     plot_q_c_slop = figure(
         #title='Evolution of tts with different steps', # Usually graphs do not have title
         x_axis_label='Classical min(TTS)', 
         y_axis_label='Quantum min(TTS)',
         x_axis_type="log",
         y_axis_type="log",
-        x_range=(10**2, 10**4), 
-        y_range=(10**2, 10**4))
+        x_range=(2*10**1, 3*10**4), 
+        y_range=(2*10**1, 3*10**4),
+        plot_height=height,
+        plot_width=width)
 
     al = []
     bl = []
@@ -146,7 +151,7 @@ def plot_q_vs_c_slope(data):
         bl.append(b)
 
         # 100 linearly spaced numbers
-        x_fit = np.linspace(1e2, 1e4)
+        x_fit = np.linspace(2e1, 3e4)
 
         # the function, which is y = x^2 here
         y_fit = b*x_fit**a
@@ -170,21 +175,6 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.yaxis.major_label_orientation = "vertical"
     plot_q_c_slop.xgrid.grid_line_color = None
     plot_q_c_slop.ygrid.grid_line_color = None
-
-
-    citation = Label(x=270, y=20, x_units='screen', y_units='screen',
-                    text='Quantum \n advantage', render_mode='css',
-                    border_line_color='white', border_line_alpha=0.0,
-                    background_fill_color='white', background_fill_alpha=0.0)
-
-    plot_q_c_slop.add_layout(citation)
-
-    citation = Label(x=170, y=520, x_units='screen', y_units='screen',
-                    text='Classical advantage', render_mode='css',
-                    border_line_color='white', border_line_alpha=0.0,
-                    background_fill_color='white', background_fill_alpha=0.0)
-
-    plot_q_c_slop.add_layout(citation)
 
     x = -1
     y = -1
@@ -213,13 +203,27 @@ def plot_q_vs_c_slope(data):
         ("tripeptides", [rtg]),
         ("tetrapeptides", [rsg]),
 
-        LegendItem(label = "2 bits", renderers=[rdg2],  size = 4),
-        LegendItem(label ="3 bits", renderers=[rdg3],  size = 6),
-        LegendItem(label ="4 bits", renderers=[rdg4],  size = 8),
-        LegendItem(label ="5 bits", renderers=[rdg5],  size = 10)
-    ], location=(230, 300))
+        ("2 bits", [rdg2]),
+        ("3 bits", [rdg3]),
+        ("4 bits", [rdg4]),
+        ("5 bits", [rdg5])
+    ], location=(.35*width, .28*height), background_fill_alpha = 0, border_line_alpha = 0)
 
     plot_q_c_slop.add_layout(legend, 'left')
+
+    citation = Label(x=1/3*width, y=1/5*height, x_units='screen', y_units='screen',
+                    text='Quantum advantage', render_mode='canvas',
+                    border_line_color='black', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
+
+    citation = Label(x=1/4*width, y=2/3*height, x_units='screen', y_units='screen',
+                    text='Classical advantage', render_mode='canvas',
+                    border_line_color='black', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
 
 
 

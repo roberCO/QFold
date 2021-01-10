@@ -101,7 +101,8 @@ def plot_q_vs_c_slope(data):
         x_range=(10**2, 10**4), 
         y_range=(10**2, 10**4))
 
-
+    al = []
+    bl = []
 
     for init in ['minifold', 'random']:
 
@@ -111,6 +112,7 @@ def plot_q_vs_c_slope(data):
         marker = []
         legend = []
         size = []
+
 
         for protein_key in data:
 
@@ -140,6 +142,9 @@ def plot_q_vs_c_slope(data):
         logb, a = model
         b = np.exp(logb)
 
+        al.append(a)
+        bl.append(b)
+
         # 100 linearly spaced numbers
         x_fit = np.linspace(1e2, 1e4)
 
@@ -155,8 +160,8 @@ def plot_q_vs_c_slope(data):
         line_color = 'red' if init == 'minifold' else 'blue'    
         x_fit = list(x_fit)
         #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
-        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color, legend_label= init + ' initialization y='+str(np.round(b,3))+'*x**'+str(np.round(a,3)))
-        plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", legend_group='legend', source=source, size = "size")
+        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color) #
+        plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", source=source, size = "size") #legend_group='legend',
     
     x_diag = [1, 10**6]
     y_diag = [1, 10**6]
@@ -167,19 +172,56 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.ygrid.grid_line_color = None
 
 
-    citation = Label(x=350, y=10, x_units='screen', y_units='screen',
-                    text='Quantum advantage', render_mode='css',
+    citation = Label(x=270, y=20, x_units='screen', y_units='screen',
+                    text='Quantum \n advantage', render_mode='css',
                     border_line_color='white', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
 
-    citation = Label(x=10, y=400, x_units='screen', y_units='screen',
+    citation = Label(x=170, y=520, x_units='screen', y_units='screen',
                     text='Classical advantage', render_mode='css',
                     border_line_color='white', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
+
+    x = -1
+    y = -1
+    rdb = plot_q_c_slop.diamond(x, y, color = 'blue')
+    rlb = plot_q_c_slop.line(x, y, color = 'blue')
+
+    rdr = plot_q_c_slop.diamond(x, y, color = 'red')
+    rlr = plot_q_c_slop.line(x, y, color = 'red')
+
+    rcg = plot_q_c_slop.circle(x, y, line_color="black")
+    rtg = plot_q_c_slop.triangle(x, y, line_color="black")
+    rsg = plot_q_c_slop.square(x, y, line_color="black")
+
+    rdg2 = plot_q_c_slop.diamond(x, y, line_color="black", size = 4)
+    rdg3 = plot_q_c_slop.diamond(x, y, line_color="black", size = 6)
+    rdg4 = plot_q_c_slop.diamond(x, y, line_color="black", size = 8)
+    rdg5 = plot_q_c_slop.diamond(x, y, line_color="black", size = 10)
+
+    legend = Legend(items=[
+        ("random initialization", [rdb, rlb]),
+        (str(np.round(bl[1],3))+'*x**'+str(np.round(al[1],3)), [rlb]),
+        ("minifold initialization", [rdr, rlr]),
+        (str(np.round(bl[0],3))+'*x**'+str(np.round(al[0],3)), [rlr]),
+
+        ("dipeptides", [rcg]),
+        ("tripeptides", [rtg]),
+        ("tetrapeptides", [rsg]),
+
+        LegendItem(label = "2 bits", renderers=[rdg2],  size = 4),
+        LegendItem(label ="3 bits", renderers=[rdg3],  size = 6),
+        LegendItem(label ="4 bits", renderers=[rdg4],  size = 8),
+        LegendItem(label ="5 bits", renderers=[rdg5],  size = 10)
+    ], location=(230, 300))
+
+    plot_q_c_slop.add_layout(legend, 'left')
+
+
 
     show(plot_q_c_slop)
 

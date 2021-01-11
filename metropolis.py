@@ -87,7 +87,7 @@ class Metropolis():
                         anglePsi_old.append(i)
                         break
 
-        for _ in range(1, nW+1):
+        for i in range(1, nW+1):
 
             anglePhi_new, anglePsi_new, change_angle, position_angle, change_plus_minus = self.generate_new_angles(anglePhi_old, anglePsi_old)
             position_angle_binary = np.binary_repr(position_angle, width = self.bits_number_angles)            

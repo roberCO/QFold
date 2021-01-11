@@ -11,7 +11,7 @@ if [ "$1" == "" ] || [ "$2" == "" ] || [ "$3" == "" ] || [ "$4" == "" ] ; then
     exit 1
 fi
 
-schedules=("linear", "logarithmic", "geometric", "exponential")
+schedules=("linear" "logarithmic" "geometric" "exponential")
 
 for schedule in "${schedules[@]}"; do
     
@@ -20,8 +20,8 @@ for schedule in "${schedules[@]}"; do
         mv config/config.json config/config_temp.json
         jq -r ".annealing_schedule |= \"$schedule\"" config/config_temp.json > config/config.json
 
-        echo "python3 main.py $1 $2 $index minifold simulation"
-        echo "python3 main.py $1 $2 $index random simulation"
+        python3 main.py $1 $2 $index minifold simulation
+        python3 main.py $1 $2 $index random simulation
     
         rm config/config_temp.json
 

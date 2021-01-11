@@ -472,7 +472,7 @@ class Utils():
         if self.config_variables['beta_type'] == 'fixed':
             plot_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
         elif self.config_variables['beta_type'] == 'variable':
-            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
+            plot_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.config_variables['annealing_schedule']+'_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.png'
 
         plt.savefig(plot_name, bbox_inches='tight')
         plt.close()
@@ -492,7 +492,7 @@ class Utils():
         if self.config_variables['beta_type'] == 'fixed':
             json_name = self.config_variables['path_tts_plot']+'tts_results_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         elif self.config_variables['beta_type'] == 'variable':
-            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
+            json_name = self.config_variables['path_tts_plot']+'tts_results_beta_var_'+self.config_variables['annealing_schedule']+'_'+self.args.protein_name+'_'+self.args.aminoacids+'_'+str(self.args.bits)+'_'+self.args.initialization+'_'+str(self.config_variables['beta'])+'.json'
         
         with open(json_name, 'w') as outfile:
             json.dump(tts_json, outfile)

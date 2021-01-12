@@ -1,15 +1,15 @@
 import random
 import re
 import numpy as np
+import itertools
+from collections import OrderedDict
 
-from bokeh.plotting import figure, show, output_file
+from bokeh.plotting import figure, show, output_file, gridplot
 from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
-from collections import OrderedDict
 from bokeh.palettes import Dark2_5 as palette
-import itertools
-from bokeh.models import SingleIntervalTicker, LinearAxis
-import numpy as np
+from bokeh.models import SingleIntervalTicker, LinearAxis, Slope
+
 
 def plot_q_vs_c(data):
     
@@ -39,13 +39,16 @@ def plot_q_vs_c(data):
     q_point = []
     minirandom = []
 
-    for protein_key in data:
+    # filter by fixed beta
+    data = dict(filter(lambda item: item[1]['schedule'] == 'fixed', data.items()))
 
-        c_point.append(data[protein_key]['min_tts_c'])
-        q_point.append(data[protein_key]['min_tts_q'])
+    for protein_key in data:
 
         min_tts_q = data[protein_key]['min_tts_q']
         min_tts_c = data[protein_key]['min_tts_c']
+
+        c_point.append(min_tts_c)
+        q_point.append(min_tts_q)
 
         #relation = min_tts_c / min_tts_q
         #min_tts = min(min_tts_q, min_tts_c)
@@ -62,28 +65,28 @@ def plot_q_vs_c(data):
             color_point = 'black'
 
         size_point = int(data[protein_key]['number_bits'])*3
-        size = 2**(int(data[protein_key]['number_bits']) * (2*int(data[protein_key]['number_aas']) -2))
-        x_point.append(size)
+        space_size = 2**(int(data[protein_key]['number_bits']) * (2*int(data[protein_key]['number_aas']) -2))
+        x_point.append(space_size)
 
         # plot dipeptides
         if data[protein_key]['number_aas'] == 2:
 
             # paint the point in the plot (only the point, the label is plotted out of the loop)
             #plot_tts.circle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
-            plot_tts.circle(size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
-            plot_tts.circle(size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
+            plot_tts.circle(space_size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
+            plot_tts.circle(space_size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
 
         elif data[protein_key]['number_aas'] == 3:
 
             #plot_tts.triangle(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
-            plot_tts.triangle(size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
-            plot_tts.triangle(size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
+            plot_tts.triangle(space_size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
+            plot_tts.triangle(space_size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
 
         elif data[protein_key]['number_aas'] == 4:
 
             #plot_tts.square(min_tts, relation, size=size_point, fill_color=color_point, fill_alpha=0.6, line_color=color_point)
-            plot_tts.square(size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
-            plot_tts.square(size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
+            plot_tts.square(space_size, min_tts_q, size=size_point, fill_color=color_point, fill_alpha=1, line_color=color_point)
+            plot_tts.square(space_size, min_tts_c, size=size_point, line_color=color_point, fill_alpha=0, fill_color='white')
 
     # plot the plane for classical and quantum region
     #plot_tts.quad(top=[10**10], bottom=[1], left=[1],right=[10**10], color="green", fill_alpha=0.1)
@@ -95,16 +98,17 @@ def plot_q_vs_c(data):
     x_fit_mini = []
     q_fit_mini = []
     c_fit_mini = []
-    for init in ['random', 'minifold']:
-        for i in range(len(x_point)):
-            if minirandom[i] == 'random':
-                x_fit_rand.append(x_point[i])
-                q_fit_rand.append(q_point[i])
-                c_fit_rand.append(c_point[i])
-            elif minirandom[i] == 'minifold':
-                x_fit_mini.append(x_point[i])
-                q_fit_mini.append(q_point[i])
-                c_fit_mini.append(c_point[i])
+
+    assert(len(x_point) == len(q_point))
+    for i in range(len(x_point)):
+        if minirandom[i] == 'random':
+            x_fit_rand.append(x_point[i])
+            q_fit_rand.append(q_point[i])
+            c_fit_rand.append(c_point[i])
+        elif minirandom[i] == 'minifold':
+            x_fit_mini.append(x_point[i])
+            q_fit_mini.append(q_point[i])
+            c_fit_mini.append(c_point[i])
         
     logx_fit_rand = np.log(x_fit_rand)
     logq_fit_rand = np.log(q_fit_rand)
@@ -167,34 +171,6 @@ def plot_q_vs_c(data):
     # create the label of each axis
     plot_tts.yaxis.axis_label='TTS'
     plot_tts.xaxis.axis_label='Size of the search space'
-    # the x_label is created appart from the axis label due a bokeh bug
-    #x_label = Label(x=50, y=270, x_units='screen', y_units='screen', text=' TTS ', render_mode='css')
-
-    # add a fake multiline figure to the plot. It is necessary to add a legend of the classical\quantum area
-    #r = plot_tts.multi_line([[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]], color=["green", "red"], line_alpha=0.3, line_width=20)
-    
-    # add the legend of the fake multiline for the c\q regions
-    '''legend = Legend(items=[
-        LegendItem(label="quantum", renderers=[r], index=0),
-        LegendItem(label="classical", renderers=[r], index=1),
-    ])'''
-
-    x = -1
-    y = -1
-    rdb = plot_tts.diamond(x, y, color = 'blue')
-    rlb = plot_tts.line(x, y, color = 'blue')
-
-    rdr = plot_tts.diamond(x, y, color = 'red')
-    rlr = plot_tts.line(x, y, color = 'red')
-
-    rcg = plot_tts.circle(x, y, line_color="black")
-    rtg = plot_tts.triangle(x, y, line_color="black")
-    rsg = plot_tts.square(x, y, line_color="black")
-
-    rdg2 = plot_tts.diamond(x, y, line_color="black", size = 4)
-    rdg3 = plot_tts.diamond(x, y, line_color="black", size = 6)
-    rdg4 = plot_tts.diamond(x, y, line_color="black", size = 8)
-    rdg5 = plot_tts.diamond(x, y, line_color="black", size = 10)
 
     legend = Legend(items=[
         ("minifold initialization, quantum", [model_renders[('q','m')], red_circle]),
@@ -204,7 +180,6 @@ def plot_q_vs_c(data):
     ], background_fill_alpha = 0, border_line_alpha = 0, location=(.37*width, .6*height))
 
     # add all legends to the plot
-    #plot_tts.add_layout(x_label, 'left')
     plot_tts.add_layout(legend, 'left')
 
     # position all legends
@@ -213,12 +188,11 @@ def plot_q_vs_c(data):
 
     show(plot_tts)
 
-def plot_q_vs_c_slope(data):
+def TTSplotter(data, schedule, width = 800, height = 450, title = None):
+    # filter by fixed beta
+    data = dict(filter(lambda item: item[1]['schedule'] == schedule, data.items()))
 
-    output_file("TTS slope quantum vs random.html")
-
-    width = 700
-    height = 450
+    x_range = (2*10**1, 3*10**4)
 
     plot_q_c_slop = figure(
         #title='Evolution of tts with different steps', # Usually graphs do not have title
@@ -226,7 +200,7 @@ def plot_q_vs_c_slope(data):
         y_axis_label='Quantum min(TTS)',
         x_axis_type="log",
         y_axis_type="log",
-        x_range=(2*10**1, 3*10**4), 
+        x_range= x_range, 
         y_range=(2*10**1, 3*10**4),
         plot_height=height,
         plot_width=width)
@@ -242,7 +216,6 @@ def plot_q_vs_c_slope(data):
         marker = []
         legend = []
         size = []
-
 
         for protein_key in data:
 
@@ -261,7 +234,6 @@ def plot_q_vs_c_slope(data):
                 else:
                     raise ValueError('The string {} does not fit the dipeptide, tripeptide or tetrapeptide description.'.format(protein_key))
 
-                # TODO change this
                 legend.append('minifold' if 'minifold initialization' in protein_key else 'random initialization')
                 size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*2))
 
@@ -276,7 +248,7 @@ def plot_q_vs_c_slope(data):
         bl.append(b)
 
         # 100 linearly spaced numbers
-        x_fit = np.linspace(2e1, 3e4)
+        x_fit = np.linspace(x_range[0]/1e2, x_range[1]*1e2)
 
         # the function, which is y = x^2 here
         y_fit = b*x_fit**a
@@ -290,9 +262,13 @@ def plot_q_vs_c_slope(data):
         line_color = 'red' if init == 'minifold' else 'blue'    
         x_fit = list(x_fit)
         #fit_source = ColumnDataSource(dict(x = x_fit, y = y_fit, line_color='green', legend='y='+str(b)+'*x**'+str(a)))
-        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color) #
+        plot_q_c_slop.line(x_fit, y_fit, line_color=line_color) 
+        # Failed attempt to picture an slope: we do not want a line, but a line when we are in log scale
+        # slope = Slope(gradient=a, y_intercept=b, line_color=line_color, line_dash='dashed', line_width=3.5)
+        # plot_q_c_slop.add_layout(slope)
+
         plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", source=source, size = "size") #legend_group='legend',
-    
+
     x_diag = [1, 10**6]
     y_diag = [1, 10**6]
     plot_q_c_slop.line(x_diag, y_diag, line_width=2, line_color='gray', line_dash="dashed")
@@ -301,6 +277,16 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.xgrid.grid_line_color = None
     plot_q_c_slop.ygrid.grid_line_color = None
 
+    return plot_q_c_slop, al, bl
+
+def plot_q_vs_c_slope(data):
+
+    output_file("TTS slope quantum vs random.html")
+    width = 800
+    height = 450
+
+    plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
+    
     x = -1
     y = -1
     rdb = plot_q_c_slop.diamond(x, y, color = 'blue')
@@ -353,13 +339,32 @@ def plot_q_vs_c_slope(data):
 
     plot_q_c_slop.add_layout(citation)
 
-
-
     show(plot_q_c_slop)
 
 def plot_q_vs_c_slope_var(data):
 
-    return 
+    output_file("schedules.html")
+
+    width = 250
+    height = 250
+
+    # create a new plot
+    s1, al1, bl1 = TTSplotter(data, schedule = 'Boltzmann', width = width, height = width, title = 'Boltzmann')
+
+    # create another one
+    s2, al2, bl2 = TTSplotter(data, schedule = 'Cauchy', width = width, height = width, title = 'Cauchy')
+
+    # create another
+    s3, al3, bl3 = TTSplotter(data, schedule = 'geometric', width = width, height = width, title = 'geometric')
+
+    # create final one
+    s4, al4, bl4 = TTSplotter(data, schedule = 'exponential', width = width, height = width, title = 'exponential')
+
+    # put all the plots in a grid layout
+    p = gridplot([[s1, s2], [s3, s4]])
+
+    # show the results
+    show(p)
 
 def plot_q_opt_step(data):
 

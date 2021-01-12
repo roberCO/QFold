@@ -8,6 +8,7 @@ import math
 import json
 import argparse
 from scipy.stats import vonmises
+import re
 
 import itertools
 class Utils():
@@ -677,7 +678,11 @@ class Utils():
         # read data
         path = self.config_variables['path_tts_plot']+input_name
         with open(path) as json_file:
-                    data[input_name] = json.load(json_file)
+            if '_beta_var' in input_name:
+                input_key = re.sub("beta_var_[a-zA-Z]*", input_name.split('_')[4], input_name)
+            else:
+                input_key = 'tts_results_fixed_' + input_name[len('tts_results_'):]
+            data[input_key] = json.load(json_file)
 
         # prepare the data
         for protein_key in data.keys():
@@ -697,26 +702,20 @@ class Utils():
             stats['min_tts_q'] = data[protein_key]['final_stats']['q']['value']
             stats['min_tts_q_step'] = data[protein_key]['final_stats']['q']['step']
             stats['min_tts_c'] = data[protein_key]['final_stats']['c']['value']
-            stats['number_bits'] = input_name.split('_')[4]
-            stats['number_aas'] = len(input_name.split('_')[3])
+            stats['number_bits'] = protein_key.split('_')[5]
+            stats['number_aas'] = len(protein_key.split('_')[4])
+            stats['schedule'] = protein_key.split('_')[2]
             
             protein_key = protein_key.replace('.json', '')
 
-            beta_padding = 0
-            # if the results are from beta variable, the key has two keys of padding.
-            # normal: tts_results_protein_aas_bits_initialization_beta_sf.json
-            # with beta var: tts_results_beta_var_protein_aas_bits_initialization_beta_sf.json
-
-            if protein_key.split('_')[2] == 'beta' and protein_key.split('_')[3] == 'var':
-                beta_padding = 2
-
-            aas = protein_key.split('_')[beta_padding+3]
-            bits = protein_key.split('_')[beta_padding+4]
-            init_mode = protein_key.split('_')[beta_padding+5]
-            beta = protein_key.split('_')[beta_padding+6]
+            schedule = protein_key.split('_')[2]
+            aas = protein_key.split('_')[4]
+            bits = protein_key.split('_')[5]
+            init_mode = protein_key.split('_')[6]
+            beta = protein_key.split('_')[7]
 
             # add a 0 if no beta var and 1 (beta_padding/2) if beta var
-            results[aas+'_'+bits+'_'+init_mode+'_'+beta+'_'+str(int(beta_padding/2))] = stats
+            results[aas+'_'+bits+'_'+init_mode+'_'+beta+'_'+schedule] = stats
 
         return results
 

@@ -25,7 +25,7 @@ class Metropolis():
         self.deltas_dict = deltas_dict
         self.number_angles = int(number_angles/2)
         self.rotation_steps = 2**self.bits_rotation
-        self.bits_number_angles = math.ceil(np.log2(number_angles))
+        self.bits_number_angles = math.ceil(np.log2(self.number_angles))
 
         self.n_iterations = tools.config_variables['number_iterations'] * (self.rotation_steps ** self.number_angles)
 

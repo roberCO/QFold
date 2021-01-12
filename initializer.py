@@ -39,13 +39,13 @@ class Initializer():
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
-        [atoms, inizialitation_stats] = self.calculateInitialStructure(atoms, aminoacids, method_rotations_generation, backbone)
+        [atoms, initialization_stats] = self.calculateInitialStructure(atoms, aminoacids, method_rotations_generation, backbone)
 
         #Calculate all posible energies for the phi and psi angles
         deltasJson = self.calculateAllDeltasOfRotations(atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone)
 
         # Add the stadistics about the precision of the inizializator
-        deltasJson['inizialitation_stats'] = inizialitation_stats
+        deltasJson['initialization_stats'] = initialization_stats
         self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein

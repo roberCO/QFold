@@ -5,6 +5,7 @@ import itertools
 from collections import OrderedDict
 
 from bokeh.plotting import figure, show, output_file, gridplot
+from bokeh.io import export_png
 from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
 from bokeh.palettes import Dark2_5 as palette
@@ -203,7 +204,8 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
         x_range= x_range, 
         y_range=(2*10**1, 3*10**4),
         plot_height=height,
-        plot_width=width)
+        plot_width=width,
+        title = title)
 
     al = []
     bl = []
@@ -267,6 +269,14 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
         # slope = Slope(gradient=a, y_intercept=b, line_color=line_color, line_dash='dashed', line_width=3.5)
         # plot_q_c_slop.add_layout(slope)
 
+        y0 = 25 if init == 'minifold' else 0
+        citation = Label(x=width*.5, y=20 + y0, x_units='screen', y_units='screen',
+            text='qTTS = '+str(np.round(b, 3))+'*cTTS^'+str(np.round(a, 3)), text_font_size='12px', render_mode='canvas',
+            border_line_color=line_color, border_line_alpha=0.0, border_line_dash = 'solid',
+            background_fill_color=line_color, background_fill_alpha=0, text_color = line_color)
+
+        plot_q_c_slop.add_layout(citation)
+
         plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", source=source, size = "size") #legend_group='legend',
 
     x_diag = [1, 10**6]
@@ -295,23 +305,23 @@ def plot_q_vs_c_slope(data):
     rdr = plot_q_c_slop.diamond(x, y, color = 'red')
     rlr = plot_q_c_slop.line(x, y, color = 'red')
 
-    rcg = plot_q_c_slop.circle(x, y, line_color="black")
-    rtg = plot_q_c_slop.triangle(x, y, line_color="black")
-    rsg = plot_q_c_slop.square(x, y, line_color="black")
+    rcg = plot_q_c_slop.circle(x, y, line_color="black", fill_alpha = 0)
+    rtg = plot_q_c_slop.triangle(x, y, line_color="black", fill_alpha = 0)
+    rsg = plot_q_c_slop.square(x, y, line_color="black", fill_alpha = 0)
 
-    rdg2 = plot_q_c_slop.diamond(x, y, line_color="black", size = 4)
-    rdg3 = plot_q_c_slop.diamond(x, y, line_color="black", size = 6)
-    rdg4 = plot_q_c_slop.diamond(x, y, line_color="black", size = 8)
-    rdg5 = plot_q_c_slop.diamond(x, y, line_color="black", size = 10)
+    rdg2 = plot_q_c_slop.diamond(x, y, line_color="black", size = 4, fill_alpha = 0)
+    rdg3 = plot_q_c_slop.diamond(x, y, line_color="black", size = 6, fill_alpha = 0)
+    rdg4 = plot_q_c_slop.diamond(x, y, line_color="black", size = 8, fill_alpha = 0)
+    rdg5 = plot_q_c_slop.diamond(x, y, line_color="black", size = 10, fill_alpha = 0)
 
     exp0 = str(np.round(al[0],3))
     exp1 = str(np.round(al[1],3))
 
     legend = Legend(items=[
         ("random initialization", [rdb, rlb]),
-        (r'qTTS ='+str(np.round(bl[1],3))+r'*cTTS^'+exp1, [rlb]),
+        #(r'qTTS ='+str(np.round(bl[1],3))+r'*cTTS^'+exp1, [rlb]),
         ("minifold initialization", [rdr, rlr]),
-        (r'qTTS ='+str(np.round(bl[0],3))+r'*cTTS^'+exp0, [rlr]),
+        #(r'qTTS ='+str(np.round(bl[0],3))+r'*cTTS^'+exp0, [rlr]),
 
         ("dipeptides", [rcg]),
         ("tripeptides", [rtg]),
@@ -321,50 +331,52 @@ def plot_q_vs_c_slope(data):
         ("3 bits", [rdg3]),
         ("4 bits", [rdg4]),
         ("5 bits", [rdg5])
-    ], location=(.37*width, .28*height), background_fill_alpha = 0, border_line_alpha = 0)
+    ], location=(.3*width, .3*height), background_fill_alpha = 0, border_line_alpha = 0)
 
     plot_q_c_slop.add_layout(legend, 'left')
 
     citation = Label(x=1/3*width, y=1/7*height, x_units='screen', y_units='screen',
-                    text='Quantum advantage', render_mode='canvas',
+                    text='Quantum advantage', render_mode='canvas', text_font_size = '12px',
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
 
     citation = Label(x=1/4*width, y=5/6*height, x_units='screen', y_units='screen',
-                    text='Classical advantage', render_mode='canvas',
+                    text='Classical advantage', render_mode='canvas', text_font_size = '12px',
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
 
     show(plot_q_c_slop)
+    export_png(plot_q_c_slop, filename="fixed_beta_TTS_slope.png")
 
 def plot_q_vs_c_slope_var(data):
 
     output_file("schedules.html")
 
-    width = 250
-    height = 250
+    width = 500
+    height = 500
 
     # create a new plot
-    s1, al1, bl1 = TTSplotter(data, schedule = 'Boltzmann', width = width, height = width, title = 'Boltzmann')
+    s1, al1, bl1 = TTSplotter(data, schedule = 'logarithmic', width = width, height = height, title = 'Boltzmann')
 
     # create another one
-    s2, al2, bl2 = TTSplotter(data, schedule = 'Cauchy', width = width, height = width, title = 'Cauchy')
+    s2, al2, bl2 = TTSplotter(data, schedule = 'linear', width = width, height = height, title = 'Cauchy')
 
     # create another
-    s3, al3, bl3 = TTSplotter(data, schedule = 'geometric', width = width, height = width, title = 'geometric')
+    s3, al3, bl3 = TTSplotter(data, schedule = 'geometric', width = width, height = height, title = 'geometric')
 
     # create final one
-    s4, al4, bl4 = TTSplotter(data, schedule = 'exponential', width = width, height = width, title = 'exponential')
+    s4, al4, bl4 = TTSplotter(data, schedule = 'exponential', width = width, height = height, title = 'exponential')
 
     # put all the plots in a grid layout
     p = gridplot([[s1, s2], [s3, s4]])
 
     # show the results
     show(p)
+    export_png(p, filename="var_beta_TTS_slope.png")
 
 def plot_q_opt_step(data):
 

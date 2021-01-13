@@ -5,7 +5,7 @@ import itertools
 from collections import OrderedDict
 
 from bokeh.plotting import figure, show, output_file, gridplot
-from bokeh.io import export_png
+from bokeh.io import export_png, export_svgs
 from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
 from bokeh.palettes import Dark2_5 as palette
@@ -171,7 +171,7 @@ def plot_q_vs_c(data):
     
     # create the label of each axis
     plot_tts.yaxis.axis_label='TTS'
-    plot_tts.xaxis.axis_label='Size of the search space'
+    plot_tts.xaxis.axis_label='Size of the configuration space'
 
     legend = Legend(items=[
         ("minifold initialization, quantum", [model_renders[('q','m')], red_circle]),
@@ -187,6 +187,10 @@ def plot_q_vs_c(data):
     #plot_tts.legend.location = "top_left"
     #plot_tts.title.align = 'center'
 
+    plot_tts.output_backend = "svg"
+
+    export_svgs(plot_tts, filename="size_vs_TTS_slope.svg")
+
     show(plot_tts)
 
 def TTSplotter(data, schedule, width = 800, height = 450, title = None):
@@ -197,8 +201,6 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
 
     plot_q_c_slop = figure(
         #title='Evolution of tts with different steps', # Usually graphs do not have title
-        x_axis_label='Classical min(TTS)', 
-        y_axis_label='Quantum min(TTS)',
         x_axis_type="log",
         y_axis_type="log",
         x_range= x_range, 
@@ -206,6 +208,21 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
         plot_height=height,
         plot_width=width,
         title = title)
+
+    if schedule == 'Boltzmann' or schedule == 'logarithmic':
+        plot_q_c_slop.yaxis.axis_label = 'Quantum min(TTS)'
+        plot_q_c_slop.yaxis.axis_label_text_font_size = "15pt"
+    elif schedule == 'fixed':
+        plot_q_c_slop.yaxis.axis_label = 'Quantum min(TTS)'
+
+    plot_q_c_slop.xaxis.axis_label = 'Classical min(TTS)'
+
+    if schedule != 'fixed':
+        plot_q_c_slop.xaxis.axis_label_text_font_size = "15pt"
+
+        plot_q_c_slop.xaxis.major_label_text_font_size = "15pt"
+        plot_q_c_slop.yaxis.major_label_text_font_size = "15pt"
+        plot_q_c_slop.title.text_font_size = '15pt'
 
     al = []
     bl = []
@@ -237,7 +254,7 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
                     raise ValueError('The string {} does not fit the dipeptide, tripeptide or tetrapeptide description.'.format(protein_key))
 
                 legend.append('minifold' if 'minifold initialization' in protein_key else 'random initialization')
-                size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*2))
+                size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*4)) if schedule != 'fixed' else size.append(str(int(re.findall('_[0-9]_', protein_key)[0][1])*3))
 
         logcx = np.log(x_point)
         logqy = np.log(y_point)
@@ -269,9 +286,12 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
         # slope = Slope(gradient=a, y_intercept=b, line_color=line_color, line_dash='dashed', line_width=3.5)
         # plot_q_c_slop.add_layout(slope)
 
+        text_font_size = '16px' if schedule != 'fixed' else '12px'
+
         y0 = 25 if init == 'minifold' else 0
-        citation = Label(x=width*.5, y=20 + y0, x_units='screen', y_units='screen',
-            text='qTTS = '+str(np.round(b, 3))+'*cTTS^'+str(np.round(a, 3)), text_font_size='12px', render_mode='canvas',
+        x0 = 300 if (schedule == 'Cauchy' or schedule == 'linear' or schedule == 'exponential' or schedule == 'geometric') else 0
+        citation = Label(x=width-600 + x0, y=20 + y0, x_units='screen', y_units='screen',
+            text='qTTS = '+str(np.round(b, 3))+'*cTTS^'+str(np.round(a, 3)), text_font_size= text_font_size, render_mode='canvas',
             border_line_color=line_color, border_line_alpha=0.0, border_line_dash = 'solid',
             background_fill_color=line_color, background_fill_alpha=0, text_color = line_color)
 
@@ -289,33 +309,28 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
 
     return plot_q_c_slop, al, bl
 
-def plot_q_vs_c_slope(data):
-
-    output_file("TTS slope quantum vs random.html")
-    width = 800
-    height = 450
-
-    plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
-    
+def generate_legend(plot, x0, y0, position = True, schedule = 'fixed'):
     x = -1
     y = -1
-    rdb = plot_q_c_slop.diamond(x, y, color = 'blue')
-    rlb = plot_q_c_slop.line(x, y, color = 'blue')
+    rdb = plot.diamond(x, y, color = 'blue')
+    rlb = plot.line(x, y, color = 'blue')
 
-    rdr = plot_q_c_slop.diamond(x, y, color = 'red')
-    rlr = plot_q_c_slop.line(x, y, color = 'red')
+    rdr = plot.diamond(x, y, color = 'red')
+    rlr = plot.line(x, y, color = 'red')
 
-    rcg = plot_q_c_slop.circle(x, y, line_color="black", fill_alpha = 0)
-    rtg = plot_q_c_slop.triangle(x, y, line_color="black", fill_alpha = 0)
-    rsg = plot_q_c_slop.square(x, y, line_color="black", fill_alpha = 0)
+    rcg = plot.circle(x, y, line_color="black", fill_alpha = 0)
+    rtg = plot.triangle(x, y, line_color="black", fill_alpha = 0)
+    rsg = plot.square(x, y, line_color="black", fill_alpha = 0)
 
-    rdg2 = plot_q_c_slop.diamond(x, y, line_color="black", size = 4, fill_alpha = 0)
-    rdg3 = plot_q_c_slop.diamond(x, y, line_color="black", size = 6, fill_alpha = 0)
-    rdg4 = plot_q_c_slop.diamond(x, y, line_color="black", size = 8, fill_alpha = 0)
-    rdg5 = plot_q_c_slop.diamond(x, y, line_color="black", size = 10, fill_alpha = 0)
+    rdg2 = plot.diamond(x, y, line_color="black", size = 4, fill_alpha = 0)
+    rdg3 = plot.diamond(x, y, line_color="black", size = 6, fill_alpha = 0)
+    rdg4 = plot.diamond(x, y, line_color="black", size = 8, fill_alpha = 0)
+    rdg5 = plot.diamond(x, y, line_color="black", size = 10, fill_alpha = 0)
 
-    exp0 = str(np.round(al[0],3))
-    exp1 = str(np.round(al[1],3))
+    if position == True:
+        location = (x0, y0)
+    else:
+        location = 'top_left'
 
     legend = Legend(items=[
         ("random initialization", [rdb, rlb]),
@@ -331,9 +346,24 @@ def plot_q_vs_c_slope(data):
         ("3 bits", [rdg3]),
         ("4 bits", [rdg4]),
         ("5 bits", [rdg5])
-    ], location=(.3*width, .3*height), background_fill_alpha = 0, border_line_alpha = 0)
+    ], location=location, background_fill_alpha = 0, border_line_alpha = 0)
 
-    plot_q_c_slop.add_layout(legend, 'left')
+    plot.add_layout(legend, 'left')
+    if schedule != 'fixed':
+        plot.legend.label_text_font_size = '15pt'
+
+    return plot
+
+
+def plot_q_vs_c_slope(data):
+
+    output_file("TTS slope quantum vs random.html")
+    width = 800
+    height = 450
+
+    plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
+
+    plot_q_c_slop = generate_legend(plot_q_c_slop, .3*width, .3*height)
 
     citation = Label(x=1/3*width, y=1/7*height, x_units='screen', y_units='screen',
                     text='Quantum advantage', render_mode='canvas', text_font_size = '12px',
@@ -350,33 +380,47 @@ def plot_q_vs_c_slope(data):
     plot_q_c_slop.add_layout(citation)
 
     show(plot_q_c_slop)
-    export_png(plot_q_c_slop, filename="fixed_beta_TTS_slope.png")
+
+    plot_q_c_slop.output_backend = "svg"
+    export_svgs(plot_q_c_slop, filename="fixed_beta_TTS_slope.svg")
 
 def plot_q_vs_c_slope_var(data):
 
     output_file("schedules.html")
 
-    width = 500
+    width = 750
     height = 500
+    width2 = 500
 
     # create a new plot
-    s1, al1, bl1 = TTSplotter(data, schedule = 'logarithmic', width = width, height = height, title = 'Boltzmann')
+    s1, al1, bl1 = TTSplotter(data, schedule = 'logarithmic', width = width, height = height, title = 'Boltzmann/logarithmic')
+    s1 = generate_legend(s1, .4*width, .3*height, position = True, schedule = 'Boltzmann')
+    s1.output_backend = "svg"
+    export_svgs(s1, filename="Boltzmann_beta_TTS_slope.svg")
 
     # create another one
-    s2, al2, bl2 = TTSplotter(data, schedule = 'linear', width = width, height = height, title = 'Cauchy')
+    s2, al2, bl2 = TTSplotter(data, schedule = 'linear', width = width2, height = height, title = 'Cauchy/linear')
+    s2.output_backend = "svg"
+    export_svgs(s2, filename="Cauchy_beta_TTS_slope.svg")
 
     # create another
-    s3, al3, bl3 = TTSplotter(data, schedule = 'geometric', width = width, height = height, title = 'geometric')
+    s3, al3, bl3 = TTSplotter(data, schedule = 'geometric', width = width2, height = height, title = 'Geometric')
+    s3.output_backend = "svg"
+    export_svgs(s3, filename="geometric_beta_TTS_slope.svg")
 
     # create final one
-    s4, al4, bl4 = TTSplotter(data, schedule = 'exponential', width = width, height = height, title = 'exponential')
+    s4, al4, bl4 = TTSplotter(data, schedule = 'exponential', width = width2, height = height, title = 'Exponential')
+    s4.output_backend = "svg"
+    export_svgs(s4, filename="exponential_beta_TTS_slope.svg")
 
     # put all the plots in a grid layout
-    p = gridplot([[s1, s2], [s3, s4]])
+    p = gridplot([[s1, s2, s3, s4]])
+
+    #p.output_backend = "svg"
+    export_png(p, filename="var_beta_TTS_slope.png")
 
     # show the results
-    show(p)
-    export_png(p, filename="var_beta_TTS_slope.png")
+    #show(p)
 
 def plot_q_opt_step(data):
 

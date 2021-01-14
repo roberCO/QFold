@@ -6,8 +6,6 @@ import math
 
 class Metropolis():
 
-    ## TODO: generalise to more than 2 angles
-
     def __init__(self, number_angles, deltas_dict, tools):
 
         self.tools = tools
@@ -96,8 +94,8 @@ class Metropolis():
             for index in range(len(anglePhi_new)):
 
                 # binary key should contain: phi_1 | psi_1 | phi_2 | psi_2 | ...
-                binary_key += np.binary_repr(anglePhi_new[index], width = self.bits_rotation)
-                binary_key += np.binary_repr(anglePsi_new[index], width = self.bits_rotation)
+                binary_key += np.binary_repr(anglePhi_old[index], width = self.bits_rotation)
+                binary_key += np.binary_repr(anglePsi_old[index], width = self.bits_rotation)
 
             # This choice of Delta_E seems weird.
             # Correspondingly: (state = angle_phi, angle_psi...) +  (move_id = phi/psi+  position_angle_binary) +  move_value
@@ -106,14 +104,14 @@ class Metropolis():
                 beta_value = self.beta
             elif self.beta_type == 'variable':
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':
-                    beta_value = self.beta * (1/self.alpha) * (1+i) 
+                    beta_value = self.beta * i 
                 elif self.annealing_schedule == 'Boltzmann' or self.annealing_schedule == 'logarithmic':
-                    beta_value = self.beta * (1/self.alpha) * np.log(1+i)
+                    beta_value = self.beta * np.log(i) + self.beta
                 elif self.annealing_schedule == 'geometric':
-                    beta_value = self.beta * self.alpha**(-i)
+                    beta_value = self.beta * self.alpha**(-i+1)
                 elif self.annealing_schedule == 'exponential': 
-                    space_dim = self.number_angles
-                    beta_value = self.beta * np.exp( self.alpha * i**(1/space_dim) )
+                    space_dim = self.n_angles
+                    beta_value = self.beta * np.exp( self.alpha * (i-1)**(1/space_dim) )
                 else:
                     raise ValueError('<*> ERROR: Annealing Scheduling wrong value. It should be one of [linear, logarithmic, geometric, exponential] but it is', self.annealing_schedule)
             else:
@@ -121,12 +119,12 @@ class Metropolis():
 
             Delta_E = self.deltas_dict[binary_key + str(change_angle) + position_angle_binary + str(change_plus_minus)]
             if Delta_E >= 0:
-                    probability_threshold = math.exp(-beta_value * Delta_E)
-            else: 
+                probability_threshold = math.exp(-beta_value * Delta_E)
+            else:
                 probability_threshold = 1
 
             random_number = np.random.random_sample()
-            
+
             # We should accept the change if probability_threshold > 1 (the energy goes down) or if beta is small.
             # If beta small, np.exp(-beta*Delta_E) approx 1.
             if random_number < min(1,probability_threshold): # Accept the change

@@ -52,6 +52,8 @@
     "color_quantum_minifold": "red",
     "color_classical_minifold": "blue",
     "color_quantum_random": "yellow",
-    "color_classical_random": "cyan"
+    "color_classical_random": "cyan",
+
+    "quantum_simulation_activated": 0
     
 }

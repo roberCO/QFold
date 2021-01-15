@@ -98,7 +98,7 @@ class AngleCalculator():
                 
                 if step == self.final_step - 1: 
                     # plot data
-                    self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
+                    #self.tools.plot_tts(q_accumulated_tts, c_accumulated_tts, self.tools.config_variables['initial_step'])
 
                     # generate json data
                     final_stats = {'q': min_q_tts, 'c': min_c_tts}
@@ -149,7 +149,7 @@ class AngleCalculator():
                 min_c_tts['success'] = classical_success
 
                 break
-        
+
         return [min_q_tts, min_c_tts]
 
     def get_selected_position_and_confidence(self, real_counts):

@@ -44,7 +44,7 @@ class Initializer():
         #Calculate all posible energies for the phi and psi angles
         deltasJson = self.calculateAllDeltasOfRotations(atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone)
 
-        # Add the stadistics about the precision of the inizializator
+        # Add the stadistics about the precision of the initializator
         deltasJson['initialization_stats'] = initialization_stats
         self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
 

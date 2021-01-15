@@ -22,6 +22,8 @@ class AngleCalculator():
 
         self.n_angles = (len(self.tools.args.aminoacids) -1)*2
 
+        self.quantum_simulation_activated == tools.config_variables['quantum_simulation_activated']
+
     def calculate3DStructure(self, deltas_dict, index_min_energy):
 
         q_accumulated_tts = []
@@ -30,43 +32,45 @@ class AngleCalculator():
         min_q_tts = {'step': 0, 'value': -1}
         min_c_tts = {'step': 0, 'value': -1}
 
-        quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
         classical_metropolis = metropolis.Metropolis(self.n_angles, deltas_dict, self.tools)
 
-        ###### Quantum Metropolis ######
-        start_time = time.time()
+        #'''
+        if self.quantum_simulation_activated == True:
+            quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
+            ###### Quantum Metropolis ######
+            start_time = time.time()
 
-        if self.mode == 'simulation':
-            [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.final_step)
-        elif self.mode == 'experiment': 
-            [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
-        elif self.mode == 'real':
-            n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
-            accum_probabilities = []
-            for _ in range(n_repetitions):
-                [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.tools.config_variables['w_real_mode'] + 1) # The 1 is needed because we implement a range (1, nW)
-                probabilities_matrix = dict_probabilities_matrix[self.tools.config_variables['w_real_mode']]
-                accum_probabilities.append(probabilities_matrix)
+            if self.mode == 'simulation':
+                [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.final_step)
+            elif self.mode == 'experiment': 
+                [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
+            elif self.mode == 'real':
+                n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
+                accum_probabilities = []
+                for _ in range(n_repetitions):
+                    [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.tools.config_variables['w_real_mode'] + 1) # The 1 is needed because we implement a range (1, nW)
+                    probabilities_matrix = dict_probabilities_matrix[self.tools.config_variables['w_real_mode']]
+                    accum_probabilities.append(probabilities_matrix)
 
-            real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
-            real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
+                real_q_counts = dict(functools.reduce(operator.add, map(collections.Counter, accum_probabilities)))
+                real_q_counts = {k:v/n_repetitions for k,v in real_q_counts.items()}
 
-        else:
-            print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
+            else:
+                print("<*> ERROR!! Quantum execution mode not recognized. The mode selected is ", self.tools.args.mode)
 
-        q_time = time.time() - start_time
-        print("<i> QUANTUM METROPOLIS: Time for", self.initial_step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
+            q_time = time.time() - start_time
+            print("<i> QUANTUM METROPOLIS: Time for", self.initial_step,"steps:", q_time, "seconds (", time_statevector,"seconds statevector)")
 
-        if self.mode == 'simulation':
+            if self.mode == 'simulation':
 
-            for step, probabilities_matrix in dict_probabilities_matrix.items():
+                for step, probabilities_matrix in dict_probabilities_matrix.items():
 
-                ###### Accumulated values Quantum Metropolis ######
-                q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.precision_solution)
+                    ###### Accumulated values Quantum Metropolis ######
+                    q_tts = self.calculate_tts_from_probability_matrix(probabilities_matrix, index_min_energy, step, self.precision_solution)
 
-                q_accumulated_tts.append(q_tts)     
-                if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
-
+                    q_accumulated_tts.append(q_tts)     
+                    if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
+        #'''
         ###### Classical Metropolis ######
         for step in range(self.initial_step, self.final_step):  
             start_time = time.time()

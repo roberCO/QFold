@@ -7,9 +7,10 @@ from collections import OrderedDict
 from bokeh.plotting import figure, show, output_file, gridplot
 from bokeh.io import export_png, export_svgs
 from bokeh.palettes import Turbo256
-from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label
+from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label, Marker, renderers
 from bokeh.palettes import Dark2_5 as palette
 from bokeh.models import SingleIntervalTicker, LinearAxis, Slope
+from bokeh.models.tickers import FixedTicker
 
 
 def plot_q_vs_c(data):
@@ -193,6 +194,129 @@ def plot_q_vs_c(data):
 
     show(plot_tts)
 
+def plot_q_vs_c_tts_ratio(data):
+    
+    output_file("TTS comparison quantum vs random.html")
+
+    data = dict(filter(lambda item: item[1]['schedule'] == 'fixed', data.items()))
+
+    width = 800
+    height = 450
+
+    plot_tts = figure( 
+        x_axis_type="log", 
+        y_axis_type="log", 
+        y_range=(1/3, 50),
+        #x_range=(20, 1e4),
+        plot_height=height,
+        plot_width=width,
+        )
+
+    # fix xaxis to cross y axis in the point (1,1)
+    plot_tts.xaxis.fixed_location = 1
+
+    for protein_key in data:
+
+        min_tts_q = data[protein_key]['min_tts_q']
+        min_tts_c = data[protein_key]['min_tts_c']
+        schedule = data[protein_key]['schedule']
+        initializer = data[protein_key]['initializer']
+        space_size = 2**(int(data[protein_key]['number_bits']) * (2*int(data[protein_key]['number_aas']) -2))
+
+        if schedule == 'fixed':
+            color_point = 'blue'
+        elif schedule == 'Boltzmann' or schedule == 'logarithmic':
+            color_point = 'green'
+        elif schedule == 'Cauchy' or schedule == 'linear':
+            color_point = 'red'
+        elif schedule == 'exponential':
+            color_point = 'orange'
+        elif schedule == 'geometric':
+            color_point = 'black'
+        else:
+            raise ValueError(schedule)
+
+        if initializer == 'minifold':
+            fill_alpha = .5
+        elif initializer == 'random':
+            fill_alpha = 0
+        else:
+            raise ValueError(initializer)
+
+        relation = min_tts_c / min_tts_q
+        min_tts = min(min_tts_q, min_tts_c)
+
+        size_point = int(data[protein_key]['number_bits'])*3
+
+        # plot dipeptides
+        if data[protein_key]['number_aas'] == 2:
+
+            plot_tts.circle(min_tts_q, relation, size=size_point, fill_color=color_point, fill_alpha=fill_alpha, line_color=color_point)
+
+        elif data[protein_key]['number_aas'] == 3:
+
+            plot_tts.triangle(min_tts_q, relation, size=size_point, fill_color=color_point, fill_alpha=fill_alpha, line_color=color_point)
+
+        elif data[protein_key]['number_aas'] == 4:
+
+            plot_tts.square(min_tts_q, relation, size=size_point, fill_color=color_point, fill_alpha=fill_alpha, line_color=color_point)
+
+    # plot the plane for classical and quantum region
+    plot_tts.quad(top=[10**10], bottom=[1], left=[1],right=[10**10], color="#003366", fill_alpha=0.05)
+    plot_tts.quad(top=[1], bottom=[10**-10], left=[1], right=[10**10], color="#996633", fill_alpha=0.05)
+    
+    # create the label of each axis
+    plot_tts.yaxis.axis_label='ratio classical/quantum min TTS'
+    plot_tts.xaxis.axis_label='min(classical min TTS, quantum min TTS)'
+    # the x_label is created appart from the axis label due a bokeh bug
+    x_label = Label(x=100, y=70, x_units='screen', y_units='screen', text='quantum TTS', text_font_style = 'italic', text_font_size = "9pt", render_mode='canvas')
+
+    # add a fake multiline figure to the plot. It is necessary to add a legend of the classical\quantum area
+    r = plot_tts.multi_line([[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]], color=["#003366", "#996633"], line_alpha=0.3, line_width=20)
+    
+    r_dot = plot_tts.dot(0, 0, line_color="black")
+    r_circle = plot_tts.circle(0, 0, line_color="black", fill_alpha = 0)
+    r_triangle = plot_tts.triangle(0, 0, line_color="black", fill_alpha = 0)
+    r_square = plot_tts.square(0, 0, line_color="black", fill_alpha = 0)
+    r_diamond = plot_tts.diamond(0, 0, line_color="black", fill_alpha = 0)
+
+    r_hex_color = plot_tts.hex(0, 0, line_color=['black', 'green', 'red', 'orange', 'blue'], fill_alpha = 0)
+
+    r_hex_init = plot_tts.hex(0, 0, color='blue', fill_alpha = [0,1])
+
+    r_bits = plot_tts.hex(0, 0, line_color="white", size = [3, 6, 9, 12, 15], fill_alpha = 0)
+
+    # add the legend of the fake multiline for the c\q regions
+    legend = Legend(items=[
+        LegendItem(label="qTTS < cTTS", renderers=[r], index=0),
+        LegendItem(label="cTTS < qTTS", renderers=[r], index=1),
+        #LegendItem(label="fixed schedule", renderers=[r_hex_color], index=0),
+        #LegendItem(label="Boltzmann schedule", renderers=[r_hex_color], index=1),
+        #LegendItem(label="Cauchy schedule", renderers=[r_hex_color], index=2),
+        #LegendItem(label="exponential schedule", renderers=[r_hex_color], index=3),
+        #LegendItem(label="geometric schedule", renderers=[r_hex_color], index=4),
+        LegendItem(label="random initialization", renderers=[r_hex_init], index=0),
+        LegendItem(label="minifold initialization", renderers=[r_hex_init], index=1),
+        LegendItem(label="dipeptides", renderers=[r_circle]),
+        LegendItem(label="tripeptides", renderers=[r_triangle]),
+        LegendItem(label="tetrapeptides", renderers=[r_square]),
+        LegendItem(label="size = # rotation bits", renderers = [r_bits])
+    ])
+
+    # add all legends to the plot
+    plot_tts.add_layout(x_label, 'left')
+    plot_tts.add_layout(legend, 'right')
+
+    # position all legends
+    plot_tts.legend.location = "center_right"
+    plot_tts.title.align = 'center'
+
+    plot_tts.output_backend = "svg"
+    export_svgs(plot_tts, filename="TTS_ratio.svg")
+
+    show(plot_tts)
+
+
 def TTSplotter(data, schedule, width = 800, height = 450, title = None):
     # filter by fixed beta
     data = dict(filter(lambda item: item[1]['schedule'] == schedule, data.items()))
@@ -209,19 +333,23 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
         plot_width=width,
         title = title)
 
+    plot_q_c_slop.background_fill_alpha = 0
+
     if schedule == 'Boltzmann' or schedule == 'logarithmic':
         plot_q_c_slop.yaxis.axis_label = 'Quantum min(TTS)'
         plot_q_c_slop.yaxis.axis_label_text_font_size = "15pt"
     elif schedule == 'fixed':
         plot_q_c_slop.yaxis.axis_label = 'Quantum min(TTS)'
+    else:
+        plot_q_c_slop.yaxis.axis_label_text_font_size = "0pt"
+        plot_q_c_slop.yaxis.major_label_text_font_size = "0pt"
+        #plot_q_c_slop.yaxis.ticker = FixedTicker(ticks=[])
 
     plot_q_c_slop.xaxis.axis_label = 'Classical min(TTS)'
 
     if schedule != 'fixed':
         plot_q_c_slop.xaxis.axis_label_text_font_size = "15pt"
-
         plot_q_c_slop.xaxis.major_label_text_font_size = "15pt"
-        plot_q_c_slop.yaxis.major_label_text_font_size = "15pt"
         plot_q_c_slop.title.text_font_size = '15pt'
 
     al = []
@@ -337,15 +465,11 @@ def generate_legend(plot, x0, y0, position = True, schedule = 'fixed'):
         #(r'qTTS ='+str(np.round(bl[1],3))+r'*cTTS^'+exp1, [rlb]),
         ("minifold initialization", [rdr, rlr]),
         #(r'qTTS ='+str(np.round(bl[0],3))+r'*cTTS^'+exp0, [rlr]),
+        ("size = # rotation bits", []),
 
         ("dipeptides", [rcg]),
         ("tripeptides", [rtg]),
-        ("tetrapeptides", [rsg]),
-
-        ("2 bits", [rdg2]),
-        ("3 bits", [rdg3]),
-        ("4 bits", [rdg4]),
-        ("5 bits", [rdg5])
+        ("tetrapeptides", [rsg])
     ], location=location, background_fill_alpha = 0, border_line_alpha = 0)
 
     plot.add_layout(legend, 'left')
@@ -363,7 +487,7 @@ def plot_q_vs_c_slope(data):
 
     plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
 
-    plot_q_c_slop = generate_legend(plot_q_c_slop, .3*width, .3*height)
+    plot_q_c_slop = generate_legend(plot_q_c_slop, .3*width, .4*height)
 
     citation = Label(x=1/3*width, y=1/7*height, x_units='screen', y_units='screen',
                     text='Quantum advantage', render_mode='canvas', text_font_size = '12px',
@@ -390,11 +514,11 @@ def plot_q_vs_c_slope_var(data):
 
     width = 750
     height = 500
-    width2 = 500
+    width2 = 450
 
     # create a new plot
     s1, al1, bl1 = TTSplotter(data, schedule = 'logarithmic', width = width, height = height, title = 'Boltzmann/logarithmic')
-    s1 = generate_legend(s1, .4*width, .3*height, position = True, schedule = 'Boltzmann')
+    s1 = generate_legend(s1, .4*width, .4*height, position = True, schedule = 'Boltzmann')
     s1.output_backend = "svg"
     export_svgs(s1, filename="Boltzmann_beta_TTS_slope.svg")
 

@@ -22,7 +22,7 @@ class AngleCalculator():
 
         self.n_angles = (len(self.tools.args.aminoacids) -1)*2
 
-        self.quantum_simulation_activated == tools.config_variables['quantum_simulation_activated']
+        self.quantum_simulation_activated = tools.config_variables['quantum_simulation_activated']
 
     def calculate3DStructure(self, deltas_dict, index_min_energy):
 

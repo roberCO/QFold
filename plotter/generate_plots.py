@@ -29,7 +29,7 @@ for input_name in input_files:
     if input_name[:3] == 'tts' and input_name.split('.')[1] == 'json':
         results.update(tools.read_results_data(input_name))
 
-# generate plot of minifold vs random inizialization mode
+# generate plot of minifold vs random initialization mode
 #plot_m_vs_r(results)
 
 # generate plot of the evolution of tts with different steps comparing classical vs quantum

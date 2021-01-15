@@ -5,7 +5,8 @@ import time
 import math
 import json
 from math import pi
-import collections, functools, operator 
+import collections, functools, operator
+from collections import OrderedDict
 
 # Importing standard Qiskit libraries and configuring account
 import qiskit
@@ -541,7 +542,7 @@ class QuantumMetropolis():
                 key = self.convert_index_to_key(index_probabilites, self.angle_precision_bits, self.n_angles)
                 probs[int_i][key] = probabilities[index_probabilites]#.as_integer
 
-            probs = collections.OrderedDict(probs)
+        probs = OrderedDict(sorted(probs.items()))
 
         return [probs, time_statevector]
 

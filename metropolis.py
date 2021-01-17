@@ -110,7 +110,7 @@ class Metropolis():
                 elif self.annealing_schedule == 'geometric':
                     beta_value = self.beta * self.alpha**(-i+1)
                 elif self.annealing_schedule == 'exponential': 
-                    space_dim = self.n_angles
+                    space_dim = self.number_angles
                     beta_value = self.beta * np.exp( self.alpha * (i-1)**(1/space_dim) )
                 else:
                     raise ValueError('<*> ERROR: Annealing Scheduling wrong value. It should be one of [linear, logarithmic, geometric, exponential] but it is', self.annealing_schedule)

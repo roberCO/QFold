@@ -321,14 +321,15 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
     # filter by fixed beta
     data = dict(filter(lambda item: item[1]['schedule'] == schedule, data.items()))
 
-    x_range = (2*10**1, 3*10**4)
+    x_range = (1, 10**4)
+    y_range = (1, 10**4)
 
     plot_q_c_slop = figure(
         #title='Evolution of tts with different steps', # Usually graphs do not have title
         x_axis_type="log",
         y_axis_type="log",
         x_range= x_range, 
-        y_range=(2*10**1, 3*10**4),
+        y_range= y_range,
         plot_height=height,
         plot_width=width,
         title = title)
@@ -435,6 +436,20 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
     plot_q_c_slop.xgrid.grid_line_color = None
     plot_q_c_slop.ygrid.grid_line_color = None
 
+    citation = Label(x=1/3*width, y=1/4*height, x_units='screen', y_units='screen',
+                    text='qTTS < cTTS', render_mode='canvas', text_font_size = text_font_size,
+                    border_line_color='black', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
+
+    citation = Label(x=.1*width, y=5/6*height, x_units='screen', y_units='screen',
+                    text='cTTS < qTTS', render_mode='canvas', text_font_size = text_font_size,
+                    border_line_color='black', border_line_alpha=0.0,
+                    background_fill_color='white', background_fill_alpha=0.0)
+
+    plot_q_c_slop.add_layout(citation)
+
     return plot_q_c_slop, al, bl
 
 def generate_legend(plot, x0, y0, position = True, schedule = 'fixed'):
@@ -487,21 +502,7 @@ def plot_q_vs_c_slope(data):
 
     plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
 
-    plot_q_c_slop = generate_legend(plot_q_c_slop, .3*width, .4*height)
-
-    citation = Label(x=1/3*width, y=1/7*height, x_units='screen', y_units='screen',
-                    text='Quantum advantage', render_mode='canvas', text_font_size = '12px',
-                    border_line_color='black', border_line_alpha=0.0,
-                    background_fill_color='white', background_fill_alpha=0.0)
-
-    plot_q_c_slop.add_layout(citation)
-
-    citation = Label(x=1/4*width, y=5/6*height, x_units='screen', y_units='screen',
-                    text='Classical advantage', render_mode='canvas', text_font_size = '12px',
-                    border_line_color='black', border_line_alpha=0.0,
-                    background_fill_color='white', background_fill_alpha=0.0)
-
-    plot_q_c_slop.add_layout(citation)
+    plot_q_c_slop = generate_legend(plot_q_c_slop, .75*width, .05*height)
 
     show(plot_q_c_slop)
 
@@ -518,7 +519,7 @@ def plot_q_vs_c_slope_var(data):
 
     # create a new plot
     s1, al1, bl1 = TTSplotter(data, schedule = 'logarithmic', width = width, height = height, title = 'Boltzmann/logarithmic')
-    s1 = generate_legend(s1, .4*width, .4*height, position = True, schedule = 'Boltzmann')
+    s1 = generate_legend(s1, .8*width, .1*height, position = True, schedule = 'Boltzmann')
     s1.output_backend = "svg"
     export_svgs(s1, filename="Boltzmann_beta_TTS_slope.svg")
 

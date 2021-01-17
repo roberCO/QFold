@@ -19,7 +19,7 @@ class Beta_precalc_TruthTableOracle():
             for (key, value) in list(self.deltas_dictionary.items()):
                 deltas[key[:-2]+key[-1]] = value
             self.deltas_dictionary = deltas
-        assert(2**len(list(self.deltas_dictionary.keys())[0]) == len(self.deltas_dictionary))
+        #assert(2**len(list(self.deltas_dictionary.keys())[0]) == len(self.deltas_dictionary))
 
 
     def generate_oracle(self, oracle_option, beta, optimization=False, mct_mode='noancilla'):

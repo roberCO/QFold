@@ -21,11 +21,11 @@
 
     "initial_step": 2,
     "final_step": 50,
-    "path_tts_plot": "./results/",
+    "path_tts_plot": "./q_results/",
     "ancilla_bits": 7,
-    "number_iterations": 50,
-    "beta": 1000,
-    "beta_type": "fixed",
+    "number_iterations": 500,
+    "beta": 50,
+    "beta_type": "variable",
     "alpha": 0.9,
     "kappa": 1,
     "annealing_schedule": "linear",
@@ -54,6 +54,7 @@
     "color_quantum_random": "yellow",
     "color_classical_random": "cyan",
 
-    "quantum_simulation_activated": 0
+    "quantum_simulation_activated": 1,
+    "classical_simulation_activated": 0
     
 }

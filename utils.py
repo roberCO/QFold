@@ -550,7 +550,6 @@ class Utils():
                     dictionary['--'] = {}
                     dictionary['--']['0-0'] = {}
                     dictionary['--']['0-0']['measurements'] = measures_dict['0-0']
-  
 
         for betas in measures_dict.keys():
             if betas != '0-0':

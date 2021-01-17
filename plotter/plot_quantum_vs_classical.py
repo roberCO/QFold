@@ -206,8 +206,8 @@ def plot_q_vs_c_tts_ratio(data):
     plot_tts = figure( 
         x_axis_type="log", 
         y_axis_type="log", 
-        y_range=(1/3, 50),
-        #x_range=(20, 1e4),
+        y_range=(1/90, 2),
+        x_range=(8, 1e4),
         plot_height=height,
         plot_width=width,
         )
@@ -269,7 +269,7 @@ def plot_q_vs_c_tts_ratio(data):
     plot_tts.yaxis.axis_label='ratio classical/quantum min TTS'
     plot_tts.xaxis.axis_label='min(classical min TTS, quantum min TTS)'
     # the x_label is created appart from the axis label due a bokeh bug
-    x_label = Label(x=100, y=70, x_units='screen', y_units='screen', text='quantum TTS', text_font_style = 'italic', text_font_size = "9pt", render_mode='canvas')
+    x_label = Label(x=100, y=.875*height, x_units='screen', y_units='screen', text='quantum TTS', text_font_style = 'italic', text_font_size = "9pt", render_mode='canvas')
 
     # add a fake multiline figure to the plot. It is necessary to add a legend of the classical\quantum area
     r = plot_tts.multi_line([[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]], color=["#003366", "#996633"], line_alpha=0.3, line_width=20)
@@ -288,8 +288,8 @@ def plot_q_vs_c_tts_ratio(data):
 
     # add the legend of the fake multiline for the c\q regions
     legend = Legend(items=[
-        LegendItem(label="qTTS < cTTS", renderers=[r], index=0),
-        LegendItem(label="cTTS < qTTS", renderers=[r], index=1),
+        LegendItem(label="quantum min(TTS) < classical min(TTS)", renderers=[r], index=0),
+        LegendItem(label="classical min(TTS) < quantum min(TTS)", renderers=[r], index=1),
         #LegendItem(label="fixed schedule", renderers=[r_hex_color], index=0),
         #LegendItem(label="Boltzmann schedule", renderers=[r_hex_color], index=1),
         #LegendItem(label="Cauchy schedule", renderers=[r_hex_color], index=2),
@@ -437,14 +437,14 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
     plot_q_c_slop.ygrid.grid_line_color = None
 
     citation = Label(x=1/3*width, y=1/4*height, x_units='screen', y_units='screen',
-                    text='qTTS < cTTS', render_mode='canvas', text_font_size = text_font_size,
+                    text='quantum min(TTS) < classical min(TTS)', render_mode='canvas', text_font_size = text_font_size,
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
 
     citation = Label(x=.1*width, y=5/6*height, x_units='screen', y_units='screen',
-                    text='cTTS < qTTS', render_mode='canvas', text_font_size = text_font_size,
+                    text='classical min(TTS) < quantum min(TTS)', render_mode='canvas', text_font_size = text_font_size,
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 

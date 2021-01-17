@@ -649,7 +649,7 @@ class QuantumMetropolis():
             else:
                 measures_dict[str(betas[0]) + '-' +str(betas[1])]= self.tools.list_of_dict_2_dict_of_lists(raw_counts)
 
-           # sum all values of the same position and get the mean of each position to store in counts
+            # sum all values of the same position and get the mean of each position to store in counts
             raw_counts = dict(functools.reduce(operator.add, map(collections.Counter, raw_counts)))
             raw_counts = {k:v/n_repetitions for k,v in raw_counts.items()}
             counts[key_name_counts]['raw'] = raw_counts

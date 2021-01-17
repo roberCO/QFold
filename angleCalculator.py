@@ -153,7 +153,7 @@ class AngleCalculator():
 
                     break
         
-        elif self.move == 'simulation' and self.classical_simulation_activated == False:
+        elif self.mode == 'simulation' and self.classical_simulation_activated == False:
             final_stats = {'q': min_q_tts, 'c': min_c_tts}
             self.tools.write_tts(q_accumulated_tts, c_accumulated_tts, self.initialization_stats, final_stats)
 

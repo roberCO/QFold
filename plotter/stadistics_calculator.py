@@ -1,5 +1,6 @@
 import numpy as np
 from prettytable import PrettyTable
+from collections import OrderedDict
 
 def calculate_stats(data):
 
@@ -10,39 +11,46 @@ def calculate_stats(data):
 
 def calculate_mean_precision(data):
 
-    minifold_tts = []
-    minifold_precision = []
-
-    random_tts = []
-    random_precision = []
-
-    quantum_tts = []
-    classical_tts = []
+    stats = {}
 
     for key in data.keys():
 
-        quantum_tts.append(data[key]['min_tts_q'])
-        classical_tts.append(data[key]['min_tts_c'])
+        number_aas = len(key.split('_')[0])
+        number_bits = key.split('_')[1]
+        init = key.split('_')[2]
 
-        if 'minifold' in key:
+        if number_aas in stats.keys():
 
-            minifold_tts.append(data[key]['min_tts'])
-            minifold_precision.append(data[key]['precision'])
+            if number_bits in stats[number_aas].keys():
 
-        elif 'random' in key:
+                if init in stats[number_aas][number_bits].keys():
 
-            random_tts.append(data[key]['min_tts'])
-            random_precision.append(data[key]['precision'])
+                    accum_q_tts = stats[number_aas][number_bits][init]['q_tts'] + data[key]['min_tts_q']
+                    accum_c_tts = stats[number_aas][number_bits][init]['c_tts'] + data[key]['min_tts_c']
 
-    mean_stats = {}
-    mean_stats['minifold_precision'] = np.mean(minifold_precision)
-    mean_stats['minifold_tts'] = np.mean(minifold_tts)
-    mean_stats['random_precision'] = np.mean(random_precision)
-    mean_stats['random_tts'] = np.mean(random_tts)
-    mean_stats['quantum_tts'] = np.mean(quantum_tts)
-    mean_stats['classical_tts'] = np.mean(classical_tts)
+                    accum_precision = stats[number_aas][number_bits][init]['precision'] + data[key]['precision']
+                    counter = stats[number_aas][number_bits][init]['counter'] + 1
 
-    return mean_stats
+                    stats[number_aas][number_bits][init].update({'q_tts': accum_q_tts, 'c_tts': accum_c_tts, 'precision': accum_precision, 'counter': counter})
+
+                else:
+                    stats[number_aas][number_bits].update({init:{'q_tts': data[key]['min_tts_q'], 'c_tts': data[key]['min_tts_c'], 'precision': data[key]['precision'], 'counter': 1}})
+
+            else:
+                stats[number_aas].update({number_bits:{init:{'q_tts': data[key]['min_tts_q'], 'c_tts': data[key]['min_tts_c'], 'precision': data[key]['precision'], 'counter': 1}}})
+
+        else:
+            stats.update({number_aas:{number_bits:{init:{'q_tts': data[key]['min_tts_q'], 'c_tts': data[key]['min_tts_c'], 'precision': data[key]['precision'], 'counter': 1}}}})
+
+    for aas in stats.keys():
+        for bits in stats[aas].keys():
+            for init in stats[aas][bits].keys():
+
+                stats[aas][bits][init]['q_tts'] = stats[aas][bits][init]['q_tts']/stats[aas][bits][init]['counter']
+                stats[aas][bits][init]['c_tts'] = stats[aas][bits][init]['c_tts']/stats[aas][bits][init]['counter']
+                stats[aas][bits][init]['precision'] = stats[aas][bits][init]['precision']/stats[aas][bits][init]['counter']
+
+    return stats
     
 def calculate_best_tts_parameters(data):
 

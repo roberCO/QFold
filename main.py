@@ -61,7 +61,7 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, len(args.aminoacids))
+angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
 [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(deltas_dict, index_min_energy)
 
 execution_time = time.time() - start_time

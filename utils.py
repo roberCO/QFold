@@ -688,11 +688,11 @@ class Utils():
 
             stats = {}
 
-            #phi_prec = data[protein_key]['initialization_stats']['phis_precision']
-            #psi_prec = data[protein_key]['initialization_stats']['psis_precision']
+            phi_prec = data[protein_key]['initialization_stats']['phis_precision']
+            psi_prec = data[protein_key]['initialization_stats']['psis_precision']
             
             # divided by 2 because it is the mean between phi and psi and by 100 to normalize the precision
-            #stats['precision'] = np.mean(np.mean(phi_prec) + np.mean(psi_prec))/2/100
+            stats['precision'] = np.mean(np.mean(phi_prec) + np.mean(psi_prec))/2/100
             stats['min_tts'] = min(data[protein_key]['final_stats']['q']['value'], data[protein_key]['final_stats']['c']['value'])
             stats['quantum_tts'] = data[protein_key]['quantum_tts']
             stats['classical_tts'] = data[protein_key]['classical_tts']

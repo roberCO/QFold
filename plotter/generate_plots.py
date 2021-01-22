@@ -50,9 +50,9 @@ TTSplotter_matplotlib(results, ['logarithmic', 'linear', 'geometric', 'exponenti
 # generate plot of hardware measurements
 #plot_hardware_prob_difs(tools)
 
-#[stats, tts_tables] = calculate_stats(results)
+[stats, tts_tables] = calculate_stats(results)
 
 #for table in tts_tables:
 #    print(table, '\n')
 
-#print(stats)
+print(stats)

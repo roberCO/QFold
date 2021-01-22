@@ -6,7 +6,7 @@ import utils
 
 from plot_minifold_vs_random import plot_m_vs_r
 from plot_tts_evolution import plot_tts_ev, plot_tts_ev_bits
-from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope, plot_q_opt_step, plot_q_vs_c_slope_var
+from plot_quantum_vs_classical import plot_q_vs_c, plot_q_vs_c_slope, plot_q_opt_step, plot_q_vs_c_slope_var, plot_q_vs_c_tts_ratio, TTSplotter_matplotlib
 
 from plot_hardware_probability_difs import plot_hardware_prob_difs
 from stadistics_calculator import calculate_stats
@@ -37,9 +37,12 @@ for input_name in input_files:
 
 # generate plot of the comparison between quantum and classical difference of tts
 #plot_q_vs_c(results)
-plot_q_vs_c_slope(results)
-plot_q_vs_c_slope_var(results)
+#plot_q_vs_c_slope(results)
+#plot_q_vs_c_slope_var(results)
+#plot_q_vs_c_tts_ratio(results)
 #plot_q_opt_step(results)
+TTSplotter_matplotlib(results, ['fixed'])
+TTSplotter_matplotlib(results, ['logarithmic', 'linear', 'geometric', 'exponential'])
 
 # generate plot of evolution quantum and classical with different bits
 #plot_tts_ev_bits(results)

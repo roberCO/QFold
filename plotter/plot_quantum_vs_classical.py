@@ -1,5 +1,6 @@
 import random
 import re
+from typing import ValuesView
 import numpy as np
 import itertools
 from collections import OrderedDict
@@ -11,6 +12,12 @@ from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label, 
 from bokeh.palettes import Dark2_5 as palette
 from bokeh.models import SingleIntervalTicker, LinearAxis, Slope
 from bokeh.models.tickers import FixedTicker
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
 
 
 def plot_q_vs_c(data):
@@ -124,7 +131,12 @@ def plot_q_vs_c(data):
     modelqm = np.polynomial.polynomial.polyfit(logx_fit_mini, logq_fit_mini, 1)
     modelcr = np.polynomial.polynomial.polyfit(logx_fit_rand, logc_fit_rand, 1)
     modelcm = np.polynomial.polynomial.polyfit(logx_fit_mini, logc_fit_mini, 1)
+    modelc = np.polynomial.polynomial.polyfit(logx_fit_mini + logx_fit_rand, logc_fit_mini+logc_fit_rand, 1)
     models = [modelcm, modelcr, modelqm, modelqr]
+
+    logb, a = modelc
+    b = np.exp(logb)
+    print('The size vs cTTS regression coefficients are', a, b)
 
     model_renders = {}
         
@@ -157,7 +169,7 @@ def plot_q_vs_c(data):
         background_fill_alpha = 0.1 if line_dash == 'solid' else 0
 
         citation = Label(x=270, y=80 + y0, x_units='screen', y_units='screen',
-            text='TTS = '+str(np.round(b, 3))+'* size**'+str(np.round(a, 3)), text_font_size='12px', render_mode='canvas',
+            text='TTS = '+str(np.round(b, 3))+'* size**'+str(np.round(a, 3)), text_font_size='12px', render_mode='css',
             border_line_color=line_color, border_line_alpha=0.0, border_line_dash = line_dash,
             background_fill_color=line_color, background_fill_alpha=background_fill_alpha, text_color = line_color)
 
@@ -269,7 +281,7 @@ def plot_q_vs_c_tts_ratio(data):
     plot_tts.yaxis.axis_label='ratio classical/quantum min TTS'
     plot_tts.xaxis.axis_label='min(classical min TTS, quantum min TTS)'
     # the x_label is created appart from the axis label due a bokeh bug
-    x_label = Label(x=100, y=.875*height, x_units='screen', y_units='screen', text='quantum TTS', text_font_style = 'italic', text_font_size = "9pt", render_mode='canvas')
+    x_label = Label(x=100, y=.875*height, x_units='screen', y_units='screen', text='quantum TTS', text_font_style = 'italic', text_font_size = "9pt", render_mode='css')
 
     # add a fake multiline figure to the plot. It is necessary to add a legend of the classical\quantum area
     r = plot_tts.multi_line([[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]], color=["#003366", "#996633"], line_alpha=0.3, line_width=20)
@@ -317,9 +329,10 @@ def plot_q_vs_c_tts_ratio(data):
     show(plot_tts)
 
 
-def TTSplotter(data, schedule, width = 800, height = 450, title = None):
+def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_width=500, plot_height=500):
     # filter by fixed beta
     data = dict(filter(lambda item: item[1]['schedule'] == schedule, data.items()))
+    #data = dict(filter(lambda item: item[1]['number_bits'] != '1' and item[1]['number_bits'] != '5', data.items()))
 
     x_range = (1, 10**4)
     y_range = (1, 10**4)
@@ -371,6 +384,7 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
 
                 x_point.append(data[protein_key]['min_tts_c'])
                 y_point.append(data[protein_key]['min_tts_q'])
+                print(protein_key,data[protein_key]['min_tts_q'])
                 line_color.append('red' if 'minifold' in protein_key else 'blue')
 
                 if re.search("[A-Z]{4}", protein_key):
@@ -419,8 +433,8 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
 
         y0 = 25 if init == 'minifold' else 0
         x0 = 300 if (schedule == 'Cauchy' or schedule == 'linear' or schedule == 'exponential' or schedule == 'geometric') else 0
-        citation = Label(x=width-600 + x0, y=20 + y0, x_units='screen', y_units='screen',
-            text='qTTS = '+str(np.round(b, 3))+'*cTTS^'+str(np.round(a, 3)), text_font_size= text_font_size, render_mode='canvas',
+        citation = Label(x=width-600 + x0, y=90 + y0, x_units='screen', y_units='screen',
+            text='qTTS = '+str(np.round(b, 3))+'*cTTS^'+str(np.round(a, 3)), text_font_size= text_font_size, render_mode='css',
             border_line_color=line_color, border_line_alpha=0.0, border_line_dash = 'solid',
             background_fill_color=line_color, background_fill_alpha=0, text_color = line_color)
 
@@ -436,15 +450,15 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None):
     plot_q_c_slop.xgrid.grid_line_color = None
     plot_q_c_slop.ygrid.grid_line_color = None
 
-    citation = Label(x=1/3*width, y=1/4*height, x_units='screen', y_units='screen',
-                    text='quantum min(TTS) < classical min(TTS)', render_mode='canvas', text_font_size = text_font_size,
+    citation = Label(x=1/7*width, y=20, x_units='screen', y_units='screen',
+                    text='quantum min(TTS) < classical min(TTS)', render_mode='css', text_font_size = text_font_size,
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
     plot_q_c_slop.add_layout(citation)
 
     citation = Label(x=.1*width, y=5/6*height, x_units='screen', y_units='screen',
-                    text='classical min(TTS) < quantum min(TTS)', render_mode='canvas', text_font_size = text_font_size,
+                    text='classical min(TTS) < quantum min(TTS)', render_mode='css', text_font_size = text_font_size,
                     border_line_color='black', border_line_alpha=0.0,
                     background_fill_color='white', background_fill_alpha=0.0)
 
@@ -502,7 +516,7 @@ def plot_q_vs_c_slope(data):
 
     plot_q_c_slop, al, bl = TTSplotter(data, schedule = 'fixed', width = width, height = height)
 
-    plot_q_c_slop = generate_legend(plot_q_c_slop, .75*width, .05*height)
+    plot_q_c_slop = generate_legend(plot_q_c_slop, .75*width, 20)
 
     show(plot_q_c_slop)
 
@@ -584,3 +598,128 @@ def plot_q_opt_step(data):
 
 
     show(p)
+
+def TTSplotter_matplotlib(data, schedules):
+
+    #params = {'text.latex.preamble' : [r'\usepackage{siunitx}', r'\usepackage{amsmath}']}
+    #plt.rcParams.update(params) plt.figure(figsize=(6,3))
+
+    if schedules[0] == 'fixed': 
+        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8,6))
+    else:
+        fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(17,10))
+
+    def schedule_plot(ax, schedule):
+
+        #ndata = dict(filter(lambda item: (int(item[1]['number_aas']) == 3) or (int(item[1]['number_bits']) > 3), data.items()))
+        schedule_data = dict(filter(lambda item: (item[1]['schedule'] == schedule), data.items()))
+
+        min_range, max_range = (1, 1e4)
+
+        ax.set_xlim([min_range, max_range])
+        ax.set_ylim([min_range, max_range])
+        ax.set_yscale("log")
+        ax.set_xscale("log")
+
+        for initializer, color in zip(['minifold', 'random'], ['red', 'blue']):
+            q_tts_fit = []
+            c_tts_fit = []
+            for number_bits in range(6):
+                for number_aas, marker in zip(range(2, 5), ['o', '^', 's']):
+                    q_tts = []
+                    c_tts = []
+                    partial_data = dict(filter(lambda item: (item[1]['number_bits'] == str(number_bits)) 
+                        and (item[1]['number_aas'] == number_aas) and (item[1]['initializer'] == str(initializer)), schedule_data.items()))
+
+                    for key, value in partial_data.items():
+                        if float(value['min_tts_q']) <= 1 or float(value['min_tts_c']) <= 1:
+                            print(key, value['min_tts_q'], value['min_tts_c'])
+                        else:
+                            q_tts.append(value['min_tts_q'])
+                            c_tts.append(value['min_tts_c'])
+                            q_tts_fit.append(value['min_tts_q'])
+                            c_tts_fit.append(value['min_tts_c'])
+
+                    # Plotting the points
+                    ax.scatter(c_tts, q_tts, marker=marker, c=color, s = int(number_bits**3+5), alpha = 1)
+
+            # Fit the points
+            logcx = np.log(c_tts_fit)
+            logqy = np.log(q_tts_fit)
+
+            model = np.polynomial.polynomial.polyfit(logcx, logqy, 1)
+            logb, a = model
+            b = np.exp(logb)
+            print('a,b',a,b)
+
+            suba = np.round(a,2)
+            subb = np.round(b,1)
+            string = r'$qTTS = {subb}\times cTTS^{{{suba}}}$'.format(subb=subb, suba = suba)
+            if initializer == 'minifold':
+                ax.text(x = 20, y = 10, s = string, color = color, fontsize = 15)
+            else:
+                ax.text(x = 20, y = 5, s = string, color = color, fontsize = 15)
+
+            # plotting the fits          
+            x_fit = np.linspace(int(1), int(1e5), int(1e5))
+            y_fit = b*x_fit**a
+            ax.plot(x_fit,y_fit, color = color, linestyle='solid')
+
+        # plotting the diagonal            
+        x = np.linspace(int(1), int(1e5), int(1e5))
+        y = x
+        ax.plot(x,y, color = 'gray', linestyle = 'dashed')
+
+        string = r'quantum min(TTS) < classical min(TTS)'
+        ax.text(x = 4, y = 2, s = string, color = 'black')
+
+        string = r'classical min(TTS) < quantum min(TTS)'
+        ax.text(x = 1.5, y = 5e3, s = string, color = 'black')
+
+        if schedule == 'fixed' or schedule == 'logarithmic' or schedule == 'geometric':
+            ax.set_ylabel('Quantum min(TTS)', fontsize=12)
+        if schedule == 'fixed' or schedule == 'exponential' or schedule == 'geometric':
+            ax.set_xlabel('Classical min(TTS)', fontsize=12)
+        
+        if schedule != 'fixed': ax.set_title(schedule.capitalize() + ' schedule', fontsize=12)
+
+        # Set legend
+
+        # First plot: two legend keys for a single entry
+        p1, = ax.plot([0], [0], c='r', marker='h', linestyle = 'solid')
+        p2, = ax.plot([0], [0], c='b', marker='h', linestyle = 'solid')
+        # `plot` returns a list, but we want the handle - thus the comma on the left
+        p3 = ax.scatter([0], [0], c='grey', marker='o')
+        p4 = ax.scatter([0], [0], c='grey', marker='^')
+        p5 = ax.scatter([0], [0], c='grey', marker='s')
+
+        p6 = ax.scatter([0], [0], c='grey', marker='s', s=1**3)
+        p7 = ax.scatter([0], [0], c='grey', marker='^', s=2**3)
+        p8 = ax.scatter([0], [0], c='grey', marker='h', s=int(3**2.5))
+        p9 = ax.scatter([0], [0], c='grey', marker='h', s=int(4**2.5))
+        p10 = ax.scatter([0], [0], c='grey', marker='h', s=int(5**2.5))
+
+        # Assign two of the handles to the same legend entry by putting them in a tuple
+        # and using a generic handler map (which would be used for any additional
+        # tuples of handles like (p1, p3)).
+        l = ax.legend([p1, p2, p3, p4, p5, (p8, p9, p10)], ['minifold initialization', 'random initialization', 'dipeptides', 'tripeptides', 'tetrapeptides', '# rotation bits'], scatterpoints=1,
+                    numpoints=1, handler_map={tuple: HandlerTuple(ndivide=None)}, loc='lower right')
+        #ax.legend(handles=legend_elements, loc='lower right')
+
+    if schedules[0] == 'fixed':
+        schedule_plot(axs,schedules[0])
+    else:
+        for ax, schedule in zip(axs.flat, schedules):
+            schedule_plot(ax,schedule)
+    #fig.text(0.5, 0.04, 'Classical min(TTS)', ha='center')
+    #fig.text(0.04, 0.5, 'Quantum min(TTS)', va='center', rotation='vertical')
+    plt.tight_layout()
+    if schedules[0]=='fixed':
+        plt.savefig("fixed_beta_tts_slope.png")
+        plt.savefig("fixed_beta_tts_slope.pdf",bbox_inches='tight', transparent=True)
+    else:
+        plt.savefig("variable_beta_tts_slope.png")
+        plt.savefig("variable_beta_tts_slope.pdf",bbox_inches='tight', transparent=True)
+    plt.show()
+
+#    "path_tts_plot": "./beta_var_dipeptides_3/",

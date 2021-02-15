@@ -57,12 +57,12 @@ except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
     angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
-[deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
+[energies_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
 angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
-[min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(deltas_dict, index_min_energy)
+[min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(energies_dict, index_min_energy)
 
 execution_time = time.time() - start_time
 

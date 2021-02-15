@@ -42,11 +42,10 @@ class Initializer():
         [atoms, initialization_stats] = self.calculateInitialStructure(atoms, aminoacids, method_rotations_generation, backbone)
 
         #Calculate all posible energies for the phi and psi angles
-        deltasJson = self.calculateAllDeltasOfRotations(atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone)
+        energiesJson = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
 
         # Add the stadistics about the precision of the initializator
-        deltasJson['initialization_stats'] = initialization_stats
-        self.write_json(deltasJson, 'delta_energies', proteinName, numberBitsRotation, method_rotations_generation)
+        self.write_json(energiesJson, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName, aminoacids, protein_id):
@@ -182,89 +181,6 @@ class Initializer():
             }
 
         return [atoms, initialization_stats]
-
-    #This method returns the json with all rotations and energies associated to these rotations
-    def calculateAllDeltasOfRotations(self, atoms, aminoacids, min_energy_psi4, proteinName, numberBitsRotation, method_rotations_generation, backbone):
-
-        rotationSteps = pow(2, int(numberBitsRotation))
-        
-        # it calculates the number of necessary bits to represent the number of angles
-        # example, 4 aminoacids: 3 phis/psis => 2 bits
-        bits_number_angles = math.ceil(np.log2(len(aminoacids)-1))
-
-        print('    ⬤ Calculating energies for all posible rotations')
-        number_angles = 2*(len(aminoacids)-1)
-        energies = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
-
-        #Write the headers of the energies json that is going to be returned
-        deltasJson = {}
-        deltasJson['protein'] = proteinName
-        deltasJson['numberBitsRotation'] = numberBitsRotation
-        deltasJson['psi4_min_energy'] = min_energy_psi4
-        deltasJson['deltas'] = {}
-
-        print('    ⬤ Calculating deltas for all possible combinations of rotations')
-
-        min_energy = 99999
-        index_min_energy = -1  
-        # iterates over all calculated energies using the keys (contains the values of the phi/psi angles)      
-        for e_key in energies.keys():
-
-            old_energy = energies[e_key]
-
-            # check if the energy is lower than the minimum
-            if old_energy < min_energy:
-                min_energy = old_energy
-                index_min_energy = e_key
-            
-            angle_keys = e_key.split(' ')
-            # iterate over all angles keys
-            for index_a_key in range(len(angle_keys)):
-
-                # calculate the plus/minus 1 rotation delta
-                for plusminus in [0,1]:
-                    pm = (-2)*plusminus + 1
-
-                    new_value = (int(angle_keys[index_a_key]) + pm) % (2**numberBitsRotation)
-
-                    # create a key with the values of the angles (if the index is equal to the index of the modified angle, insert the modified one)
-                    angle_key = ''
-                    binary_key = ''
-                    for index_key in range(len(angle_keys)):
-
-                        binary_key += np.binary_repr(int(angle_keys[index_key]), width = numberBitsRotation)
-
-                        if index_key == index_a_key:
-                            angle_key += str(new_value)+ ' '
-                        
-                        else:
-                            angle_key += angle_keys[index_key] + ' '
-
-                    new_energy = energies[angle_key.strip()]
-
-                    # add 0/1 for phi/psi
-                    if index_a_key % 2 == 0:
-                        # if it is even number is phi (add 0)
-                        binary_key += str(0)
-                    else:
-                        # if it is odd number is psi (add 1)
-                        binary_key += str(1)
-                    
-                    # add the index of the phi/psi angle (with more than 2 aminoacids, there are more than one phi/psi)
-                    binary_key += np.binary_repr(int(index_a_key/2), width = bits_number_angles)
-
-                    # add 0/1 for plus/minus
-                    binary_key += str(plusminus)
-
-                    delta = new_energy - old_energy
-                    
-                    #Add the values to the file with the precalculated energies
-                    deltasJson['deltas'][binary_key] = delta
-
-        deltasJson['initial_min_energy'] = min_energy
-        deltasJson['index_min_energy'] = index_min_energy.replace(' ', '-')
-
-        return deltasJson
 
     # RECURSIVE function to calculate all energies of each possible rotation 
     def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, max_lenght, aminoacids, index_sequence='', energies = {}):

@@ -444,11 +444,6 @@ class Utils():
 
         return ('0'*(number_bits_rotation - len(format(angle,'b'))) + format(angle,'b'))
 
-    def calculateTTS(self, precision_solution, t, p_t):
-
-        return t * (math.log10(1-precision_solution)/(math.log10(1-p_t)))
-
-
     def plot_tts(self, q_accumulated_tts, c_accumulated_tts, initial_step):
 
         x_axis = [x for x in range(initial_step, initial_step+len(q_accumulated_tts))]

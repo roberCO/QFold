@@ -41,7 +41,7 @@ class AngleCalculator():
             start_time = time.time()
 
             if self.mode == 'simulation':
-                q_tts_all_steps = qms_solver.execute_quantum_metropolis(nW = self.final_step, 'TTS')
+                q_tts_all_steps = qms_solver.execute_quantum_metropolis(nW = self.final_step)
             elif self.mode == 'experiment': 
                 ibmq_executor = executorIBMQ.ExecutorIBMQ(self.tools, energies_dict)
                 [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = ibmq_executor.execute_real_hardware(nWs = 2)
@@ -49,7 +49,7 @@ class AngleCalculator():
                 n_repetitions = self.tools.config_variables['number_repetitions_real_mode']
                 accum_probabilities = []
                 for _ in range(n_repetitions):
-                    [dict_probabilities_matrix, time_statevector] = qms_solver.execute_quantum_metropolis(nW = self.tools.config_variables['w_real_mode'] + 1, 'probabities') # The 1 is needed because we implement a range (1, nW)
+                    [dict_probabilities_matrix, time_statevector] = qms_solver.execute_quantum_metropolis(nW = self.tools.config_variables['w_real_mode'] + 1) # The 1 is needed because we implement a range (1, nW)
                     probabilities_matrix = dict_probabilities_matrix[self.tools.config_variables['w_real_mode']]
                     accum_probabilities.append(probabilities_matrix)
 

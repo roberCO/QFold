@@ -7,7 +7,7 @@
     "epochs": 3,
     "batch_size": 16,
     
-    "psi4_path": "/Users/pablo/psi4conda/bin/psi4",
+    "psi4_path": "/home/roberto/installations/psi4conda/bin/psi4",
     "energy_method": "mp2",
     "basis": "6-31g",
     "input_filename_energy_psi4": "inputRotations",
@@ -23,12 +23,6 @@
     "final_step": 50,
     "path_tts_plot": "./results/",
     "ancilla_bits": 7,
-    "number_iterations": 500,
-    "beta": 50,
-    "beta_type": "variable",
-    "alpha": 0.9,
-    "kappa": 1,
-    "annealing_schedule": "geometric",
     "oracle_option":"qfold_oracle",
     
     "path_qiskit_token": "./config/qiskit_API_token.json",
@@ -40,9 +34,6 @@
     "betas": [ 0.1, 1],
     "w_real_mode": 20,
     "number_repetitions_real_mode": 1,
-
-    "precision_solution": 0.9,
-    "default_value_tts": 99999,
     
     "n_threads_pool": 1,    
     

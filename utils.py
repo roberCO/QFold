@@ -716,6 +716,27 @@ class Utils():
 
     def von_mises_amplitudes(self, n_qubits, kappa):
 
+        '''
+
+        _, accumulated_probs = self.tools.von_mises_amplitudes(n_qubits = self.bits_rotation, kappa = self.kappa)
+
+        for _ in range(self.number_energy_groups):
+
+            # Random initialization of angles
+            r = np.random.random()
+            for i in range(self.rotation_steps):
+                if accumulated_probs[i] >= r:
+                    anglePhi_old.append(i)
+                    break
+
+            r = np.random.random()
+            for i in range(self.rotation_steps):
+                if accumulated_probs[i] >= r:
+                    anglePsi_old.append(i)
+                    break
+
+        '''
+
         probs = {}
         probs[0] = vonmises.cdf(np.pi/2**n_qubits, kappa) - vonmises.cdf(-np.pi/2**n_qubits, kappa)
         probs[2**n_qubits/2] = 2* vonmises.cdf(np.pi/2**n_qubits - np.pi, kappa)

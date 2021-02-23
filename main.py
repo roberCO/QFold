@@ -1,6 +1,6 @@
 import sys
 import initializer
-import angleCalculator
+# import angleCalculator
 import psiFour
 import utils
 #import openfermion
@@ -61,8 +61,8 @@ except IOError:
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
-[min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(energies_dict, index_min_energy)
+# angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
+# [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(energies_dict, index_min_energy)
 
 execution_time = time.time() - start_time
 
@@ -71,6 +71,7 @@ print('**       RESULTS for ', args.protein_name,'with', args.bits,'bits       *
 print('********************************************************')
 print('**                                                    **')
 
+'''
 if args.mode == 'simulation' or args.mode == 'experiment':
     print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
     print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
@@ -82,7 +83,7 @@ elif args.mode == 'real':
     print('**                                                    **')
     print('**      Quantum success min energy:', min_q_tts['success'],'      **')
     print('**      Classical success min energy:', min_c_tts['success'],'      **')
-
+'''
 
 
 print('**                                                    **')

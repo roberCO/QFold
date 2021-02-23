@@ -6,7 +6,6 @@ import minifold
 import math
 import random
 import sys
-import progressbar
 import numpy as np
 import time
 
@@ -41,6 +40,8 @@ class Initializer():
         #Get initial structure of the protein to rotate from it
         [atoms, initialization_stats] = self.calculateInitialStructure(atoms, aminoacids, method_rotations_generation, backbone)
 
+        rotationSteps = pow(2, int(numberBitsRotation))
+        number_angles = 2*(len(aminoacids)-1)
         #Calculate all posible energies for the phi and psi angles
         energiesJson = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
 
@@ -196,7 +197,8 @@ class Initializer():
                 # returned energy is added to a data structure (this structure is multi-dimensional)
                 # index_sequence contains the accumulated index (it helps to know the general index_sequence)
                 energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, max_lenght, aminoacids, index_sequence+str(index)+' ', energies)
-            
+
+
             else:
                 
                 #Perform the rotations over a copy

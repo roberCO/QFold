@@ -58,7 +58,7 @@ class Metropolis():
         anglePhi_old = []
         anglePsi_old = []
 
-        if self.initialization == 'random':
+        if self.initialization == 'random' or self.initialization == 'original':
 
             for _ in range(self.number_angles):
 

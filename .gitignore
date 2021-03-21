@@ -2,7 +2,7 @@
 precalculated_energies/energies_*
 
 # ignore results files
-results/
+#results/
 *.html
 
 # ignore files created by psi4

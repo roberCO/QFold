@@ -2,7 +2,7 @@
  
 # QFold     
 
-[![Paper](http://img.shields.io/badge/paper-arxiv.2101.10279-B31B1B.svg)](https://arxiv.org/pdf/2101.10279.pdf)
+[![arXiv](http://img.shields.io/badge/2101.10279-B31B1B.svg)](https://arxiv.org/pdf/2101.10279.pdf)
 <!--
 [![Conference](http://img.shields.io/badge/NeurIPS-2019-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018)
 [![Conference](http://img.shields.io/badge/ICLR-2019-4b44ce.svg)](https://papers.nips.cc/book/advances-in-neural-information-processing-systems-31-2018)

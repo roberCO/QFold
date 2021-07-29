@@ -8,15 +8,15 @@ import time
 
 class PsiFour():
 
-    def __init__(self, psi4_path, input_filename, output_filename, precalculated_energies_path, energy_method, n_threads, basis):
+    def __init__(self, tools):
 
-        self.psi4_path = psi4_path
-        self.input_filename = input_filename
-        self.output_filename = output_filename
-        self.precalculated_energies_path = precalculated_energies_path
-        self.energy_method = energy_method
-        self.n_threads = n_threads
-        self.basis = basis
+        self.psi4_path = tools.config_variables['psi4_path']
+        self.input_filename = tools.config_variables['input_filename_energy_psi4']
+        self.output_filename = tools.config_variables['output_filename_energy_psi4']
+        self.precalculated_energies_path = tools.config_variables['precalculated_energies_path']
+        self.energy_method = tools.config_variables['energy_method']
+        self.n_threads = tools.config_variables['n_threads_pool']
+        self.basis = tools.config_variables['basis']
 
     def getAtomsFromProtein(self, protein, protein_id):
 
@@ -132,10 +132,3 @@ class PsiFour():
                     isInfoLine = True
                         
         return [atoms, protein_id]
-
-    def readEnergyJson(self, proteinName, numberBitsRotation, method_rotations_generation):
-
-        with open(self.precalculated_energies_path + 'delta_energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
-            data = json.load(json_file)
-
-            return [data['deltas'], data['psi4_min_energy'], data['initial_min_energy'], data['index_min_energy'], data['initialization_stats']]

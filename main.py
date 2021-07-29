@@ -1,18 +1,10 @@
-import sys
-import initializer
-# import angleCalculator
-import psiFour
-import utils
-#import openfermion
-
+import os
 import time
 import datetime
-
-#Read config file with the QFold configuration variables
-config_path = './config/config.json'
-tools = utils.Utils(config_path)
-
-args = tools.parse_arguments()
+import initializer
+import psiFour
+import utils
+import qms
 
 print('\n###################################################################')
 print('##                             QFOLD                             ##')
@@ -22,47 +14,38 @@ print('###################################################################\n')
 
 start_time = time.time()
 
-rotationSteps = 2**(int(args.bits))
+#Read config file with the QFold configuration variables
+config_path = './config/config.json'
 
-config_variables = tools.get_config_variables()
-angleInitializer = initializer.Initializer(
-    psi4_path = config_variables['psi4_path'],
-    input_file_energies_psi4 = config_variables['input_filename_energy_psi4'], 
-    output_file_energies_psi4 = config_variables['output_filename_energy_psi4'],
-    energy_method = config_variables['energy_method'],
-    precalculated_energies_path = config_variables['precalculated_energies_path'], 
-    model_path = config_variables['model_path'], 
-    window_size = config_variables['window_size'], 
-    max_aa_length = config_variables['maximum_aminoacid_length'],
-    initialization_option = config_variables['methods_initialization'],
-    n_threads = config_variables['n_threads_pool'],
-    basis = config_variables['basis']
-    )
+tools = utils.Utils(config_path)
+angleInitializer = initializer.Initializer(tools)
+psi = psiFour.PsiFour(tools)
 
-psi = psiFour.PsiFour(
-    config_variables['psi4_path'], 
-    config_variables['input_filename_energy_psi4'], 
-    config_variables['output_filename_energy_psi4'], 
-    config_variables['precalculated_energies_path'], 
-    config_variables['energy_method'], 
-    config_variables['n_threads_pool'],
-    config_variables['basis'])
+args = tools.parse_arguments()
 
 #Check if it existes a precalculated energy file with the same parameters, if not call initializer to calculate it
-#The format should be energies[args.protein_name][numberBitsForRotation] ex: energiesGlycylglycine2.json
+#The format should be energies[args.protein_name][numberBitsForRotation][initialization] ex: energies_glycylglycine_2_minifold.json
 try:
-    f = open(config_variables['precalculated_energies_path']+'delta_energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json')
+    f = open(tools.config_variables['precalculated_energies_path']+'energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json')
     f.close()
 except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
-    angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
-
-[energies_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)
+    angleInitializer.calculate_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
 print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-# angleCalculator = angleCalculator.AngleCalculator(tools, angleInitializer, initialization_stats)
-# [min_q_tts, min_c_tts] = angleCalculator.calculate3DStructure(energies_dict, index_min_energy)
+file_energies_path_qms = tools.config_variables['precalculated_energies_path'] + 'file_energies_qms_' + args.protein_name + '_' + args.bits + '_' + args.initialization + '.json'
+
+[energies_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = tools.write_qms_energies_file(args.protein_name, args.bits, args.initialization, file_energies_path_qms)
+
+# call QMS module to calculate results
+[min_q_tts, min_c_tts] = qms.executeMetropolis(path=file_energies_path_qms, isCircular=True)
+
+# delete temporal energies file for qms
+if os.path.exists(file_energies_path_qms):
+    os.remove(file_energies_path_qms)
+else:
+    print('<*> ERROR: Temporal qms file ' + file_energies_path_qms + 'does not exist! Probably QFold is not working correctly')
 
 execution_time = time.time() - start_time
 
@@ -71,7 +54,6 @@ print('**       RESULTS for ', args.protein_name,'with', args.bits,'bits       *
 print('********************************************************')
 print('**                                                    **')
 
-'''
 if args.mode == 'simulation' or args.mode == 'experiment':
     print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
     print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
@@ -83,8 +65,6 @@ elif args.mode == 'real':
     print('**                                                    **')
     print('**      Quantum success min energy:', min_q_tts['success'],'      **')
     print('**      Classical success min energy:', min_c_tts['success'],'      **')
-'''
-
 
 print('**                                                    **')
 print('** -------------------------------------------------- **')

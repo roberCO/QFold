@@ -11,30 +11,35 @@ import time
 
 class Initializer():
 
-    def __init__(self, psi4_path, input_file_energies_psi4, output_file_energies_psi4, energy_method, precalculated_energies_path, model_path, window_size, max_aa_length, initialization_option, n_threads, basis):
+    def __init__(self, tools):
 
         ## PARAMETERS ##
-
-        self.model_path = model_path
-        self.window_size = window_size
-        self.max_aa_length = max_aa_length
-        self.initialization_option = initialization_option
-        self.precalculated_energies_path = precalculated_energies_path
-        self.basis = basis
+        self.model_path = tools.config_variables['model_path']
+        self.window_size = tools.config_variables['window_size']
+        self.max_aa_length = tools.config_variables['maximum_aminoacid_length']
+        self.initialization_option = tools.config_variables['methods_initialization']
+        self.precalculated_energies_path = tools.config_variables['precalculated_energies_path']
+        self.basis = tools.config_variables['basis']
+        
+        psi4_path = tools.config_variables['psi4_path']
+        input_file_energies_psi4 = tools.config_variables['input_filename_energy_psi4']
+        output_file_energies_psi4 = tools.config_variables['output_filename_energy_psi4']
+        energy_method = tools.config_variables['energy_method']
+        n_threads = tools.config_variables['n_threads_pool']
 
         #Declare the instances to use the functions of these classes
-
-        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, precalculated_energies_path, energy_method, n_threads, basis)
+        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, self.precalculated_energies_path, energy_method, n_threads, self.basis)
         self.tools = utils.Utils()
 
     #Calculate all posible energies for the protein and the number of rotations given
-    def calculate_delta_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id):
+    def calculate_energies(self, proteinName, numberBitsRotation, method_rotations_generation, aminoacids, protein_id):
 
         print('## Generating file of energies ##')
 
         #Get all atoms from the protein with x/y/z positions and connections
         atoms, backbone = self.extractAtoms(proteinName, aminoacids, protein_id)
 
+        # calculate the energy of the molecule returned by PSI4 (in theory the minimum energy of the molecule)
         min_energy_psi4 = self.calculateEnergyOfRotation(atoms)
 
         #Get initial structure of the protein to rotate from it
@@ -42,11 +47,16 @@ class Initializer():
 
         rotationSteps = pow(2, int(numberBitsRotation))
         number_angles = 2*(len(aminoacids)-1)
+
+
         #Calculate all posible energies for the phi and psi angles
-        energiesJson = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
+        energies_json = []
+        energies_json['energies'] = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
+        energies_json['initialization_stats'] = initialization_stats
+        energies_json['min_energy_psi4'] = min_energy_psi4
 
         # Add the stadistics about the precision of the initializator
-        self.write_json(energiesJson, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
+        self.write_json(energies_json, 'energies', proteinName, numberBitsRotation, method_rotations_generation)
 
     #Get the atoms (and the properties) of a protein
     def extractAtoms(self, proteinName, aminoacids, protein_id):

@@ -26,9 +26,6 @@ class Utils():
             with open(config_path) as json_file:
                         self.config_variables = json.load(json_file)
 
-    def get_config_variables(self):
-        return self.config_variables
-
     def parse_arguments(self):
 
         parser = argparse.ArgumentParser(description="Tool that combines AI and QC to solve protein folding problem.\n Example: python main.py glycylglycine GG 5 minifold simulation -c")
@@ -714,6 +711,20 @@ class Utils():
 
         return results
 
+    def write_qms_energies_file(self, proteinName, numberBitsRotation, method_rotations_generation, file_energies_path_qms):
+
+        with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
+            data = json.load(json_file)
+
+            #Write file with all atoms rotated
+            handle_qms_input_file = open(self.file_energies_path_qms, 'w')
+
+            handle_qms_input_file.write(data['energies'])
+
+            handle_qms_input_file.close()
+
+            return [data['psi4_min_energy'], data['initial_min_energy'], data['index_min_energy'], data['initialization_stats']]
+
     def von_mises_amplitudes(self, n_qubits, kappa):
 
         '''
@@ -761,4 +772,3 @@ class Utils():
         acc = acc[1:] # We are not interested in the first item, which is 0
 
         return aa, acc
-

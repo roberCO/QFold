@@ -7,7 +7,7 @@
     "epochs": 3,
     "batch_size": 16,
     
-    "psi4_path": "/home/roberto/installations/psi4conda/bin/psi4",
+    "psi4_path": "/home/rco/installations/psi4conda/bin/psi4",
     "energy_method": "mp2",
     "basis": "6-31g",
     "input_filename_energy_psi4": "inputRotations",

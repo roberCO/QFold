@@ -8,6 +8,7 @@ import random
 import sys
 import numpy as np
 import time
+import datetime
 
 class Initializer():
 
@@ -20,15 +21,9 @@ class Initializer():
         self.initialization_option = tools.config_variables['methods_initialization']
         self.precalculated_energies_path = tools.config_variables['precalculated_energies_path']
         self.basis = tools.config_variables['basis']
-        
-        psi4_path = tools.config_variables['psi4_path']
-        input_file_energies_psi4 = tools.config_variables['input_filename_energy_psi4']
-        output_file_energies_psi4 = tools.config_variables['output_filename_energy_psi4']
-        energy_method = tools.config_variables['energy_method']
-        n_threads = tools.config_variables['n_threads_pool']
 
         #Declare the instances to use the functions of these classes
-        self.psi = psiFour.PsiFour(psi4_path, input_file_energies_psi4, output_file_energies_psi4, self.precalculated_energies_path, energy_method, n_threads, self.basis)
+        self.psi = psiFour.PsiFour(tools)
         self.tools = utils.Utils()
 
     #Calculate all posible energies for the protein and the number of rotations given
@@ -50,8 +45,8 @@ class Initializer():
 
 
         #Calculate all posible energies for the phi and psi angles
-        energies_json = []
-        energies_json['energies'] = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
+        energies_json = {}
+        [energies_json['energies'], energies_json['index_min_energy']] = self.calculate_all_energies(atoms, rotationSteps, number_angles, number_angles, aminoacids)
         energies_json['initialization_stats'] = initialization_stats
         energies_json['min_energy_psi4'] = min_energy_psi4
 
@@ -139,7 +134,6 @@ class Initializer():
             atoms = self.flat_protein(atoms, backbone, phi_angles_psi4, psi_angles_psi4)
 
             # calculate n random angle values (n is the number of phi/psi angles that is the same than nitro/carboxy atoms)
-            print('len_angles_phi',len(phi_angles_psi4))
             for _ in range(len(phi_angles_psi4)):
 
                 phis_initial_rotation.append(random.uniform(-math.pi, math.pi))
@@ -174,7 +168,6 @@ class Initializer():
         [phis_precision, psis_precision] = self.tools.calculatePrecisionOfAngles(phi_angles_psi4, psi_angles_psi4, phis_initial_rotation, psis_initial_rotation)
 
         # if it is necessary convert float32 in standard python type (float32 is not serializable by json)
-        print(phis_initial_rotation, psis_initial_rotation)
         if type(phis_initial_rotation[0]) is np.float32:
             phis_initial_rotation = [value.item() for value in phis_initial_rotation]
         
@@ -194,7 +187,7 @@ class Initializer():
         return [atoms, initialization_stats]
 
     # RECURSIVE function to calculate all energies of each possible rotation 
-    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, max_lenght, aminoacids, index_sequence='', energies = {}):
+    def calculate_all_energies(self, atoms, rotation_steps, protein_sequence_length, max_lenght, aminoacids, index_sequence='', index_min_energy=-1, energies = {}):
 
         # iterate to calculate all possible rotations
         # for example if there are 4 rotation steps, it executes the loop 4 times, but in each iteration, it calls recursively to all rotations starting with 0 (first iteration)  
@@ -206,8 +199,7 @@ class Initializer():
             if protein_sequence_length > 0:
                 # returned energy is added to a data structure (this structure is multi-dimensional)
                 # index_sequence contains the accumulated index (it helps to know the general index_sequence)
-                energies = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, max_lenght, aminoacids, index_sequence+str(index)+' ', energies)
-
+                [energies, index_min_energy] = self.calculate_all_energies(atoms, rotation_steps, protein_sequence_length-1, max_lenght, aminoacids, index_sequence+str(index)+' ', index_min_energy, energies)
 
             else:
                 
@@ -246,6 +238,8 @@ class Initializer():
                 #Calculate the energy of the protein structure after the previous rotations
                 energies[index_sequence] = self.calculateEnergyOfRotation(copied_atoms)
 
+                if index_min_energy == -1 or energies[index_sequence] < energies[index_min_energy]: index_min_energy = index_sequence
+
                 # We eliminate previous copies
                 del copied_atoms
                 del copied_backbone
@@ -254,9 +248,9 @@ class Initializer():
 
             if max_lenght == protein_sequence_length:
                 total_time = time.time() - start_time
-                print("Step", index+1, "of", rotation_steps,"calculated for aminoacids", aminoacids, "in", total_time, "seconds", "(", total_time/(rotation_steps**(max_lenght-1)), "per each)")
+                print("Step", index+1, "of", rotation_steps,"calculated for aminoacids", aminoacids, "in", str(datetime.timedelta(seconds=total_time)), " in hh:mm:ss (", str(datetime.timedelta(seconds=total_time/(rotation_steps**(max_lenght-1)))), "per each)")
 
-        return energies
+        return [energies, index_min_energy]
 
     def calculateEnergyOfRotation(self, copied_atoms):
 

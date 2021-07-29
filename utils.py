@@ -1,15 +1,11 @@
-import atom
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-import struct
-import copy
 import math
 import json
 import argparse
 from scipy.stats import vonmises
-import re
 
+import re
 import itertools
 class Utils():
 
@@ -432,8 +428,8 @@ class Utils():
 
                 phi_precisions.append((1-(minimum_option / (math.pi)))*100) if phi_psi == 0 else psi_precisions.append((1-(minimum_option / (math.pi)))*100)
         
-        print('\nPHI precision: ', np.mean(phi_precisions), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
-        print('PSI precision: ', np.mean(psi_precisions), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
+        print('\nPHI precision: ', '{:.2f}'.format(np.mean(phi_precisions)), '% phi mean real value: ', np.mean(phi_angles_psi4), 'phi mean calculated value:', np.mean(phis_initial_rotation))
+        print('PSI precision: ', '{:.2f}'.format(np.mean(psi_precisions)), '% psi mean real value: ', np.mean(psi_angles_psi4), 'psi mean calculated value:', np.mean(psis_initial_rotation), '\n')
 
         return [phi_precisions, psi_precisions]
 
@@ -713,17 +709,17 @@ class Utils():
 
     def write_qms_energies_file(self, proteinName, numberBitsRotation, method_rotations_generation, file_energies_path_qms):
 
-        with open(self.precalculated_energies_path + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
+        with open(self.config_variables['precalculated_energies_path'] + 'energies_'+proteinName+'_'+str(numberBitsRotation)+'_'+method_rotations_generation+'.json') as json_file:
             data = json.load(json_file)
 
             #Write file with all atoms rotated
-            handle_qms_input_file = open(self.file_energies_path_qms, 'w')
+            handle_qms_input_file = open(file_energies_path_qms, 'w')
 
-            handle_qms_input_file.write(data['energies'])
+            handle_qms_input_file.write(json.dumps(data['energies']))
 
             handle_qms_input_file.close()
 
-            return [data['psi4_min_energy'], data['initial_min_energy'], data['index_min_energy'], data['initialization_stats']]
+            return [data['min_energy_psi4'], data['index_min_energy'], data['initialization_stats']]
 
     def von_mises_amplitudes(self, n_qubits, kappa):
 

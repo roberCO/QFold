@@ -32,11 +32,11 @@ except IOError:
     print('<!> Info: No precalculated energies file found => Calculating energies\n')
     angleInitializer.calculate_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
-print('## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
+print('\n## 3D STRUCTURE CALCULATOR FOR', args.protein_name,'with', args.bits,'bits and', args.initialization,'initialization##\n')
 
-file_energies_path_qms = tools.config_variables['precalculated_energies_path'] + 'file_energies_qms_' + args.protein_name + '_' + args.bits + '_' + args.initialization + '.json'
+file_energies_path_qms = tools.config_variables['precalculated_energies_path'] + 'file_energies_qms_' + args.protein_name + '_' + str(args.bits) + '_' + args.initialization + '.json'
 
-[energies_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = tools.write_qms_energies_file(args.protein_name, args.bits, args.initialization, file_energies_path_qms)
+[psi4_min_energy, index_min_energy, initialization_stats] = tools.write_qms_energies_file(args.protein_name, args.bits, args.initialization, file_energies_path_qms)
 
 # call QMS module to calculate results
 [min_q_tts, min_c_tts] = qms.executeMetropolis(path=file_energies_path_qms, isCircular=True)
@@ -49,19 +49,19 @@ else:
 
 execution_time = time.time() - start_time
 
-print('\n\n********************************************************')
+print('\n********************************************************')
 print('**       RESULTS for ', args.protein_name,'with', args.bits,'bits       **')
 print('********************************************************')
 print('**                                                    **')
 
 if args.mode == 'simulation' or args.mode == 'experiment':
-    print('** Quantum Metropolis   => Min TTS:', '{:.10f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
-    print('** Classical Metropolis => Min TTS:', '{:.10f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
+    print('** Quantum Metropolis   => Min TTS:', '{:.4f}'.format(min_q_tts['value']), 'at step:', min_q_tts['step'], ' **')
+    print('** Classical Metropolis => Min TTS:', '{:.4f}'.format(min_c_tts['value']), 'at step:', min_c_tts['step'], ' **')
 
 elif args.mode == 'real':
 
-    print('** Quantum Metropolis   => Confidence:', '{:.10f}'.format(min_q_tts['value']*100), '% **')
-    print('** Classical Metropolis => Confidence:', '{:.10f}'.format(min_c_tts['value']*100), '% **')
+    print('** Quantum Metropolis   => Confidence:', '{:.4f}'.format(min_q_tts['value']*100), '% **')
+    print('** Classical Metropolis => Confidence:', '{:.4f}'.format(min_c_tts['value']*100), '% **')
     print('**                                                    **')
     print('**      Quantum success min energy:', min_q_tts['success'],'      **')
     print('**      Classical success min energy:', min_c_tts['success'],'      **')

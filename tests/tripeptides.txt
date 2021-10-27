@@ -8,10 +8,10 @@ Glycylhistidyllysine          GHK (73587)     #https://pubchem.ncbi.nlm.nih.gov/
 glycyltyrosyllysine           GYK (192230)    #https://pubchem.ncbi.nlm.nih.gov/compound/192230
 alaynylglycylglycine          AGG (96798)     #https://pubchem.ncbi.nlm.nih.gov/compound/96798
 Leucylglycylaspartic          LGD (10193131)  #https://pubchem.ncbi.nlm.nih.gov/compound/10193131
-Glycylglycyl-L-isoleucine     GGI (7020346)   #https://pubchem.ncbi.nlm.nih.gov/compound/7020346
-Glycylglycyl-L-leucine        GGL (6992871)   #https://pubchem.ncbi.nlm.nih.gov/compound/6992871
-Glycylglycyl-L-glutamine      GGQ (7019370)   #https://pubchem.ncbi.nlm.nih.gov/compound/7019370
-Seryl-lysyl-leucine           SKL (131223)    #https://pubchem.ncbi.nlm.nih.gov/compound/131223
+glycylglycylisoleucine        GGI (7020346)   #https://pubchem.ncbi.nlm.nih.gov/compound/7020346
+glycylglycylleucine           GGL (6992871)   #https://pubchem.ncbi.nlm.nih.gov/compound/6992871
+SCHEMBL4170252                GGQ (7019370)   #https://pubchem.ncbi.nlm.nih.gov/compound/7019370
+DTXSID40156575                SKL (131223)    #https://pubchem.ncbi.nlm.nih.gov/compound/131223
 L-Threonyl-L-arginyl-L-serine TRS (145457962) #https://pubchem.ncbi.nlm.nih.gov/compound/145457962
 lysyl-leucyl-glycine          KLG (24769460)  #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
 Met-Cys-Asp                   MCD (145456890) #https://pubchem.ncbi.nlm.nih.gov/compound/145456890

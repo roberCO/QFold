@@ -12,9 +12,9 @@ glycylglycylisoleucine        GGI (7020346)   #https://pubchem.ncbi.nlm.nih.gov/
 glycylglycylleucine           GGL (6992871)   #https://pubchem.ncbi.nlm.nih.gov/compound/6992871
 SCHEMBL4170252                GGQ (7019370)   #https://pubchem.ncbi.nlm.nih.gov/compound/7019370
 DTXSID40156575                SKL (131223)    #https://pubchem.ncbi.nlm.nih.gov/compound/131223
-L-Threonyl-L-arginyl-L-serine TRS (145457962) #https://pubchem.ncbi.nlm.nih.gov/compound/145457962
-lysyl-leucyl-glycine          KLG (24769460)  #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
-Met-Cys-Asp                   MCD (145456890) #https://pubchem.ncbi.nlm.nih.gov/compound/145456890
-Glutamyl-glutamyl-glycine     EEG (86289106)  #https://pubchem.ncbi.nlm.nih.gov/compound/86289106
-Glutaminyl-glutamyl-glycine   QEG (145455053) #https://pubchem.ncbi.nlm.nih.gov/compound/145455053
-Seryl-threonyl-isoleucine     STI (145457884) #https://pubchem.ncbi.nlm.nih.gov/compound/145457884
+SCHEMBL6535296                KLG (24769460)  #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
+Q27271951                     KDI (90478376)  #https://pubchem.ncbi.nlm.nih.gov/compound/90478376
+Threonylseryllysine           TSK (194404)    #https://pubchem.ncbi.nlm.nih.gov/compound/194404
+X6346H6PUM                    GPX (11778669)  #https://pubchem.ncbi.nlm.nih.gov/compound/11778669
+Glycylhydroxyprolylproline    GXP (72941529)  #https://pubchem.ncbi.nlm.nih.gov/compound/72941529
+4L0BCI8ULH                    KHG (9927908)   #https://pubchem.ncbi.nlm.nih.gov/compound/9927908

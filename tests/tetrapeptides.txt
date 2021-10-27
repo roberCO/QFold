@@ -1,10 +1,10 @@
-Alanylglycylserylglutamic AGSE (188349)    #https://pubchem.ncbi.nlm.nih.gov/compound/188349
-valylglycylserylglutamic  VGSE (14728932)  #https://pubchem.ncbi.nlm.nih.gov/compound/14728932
-tetrapeptide4             GEPG (42630676)  #https://pubchem.ncbi.nlm.nih.gov/compound/42630676
-tetrapeptide6             VPAA (121491893) #https://pubchem.ncbi.nlm.nih.gov/compound/121491893
-Glycyl-glycyl-glycyl-glycine GGGG (69481) https://pubchem.ncbi.nlm.nih.gov/compound/69481
-H-Asp-Gly-Glu-Ala-OH 	NGEA (9821757)	https://pubchem.ncbi.nlm.nih.gov/compound/9821757
-H-Asp-asp-asp-asp-OH NNNN https://pubchem.ncbi.nlm.nih.gov/compound/10028036
-H-Asp-Gly-Gly-Ala-OH NGGA https://pubchem.ncbi.nlm.nih.gov/compound/11681255
-Ala-Ala-Asp-Asp AADD https://pubchem.ncbi.nlm.nih.gov/compound/71464658
-Ala-Val-Asp-Ser AVDS https://pubchem.ncbi.nlm.nih.gov/compound/71464603
+Alanylglycylserylglutamic    AGSE (188349)    #https://pubchem.ncbi.nlm.nih.gov/compound/188349
+valylglycylserylglutamic     VGSE (14728932)  #https://pubchem.ncbi.nlm.nih.gov/compound/14728932
+tetrapeptide4                GEPG (42630676)  #https://pubchem.ncbi.nlm.nih.gov/compound/42630676
+tetrapeptide6                VPAA (121491893) #https://pubchem.ncbi.nlm.nih.gov/compound/121491893
+Glycyl-glycyl-glycyl-glycine GGGG (69481)     #https://pubchem.ncbi.nlm.nih.gov/compound/69481
+H-Asp-Gly-Glu-Ala-OH 	     NGEA (9821757)	  #https://pubchem.ncbi.nlm.nih.gov/compound/9821757
+H-Asp-asp-asp-asp-OH         NNNN (10028036)  #https://pubchem.ncbi.nlm.nih.gov/compound/10028036
+H-Asp-Gly-Gly-Ala-OH         NGGA (11681255)  #https://pubchem.ncbi.nlm.nih.gov/compound/11681255
+Ala-Ala-Asp-Asp              AADD (71464658)  #https://pubchem.ncbi.nlm.nih.gov/compound/71464658
+Ala-Val-Asp-Ser              AVDS (71464603)  #https://pubchem.ncbi.nlm.nih.gov/compound/71464603

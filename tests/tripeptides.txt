@@ -1,20 +1,20 @@
-glycylglycylglycine    GGG #https://pubchem.ncbi.nlm.nih.gov/compound/11161
-glycylglycylalanine    GGA #https://pubchem.ncbi.nlm.nih.gov/compound/6992378
-alanylalanylalanine    AAA #https://pubchem.ncbi.nlm.nih.gov/compound/5478845
-alanylglutaminyllysine AQK #https://pubchem.ncbi.nlm.nih.gov/compound/131801085
-melanostatin           PLG #https://pubchem.ncbi.nlm.nih.gov/compound/92910
-tyrosylglycylglycine   YGG #https://pubchem.ncbi.nlm.nih.gov/compound/123715
-Glycylhistidyllysine   GHK #https://pubchem.ncbi.nlm.nih.gov/compound/73587
-glycyltyrosyllysine    GYK #https://pubchem.ncbi.nlm.nih.gov/compound/192230
-alaynylglycylglycine   AGG (96798) #https://pubchem.ncbi.nlm.nih.gov/compound/96798
-Leucylglycylaspartic   LGD (10193131) #https://pubchem.ncbi.nlm.nih.gov/compound/10193131
-Glycylglycyl-L-isoleucine GGI (7020346) #https://pubchem.ncbi.nlm.nih.gov/compound/7020346
-Glycylglycyl-L-leucine GGL (6992871) #https://pubchem.ncbi.nlm.nih.gov/compound/6992871
-Glycylglycyl-L-glutamine GGQ (7019370) #https://pubchem.ncbi.nlm.nih.gov/compound/7019370
-Seryl-lysyl-leucine SKL #https://pubchem.ncbi.nlm.nih.gov/compound/131223
-L-Threonyl-L-arginyl-L-serine TRS #https://pubchem.ncbi.nlm.nih.gov/compound/145457962
-lysyl-leucyl-glycine KLG #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
-Met-Cys-Asp MCD #https://pubchem.ncbi.nlm.nih.gov/compound/145456890
-Glutamyl-glutamyl-glycine EEG https://pubchem.ncbi.nlm.nih.gov/compound/86289106
-Glutaminyl-glutamyl-glycine QEG #https://pubchem.ncbi.nlm.nih.gov/compound/145455053
-Seryl-threonyl-isoleucine STI #https://pubchem.ncbi.nlm.nih.gov/compound/145457884
+glycylglycylglycine           GGG (11161)     #https://pubchem.ncbi.nlm.nih.gov/compound/11161
+glycylglycylalanine           GGA (6992378)   #https://pubchem.ncbi.nlm.nih.gov/compound/6992378
+alanylalanylalanine           AAA (5478845)   #https://pubchem.ncbi.nlm.nih.gov/compound/5478845
+alanylglutaminyllysine        AQK (131801085) #https://pubchem.ncbi.nlm.nih.gov/compound/131801085
+melanostatin                  PLG (92910)     #https://pubchem.ncbi.nlm.nih.gov/compound/92910
+tyrosylglycylglycine          YGG (123715)    #https://pubchem.ncbi.nlm.nih.gov/compound/123715
+Glycylhistidyllysine          GHK (73587)     #https://pubchem.ncbi.nlm.nih.gov/compound/73587
+glycyltyrosyllysine           GYK (192230)    #https://pubchem.ncbi.nlm.nih.gov/compound/192230
+alaynylglycylglycine          AGG (96798)     #https://pubchem.ncbi.nlm.nih.gov/compound/96798
+Leucylglycylaspartic          LGD (10193131)  #https://pubchem.ncbi.nlm.nih.gov/compound/10193131
+Glycylglycyl-L-isoleucine     GGI (7020346)   #https://pubchem.ncbi.nlm.nih.gov/compound/7020346
+Glycylglycyl-L-leucine        GGL (6992871)   #https://pubchem.ncbi.nlm.nih.gov/compound/6992871
+Glycylglycyl-L-glutamine      GGQ (7019370)   #https://pubchem.ncbi.nlm.nih.gov/compound/7019370
+Seryl-lysyl-leucine           SKL (131223)    #https://pubchem.ncbi.nlm.nih.gov/compound/131223
+L-Threonyl-L-arginyl-L-serine TRS (145457962) #https://pubchem.ncbi.nlm.nih.gov/compound/145457962
+lysyl-leucyl-glycine          KLG (24769460)  #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
+Met-Cys-Asp                   MCD (145456890) #https://pubchem.ncbi.nlm.nih.gov/compound/145456890
+Glutamyl-glutamyl-glycine     EEG (86289106)  #https://pubchem.ncbi.nlm.nih.gov/compound/86289106
+Glutaminyl-glutamyl-glycine   QEG (145455053) #https://pubchem.ncbi.nlm.nih.gov/compound/145455053
+Seryl-threonyl-isoleucine     STI (145457884) #https://pubchem.ncbi.nlm.nih.gov/compound/145457884

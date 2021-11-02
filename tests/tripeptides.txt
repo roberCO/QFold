@@ -15,6 +15,6 @@ DTXSID40156575                SKL (131223)    #https://pubchem.ncbi.nlm.nih.gov/
 schembl6535296                KLG (24769460)  #https://pubchem.ncbi.nlm.nih.gov/compound/24769460
 q27271951                     KDI (90478376)  #https://pubchem.ncbi.nlm.nih.gov/compound/90478376
 threonylseryllysine           TSK (194404)    #https://pubchem.ncbi.nlm.nih.gov/compound/194404
-X6346H6PUM                    GPX (11778669)  #https://pubchem.ncbi.nlm.nih.gov/compound/11778669
-glycylhydroxyprolylproline    GXP (72941529)  #https://pubchem.ncbi.nlm.nih.gov/compound/72941529
-4L0BCI8ULH                    KHG (9927908)   #https://pubchem.ncbi.nlm.nih.gov/compound/9927908
+CHEMBL190414                  VPP (9818200)   #https://pubchem.ncbi.nlm.nih.gov/compound/9818200
+SCHEMBL8760024                TKP (170596)    #https://pubchem.ncbi.nlm.nih.gov/compound/170596
+CHEMBL313763                  RGD (104802)    #https://pubchem.ncbi.nlm.nih.gov/compound/104802

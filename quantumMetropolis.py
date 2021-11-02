@@ -442,7 +442,7 @@ class QuantumMetropolis():
         
         return U_gate
 
-    def execute_quantum_metropolis_n(self, nW):
+    def execute_quantum_metropolis_n(self, initial_step, nW):
 
         # State definition. All angles range from 0 to 2pi
 
@@ -483,7 +483,7 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
 
-        for i in range(1,nW):
+        for i in range(initial_step, nW):
 
             if self.beta_type == 'variable':
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':

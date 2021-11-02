@@ -54,7 +54,7 @@ try:
     f = open(config_variables['precalculated_energies_path']+'delta_energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json')
     f.close()
 except IOError:
-    print('<!> Info: No precalculated energies file found => Calculating energies\n')
+    print('<!> Info: No precalculated energies file', config_variables['precalculated_energies_path']+'delta_energies_'+args.protein_name+'_'+str(args.bits)+'_'+args.initialization+'.json','found => Calculating energies\n')
     angleInitializer.calculate_delta_energies(args.protein_name, args.bits, args.initialization, args.aminoacids, args.id)
 
 [deltas_dict, psi4_min_energy, initial_min_energy, index_min_energy, initialization_stats] = psi.readEnergyJson(args.protein_name, args.bits, args.initialization)

@@ -3,8 +3,8 @@ valylglycylserylglutamic     VGSE (14728932)  #https://pubchem.ncbi.nlm.nih.gov/
 tetrapeptide4                GEPG (42630676)  #https://pubchem.ncbi.nlm.nih.gov/compound/42630676
 tetrapeptide6                VPAA (121491893) #https://pubchem.ncbi.nlm.nih.gov/compound/121491893
 Glycylglycylglycylglycine    GGGG (69481)     #https://pubchem.ncbi.nlm.nih.gov/compound/69481
-dgea                 	     DGEA (9821757)	  #https://pubchem.ncbi.nlm.nih.gov/compound/9821757
-schembl17411                  NNNN (10028036)  #https://pubchem.ncbi.nlm.nih.gov/compound/10028036
+dgea                         DGEA (9821757)   #https://pubchem.ncbi.nlm.nih.gov/compound/9821757
 aadd                         AADD (71464658)  #https://pubchem.ncbi.nlm.nih.gov/compound/71464658
-avds                         AVDS (71464603)  #https://pubchem.ncbi.nlm.nih.gov/compound/71464603
-179juc43hu                   GEKG (42630677)  #https://pubchem.ncbi.nlm.nih.gov/compound/42630677
+CHEMBL333357                 YPFF (5311081)   #https://pubchem.ncbi.nlm.nih.gov/compound/5311081
+MFCD00133379                 GPGG (96811)     #https://pubchem.ncbi.nlm.nih.gov/compound/96811
+

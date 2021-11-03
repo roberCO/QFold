@@ -483,7 +483,7 @@ class QuantumMetropolis():
             #It creates one different oracle for each beta
             oracle = oracle_generator.generate_oracle(self.oracle_option, self.beta)
 
-        for i in range(initial_step, nW):
+        for i in range(initial_step-1, nW):
 
             if self.beta_type == 'variable':
                 if self.annealing_schedule == 'Cauchy' or self.annealing_schedule == 'linear':

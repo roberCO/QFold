@@ -8,3 +8,13 @@ alanylcysteine   AC #https://pubchem.ncbi.nlm.nih.gov/compound/13019623
 glycylalanine    GA #https://pubchem.ncbi.nlm.nih.gov/compound/98153
 cysteinylalanine CA #https://pubchem.ncbi.nlm.nih.gov/compound/20574727
 leucylglycine    LG #https://pubchem.ncbi.nlm.nih.gov/compound/79070
+CHEMBL380047     AN #https://pubchem.ncbi.nlm.nih.gov/compound/99719
+SCHEMBL2490761   AR #https://pubchem.ncbi.nlm.nih.gov/compound/446132
+asparagylalanine NA #https://pubchem.ncbi.nlm.nih.gov/compound/18218175
+threonylcysteine TC #https://pubchem.ncbi.nlm.nih.gov/compound/18218245
+CHEMBL191057     AK #https://pubchem.ncbi.nlm.nih.gov/compound/7016106
+serylcysteine    SC #https://pubchem.ncbi.nlm.nih.gov/compound/18218239
+aspartylalanine  DA #https://pubchem.ncbi.nlm.nih.gov/compound/5491963
+aspartylcysteine DC #https://pubchem.ncbi.nlm.nih.gov/compound/18218191
+CHEMBL302607     SD #https://pubchem.ncbi.nlm.nih.gov/compound/7016057
+asparagylcysteine NC #https://pubchem.ncbi.nlm.nih.gov/compound/18218178

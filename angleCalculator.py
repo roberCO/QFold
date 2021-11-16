@@ -35,14 +35,15 @@ class AngleCalculator():
 
         classical_metropolis = metropolis.Metropolis(self.n_angles, deltas_dict, self.tools)
 
-        #'''
+        ###### Quantum Metropolis ######
+
         if self.quantum_simulation_activated == True:
             quantum_metropolis = quantumMetropolis.QuantumMetropolis(self.n_angles, deltas_dict, self.tools)
-            ###### Quantum Metropolis ######
+            
             start_time = time.time()
 
             if self.mode == 'simulation':
-                [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(nW = self.final_step)
+                [dict_probabilities_matrix, time_statevector] = quantum_metropolis.execute_quantum_metropolis_n(initial_step=self.initial_step, nW=self.final_step)
             elif self.mode == 'experiment': 
                 [experiment_result_matrix, time_statevector, execution_stats, measures_dict] = quantum_metropolis.execute_real_hardware(nWs = 2)
             elif self.mode == 'real':
@@ -71,7 +72,7 @@ class AngleCalculator():
 
                     q_accumulated_tts.append(q_tts)     
                     if q_tts < min_q_tts['value'] or min_q_tts['value'] == -1: min_q_tts.update(dict(value=q_tts, step=step))
-        #'''
+
         ###### Classical Metropolis ######
 
         if self.classical_simulation_activated == True:

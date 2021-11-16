@@ -20,12 +20,12 @@
     ],
 
     "initial_step": 2,
-    "final_step": 50,
+    "final_step": 10,
     "path_tts_plot": "./results/",
     "ancilla_bits": 7,
     "number_iterations": 500,
-    "beta": 50,
-    "beta_type": "variable",
+    "beta": 1000,
+    "beta_type": "fixed",
     "alpha": 0.9,
     "kappa": 1,
     "annealing_schedule": "geometric",
@@ -54,7 +54,7 @@
     "color_quantum_random": "yellow",
     "color_classical_random": "cyan",
 
-    "quantum_simulation_activated": 0,
+    "quantum_simulation_activated": 1,
     "classical_simulation_activated": 1
     
 }

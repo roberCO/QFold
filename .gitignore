@@ -1,0 +1,8 @@
+.vscode
+__pycache__/
+timer.dat
+.DS_Store
+src/
+inputRotations.dat
+outputRotations.dat
+output.dat

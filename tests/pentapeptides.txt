@@ -1,0 +1,3 @@
+pentaglycine GGGGG       # https://pubchem.ncbi.nlm.nih.gov/compound/81537
+Pentaalanine AAAAA       # https://pubchem.ncbi.nlm.nih.gov/compound/4079599
+SCHEMBL16777806 GAGAG    # https://pubchem.ncbi.nlm.nih.gov/compound/102439183

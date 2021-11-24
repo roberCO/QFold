@@ -1,8 +1,17 @@
+# ignore code editor files
 .vscode
-__pycache__/
-timer.dat
 .DS_Store
 src/
-inputRotations.dat
-outputRotations.dat
-output.dat
+
+# ignore python configuration
+__pycache__/
+
+# ignore temporary files
+*.dat
+psi.*
+
+# ignore results images
+*.html
+*.png
+*.jpg
+*.pdf

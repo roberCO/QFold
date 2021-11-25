@@ -18,7 +18,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
-
+from utils import Utils
+tools = Utils()
 
 def plot_q_vs_c(data):
     
@@ -384,7 +385,7 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_wid
 
                 x_point.append(data[protein_key]['min_tts_c'])
                 y_point.append(data[protein_key]['min_tts_q'])
-                print(protein_key,data[protein_key]['min_tts_q'])
+                #print(protein_key,data[protein_key]['min_tts_q'])
                 line_color.append('red' if 'minifold' in protein_key else 'blue')
 
                 if re.search("[A-Z]{4}", protein_key):
@@ -414,7 +415,7 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_wid
 
         # the function, which is y = x^2 here
         y_fit = b*x_fit**a
-        print('a,b',a,b)
+        #print('a,b',a,b)
 
         source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend, size = size))
 
@@ -651,6 +652,9 @@ def TTSplotter_matplotlib(data, schedules):
             logb, a = model
             b = np.exp(logb)
             print('a,b',a,b)
+
+            std_boots = np.std(tools.bootstrap(logcx, logqy))
+            print('std',std_boots)
 
             suba = np.round(a,2)
             subb = np.round(b,1)

@@ -378,14 +378,19 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_wid
         marker = []
         legend = []
         size = []
+        names = []
 
         for protein_key in data:
 
             if init in protein_key:
 
+                protein_id = protein_key.split('_')[0]
+
                 x_point.append(data[protein_key]['min_tts_c'])
                 y_point.append(data[protein_key]['min_tts_q'])
+                names.append(protein_id)
                 #print(protein_key,data[protein_key]['min_tts_q'])
+
                 line_color.append('red' if 'minifold' in protein_key else 'blue')
 
                 if re.search("[A-Z]{4}", protein_key):
@@ -417,7 +422,8 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_wid
         y_fit = b*x_fit**a
         #print('a,b',a,b)
 
-        source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend, size = size))
+        source = ColumnDataSource(dict(x = x_point, y = y_point, line_color=line_color, marker=marker, legend=legend, size = size, names=names))
+        labels = LabelSet(x='x', y='y', text='names', x_offset=5, y_offset=5, source=source, render_mode='canvas')
 
         #plot_q_c_slop.triangle(min_tts_c, min_tts_q, size=10, line_color='red', color='transparent')      
         #plot_q_c_slop.circle(min_tts_c, min_tts_q, size=10, line_color='blue', color='transparent')
@@ -440,6 +446,8 @@ def TTSplotter(data, schedule, width = 800, height = 450, title = None, plot_wid
             background_fill_color=line_color, background_fill_alpha=0, text_color = line_color)
 
         plot_q_c_slop.add_layout(citation)
+        plot_q_c_slop.add_layout(labels)
+
 
         plot_q_c_slop.scatter(x="x", y="y", line_color="line_color", fill_alpha=0, marker="marker", source=source, size = "size") #legend_group='legend',
 

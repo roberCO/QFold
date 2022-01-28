@@ -26,14 +26,30 @@ First, install dependencies
 ```bash
 # clone project   
 git clone https://github.com/roberCO/QFold/
+```
 
-# install project   
+Then we create a conda environment
+```
+conda create -n qfold python=3.6
+conda activate qfold
+```
+
+Then we must install a few packages
+```
+pip install tensorflow
+pip install keras
+pip install progressbar
+pip install matplotlib
+pip install mpl_toolkits
+pip install qiskit==0.29.0
+pip install pandas
 
 ```
- 
+
+## How to run
 Next, run it.   
 ```
- 
+python main.py [peptide_name] [# aminoacids] [# rotation bits] [initialization: random/minifold] [mode: simulation/experiment]
 ```
 
 

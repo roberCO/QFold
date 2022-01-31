@@ -1,0 +1,17 @@
+# ignore code editor files
+.vscode
+.DS_Store
+src/
+
+# ignore python configuration
+__pycache__/
+
+# ignore temporary files
+*.dat
+psi.*
+
+# ignore results images
+*.html
+*.png
+*.jpg
+*.pdf

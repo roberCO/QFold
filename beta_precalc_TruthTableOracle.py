@@ -1,6 +1,5 @@
-from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
-from sympy.combinatorics.graycode import GrayCode, gray_to_bin, bin_to_gray
-from qiskit.circuit import QuantumRegister, ClassicalRegister, QuantumCircuit, Qubit
+from qiskit.aqua.components.oracles import TruthTableOracle
+from qiskit.circuit import QuantumRegister, QuantumCircuit
 from collections import OrderedDict
 
 import math

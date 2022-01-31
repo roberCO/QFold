@@ -1,9 +1,6 @@
 from bokeh.io import output_file, show
 from bokeh.models import ColumnDataSource
-from bokeh.palettes import Set1
 from bokeh.plotting import figure
-import random
-from bokeh.palettes import Turbo256
 from bokeh.models import FactorRange
 from bokeh.layouts import row
 

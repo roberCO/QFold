@@ -36,12 +36,15 @@ conda activate qfold
 
 Then we must install a few packages
 ```
+pip install numpy
+pip install scipy
 pip install tensorflow
 pip install keras
-pip install progressbar
-pip install matplotlib
-pip install mpl_toolkits
 pip install qiskit
+pip install matplotlib
+pip install bokeh
+pip install functools
+pip install progressbar
 
 ```
 

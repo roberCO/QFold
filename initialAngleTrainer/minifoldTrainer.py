@@ -7,21 +7,10 @@
 
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import math
 import progressbar
 
 # Import libraries
-import keras
-import keras.backend as K
-from keras.models import Model
-# Optimizer and regularization
-from keras.regularizers import l2
-from keras.losses import mean_squared_error, mean_absolute_error
-# Keras layers
-from keras.layers.convolutional import Conv1D
-from keras.layers import Dense, Dropout, Flatten, Input, BatchNormalization, Activation
-from keras.layers.pooling import MaxPooling1D, AveragePooling1D, MaxPooling2D, AveragePooling2D
 from keras.optimizers import Adam
 
 # Model architecture

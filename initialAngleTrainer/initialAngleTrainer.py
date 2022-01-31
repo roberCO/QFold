@@ -1,8 +1,8 @@
-import sys
-import minifoldTrainer
 import sys 
 sys.path.insert(1, '../QFold/')
+
 import utils
+import minifoldTrainer
 
 if len(sys.argv) == 2 and sys.argv[1] == 'list_trainers':
 

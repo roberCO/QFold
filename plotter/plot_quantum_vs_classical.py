@@ -1,6 +1,4 @@
-import random
 import re
-from typing import ValuesView
 import numpy as np
 import itertools
 from collections import OrderedDict
@@ -11,12 +9,8 @@ from bokeh.palettes import Turbo256
 from bokeh.models import Legend, LegendItem, ColumnDataSource, LabelSet, Label, Marker, renderers
 from bokeh.palettes import Dark2_5 as palette
 from bokeh.models import SingleIntervalTicker, LinearAxis, Slope
-from bokeh.models.tickers import FixedTicker
 
-import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.lines import Line2D
 from matplotlib.legend_handler import HandlerLine2D, HandlerTuple
 from utils import Utils
 tools = Utils()

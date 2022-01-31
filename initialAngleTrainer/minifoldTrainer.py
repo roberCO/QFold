@@ -1,9 +1,9 @@
-#####################################################################################################################################
-##  Minifold is a project developed by Eric Alcaide (https://github.com/EricAlcaide/MiniFold)                                      ##
-##  Thanks to the autor for his awesome project similar to AlphaFold but in miniature                                              ##
-##                                                                                                                                 ##
-##  Initial project uses Jupyter Notebooks, but in this project everything was translated to plain python for performance reasons  ## 
-#####################################################################################################################################
+######################################################################################################################################
+##  Minifold is a project developed by Eric Alcaide (https://github.com/EricAlcaide/MiniFold)                                       ##
+##  Thanks to the autor for his awesome project similar to AlphaFold but in miniature                                               ##
+##                                                                                                                                  ##
+## Initial project uses Jupyter Notebooks, but in this project everything was translated to plain python due to performance reasons ## 
+######################################################################################################################################
 
 import os
 import numpy as np

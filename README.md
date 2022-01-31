@@ -41,8 +41,7 @@ pip install keras
 pip install progressbar
 pip install matplotlib
 pip install mpl_toolkits
-pip install qiskit==0.29.0
-pip install pandas
+pip install qiskit
 
 ```
 
@@ -50,6 +49,9 @@ pip install pandas
 Next, run it.   
 ```
 python main.py [peptide_name] [# aminoacids] [# rotation bits] [initialization: random/minifold] [mode: simulation/experiment]
+
+example:
+python3 main.py glycylglycine GG 2 minifold simulation
 ```
 
 

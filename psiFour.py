@@ -1,10 +1,7 @@
 from copy import Error
 import subprocess
-import pandas as pd
-import re
 import atom
 import json
-import time
 
 class PsiFour():
 

@@ -5,8 +5,6 @@ import copy
 import minifold
 import math
 import random
-import sys
-import progressbar
 import numpy as np
 import time
 

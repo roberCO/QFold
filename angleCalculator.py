@@ -1,10 +1,7 @@
-import math
 import metropolis
 import quantumMetropolis
 import time
-import utils
 import collections, functools, operator
-import initializer
 
 class AngleCalculator():
 

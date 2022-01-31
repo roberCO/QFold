@@ -1,6 +1,4 @@
-import numpy as np
 from prettytable import PrettyTable
-from collections import OrderedDict
 
 def calculate_stats(data):
 

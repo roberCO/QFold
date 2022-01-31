@@ -1,4 +1,3 @@
-import sys
 import initializer
 import angleCalculator
 import psiFour

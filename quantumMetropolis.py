@@ -1,6 +1,5 @@
 import numpy as np
 from itertools import product
-import utils
 import time
 import math
 import json
@@ -11,11 +10,9 @@ from collections import OrderedDict
 # Importing standard Qiskit libraries and configuring account
 import qiskit
 from qiskit import QuantumCircuit, execute, Aer, IBMQ
-from qiskit.circuit import QuantumRegister, ClassicalRegister, Qubit, Gate
-from qiskit.aqua.components.oracles import Oracle, TruthTableOracle
+from qiskit.circuit import QuantumRegister, ClassicalRegister
 from qiskit.quantum_info import Statevector
 from qiskit.compiler import transpile
-from qiskit.providers.aer import noise
 
 import beta_precalc_TruthTableOracle
 

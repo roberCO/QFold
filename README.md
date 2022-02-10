@@ -45,8 +45,15 @@ pip install matplotlib
 pip install bokeh
 pip install functools
 pip install progressbar
-
 ```
+See also configuration for the installation of `psi4`
+
+## Configuration
+It is possible to configure different parameters during QFold execution. In the config/config.json it is possible to modify the value of the parameters.
+
+The most important parameter is the psi4 library path. The variable "psi4_path" containts a path where the psi4 binary file is stored.
+
+For example: /home/user/installations/psi4conda/bin/psi4. The binary execution file of psi4 can be downloaded from https://psicode.org/installs/v15/
 
 ## How to run
 Next, run it.   
@@ -58,13 +65,6 @@ Example:
 ```
 python3 main.py glycylglycine GG 2 minifold simulation
 ```
-## Configuration
-It is possible to configure different parameters during QFold execution. In the config/config.json it is possible to modify the value of the parameters.
-
-The most important parameter is the psi4 library path. The variable "psi4_path" containts a path where the psi4 binary file is stored.
-
-For example: /home/user/installations/psi4conda/bin/psi4. The binary execution file of psi4 can be downloaded from https://psicode.org/installs/v15/
-
 
 ### Citation   
 ```

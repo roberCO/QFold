@@ -55,12 +55,22 @@ The most important parameter is the psi4 library path. The variable "psi4_path" 
 
 For example: /home/user/installations/psi4conda/bin/psi4. The binary execution file of psi4 can be downloaded from https://psicode.org/installs/v15/
 
+This repository should work with the following qiskit versions
+```
+qiskit                    0.29.0                   pypi_0    pypi
+qiskit-aer                0.8.2                    pypi_0    pypi
+qiskit-aqua               0.9.4                    pypi_0    pypi
+qiskit-ibmq-provider      0.16.0                   pypi_0    pypi
+qiskit-ignis              0.6.0                    pypi_0    pypi
+qiskit-terra              0.18.1                   pypi_0    pypi
+```
+
 ## How to run
 Next, run it.   
 ```
 python main.py [peptide_name] [# aminoacids] [# rotation bits] [initialization: random/minifold] [mode: simulation/experiment]
-
 ```
+
 Example:
 ```
 python3 main.py glycylglycine GG 2 minifold simulation

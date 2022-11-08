@@ -78,10 +78,14 @@ python3 main.py glycylglycine GG 2 minifold simulation
 
 ### Citation   
 ```
-@article{QFold,
-  title={QFold: Quantum Walks and Deep Learning to Solve Protein Folding},
-  author={Casares, PAM and Campos, Roberto and Martin-Delgado, MA},
-  journal={arXiv preprint arXiv:2101.10279},
-  year={2021}
+@article{casares2022qfold,
+  title={QFold: quantum walks and deep learning to solve protein folding},
+  author={Casares, Pablo Antonio Moreno and Campos, Roberto and Martin-Delgado, Miguel Angel},
+  journal={Quantum Science and Technology},
+  volume={7},
+  number={2},
+  pages={025013},
+  year={2022},
+  publisher={IOP Publishing}
 }
 ```   

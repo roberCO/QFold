@@ -88,4 +88,13 @@ python3 main.py glycylglycine GG 2 minifold simulation
   year={2022},
   publisher={IOP Publishing}
 }
-```   
+```
+
+## License
+
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
+
+This license applies to the original source code and comments in this repository,
+including prior versions and commits, to the extent they are authored by the project
+contributors. Third-party dependencies and adapted third-party code remain under
+their respective licenses.
